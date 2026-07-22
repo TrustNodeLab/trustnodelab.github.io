@@ -1,0 +1,93 @@
+import React, { createContext, useContext, useState, useEffect } from "react";
+
+export type PageId = "home" | "how-it-works" | "tech" | "about" | "early-access" | "comparison" | "not-found" | "admin" | "roadmap";
+
+interface NavigationContextValue {
+  activePage: PageId;
+  navigateTo: (page: PageId, anchorId?: string) => void;
+}
+
+const NavigationContext = createContext<NavigationContextValue | null>(null);
+
+function resolvePageFromPath(path: string): PageId {
+  const segments = path.split("/").filter(Boolean);
+  const isGhPages = segments[0]?.toLowerCase() === "trustnode-site";
+  const pagePath = isGhPages ? "/" + segments.slice(1).join("/") : path;
+  const normalized = pagePath.replace(/\/+$/, "") || "/";
+  if (normalized === "/" || normalized === "/index.html") return "home";
+  if (normalized === "/how-it-works") return "how-it-works";
+  if (normalized === "/tech") return "tech";
+  if (normalized === "/about") return "about";
+  if (normalized === "/early-access") return "early-access";
+  if (normalized === "/comparison") return "comparison";
+  if (normalized === "/admin") return "admin";
+  if (normalized === "/roadmap") return "roadmap";
+  return "not-found";
+}
+
+export function NavigationProvider({ children }: { children: React.ReactNode }) {
+  const [activePage, setActivePage] = useState<PageId>(() => {
+    return resolvePageFromPath(window.location.pathname);
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setActivePage(resolvePageFromPath(window.location.pathname));
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const navigateTo = (page: PageId, anchorId?: string) => {
+    setActivePage(page);
+    const segments = window.location.pathname.split("/").filter(Boolean);
+    const ghPrefix = segments[0]?.toLowerCase() === "trustnode-site" ? "/TrustNode-site" : "";
+    const path = ghPrefix + (page === "home" ? "/" : `/${page}`);
+    
+    // Update browser history
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, "", path);
+    }
+
+    // Scroll to anchor or top of the page
+    setTimeout(() => {
+      if (anchorId) {
+        let retries = 0;
+        const findAndScroll = () => {
+          const element = document.getElementById(anchorId);
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "start" });
+            return true;
+          }
+          return false;
+        };
+
+        if (!findAndScroll()) {
+          const interval = setInterval(() => {
+            retries++;
+            if (findAndScroll() || retries > 15) {
+              clearInterval(interval);
+            }
+          }, 50);
+        }
+        return;
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 100);
+  };
+
+  return (
+    <NavigationContext.Provider value={{ activePage, navigateTo }}>
+      {children}
+    </NavigationContext.Provider>
+  );
+}
+
+export function useNavigation() {
+  const ctx = useContext(NavigationContext);
+  if (!ctx) {
+    throw new Error("useNavigation must be used within a NavigationProvider");
+  }
+  return ctx;
+}
