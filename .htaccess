@@ -1,0 +1,34 @@
+# --- SPA client-side routing fallback ---
+# InfinityFree serves static files only (no Node/Express), so without this,
+# refreshing any non-root route (e.g. /tech) returns a real Apache/InfinityFree 404.
+# This rewrites any request that isn't an existing file/folder to index.html,
+# letting React Router handle the route on the client.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# --- Correct MIME types for the ONNX Runtime Web assets ---
+# Some shared hosts serve unknown extensions as text/plain or application/octet-stream
+# with the wrong charset, which can make WebAssembly.instantiateStreaming() and the
+# ONNX model fetch fail in stricter browsers.
+<IfModule mod_mime.c>
+  AddType application/wasm .wasm
+  AddType application/octet-stream .onnx
+  AddType text/plain .txt
+  AddType application/javascript .mjs
+  AddType application/gzip .gz
+</IfModule>
+
+# Ensure no unexpected charset/text transform is applied to binary assets
+<IfModule mod_headers.c>
+  <FilesMatch "\.(wasm|onnx)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
