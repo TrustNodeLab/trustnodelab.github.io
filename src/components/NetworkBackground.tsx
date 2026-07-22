@@ -180,6 +180,8 @@ const NetworkBackground = React.memo(function NetworkBackground({
     };
     window.addEventListener("resize", handleResize);
 
+    const isMobile = width < 768;
+
     // Throttle heavy astronomical computations to once every 250ms while rendering smoothly at 60fps
     let lastAstroCalcTime = 0;
     const astroCalcInterval = activeEcoMode ? 2000 : (isMobile ? 500 : 250);
@@ -239,7 +241,6 @@ const NetworkBackground = React.memo(function NetworkBackground({
     }
     let currentSatCoords: SatCoord[] = [];
 
-    const isMobile = width < 768;
     const isUltraLowEnd = typeof navigator !== "undefined" && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency < 4;
     const maxTrail = isMobile ? 4 : 8;
     const starList = isMobile ? REAL_STARS.slice(0, Math.floor(REAL_STARS.length * 0.75)) : REAL_STARS;
