@@ -172,11 +172,54 @@ export default function Header() {
 
   return (
     <>
-      {/* Vertical sidebar rail — fixed on the left, full height (per reference).
-          Scrolls (scrollbar hidden) on short screens like landscape phones so
-          the brand + toggles + socials never get cut off. */}
+      {/* Mobile top bar (replaces the vertical rail below md). Keeps the brand,
+          quick toggles and the burger thumb-friendly; full-width so content and
+          the cinematic intro logo stay centered on phones. */}
       <header
-        className="fixed top-0 left-0 bottom-0 z-[80] w-16 sm:w-20 flex flex-col items-center border-r border-[#3C404A]/40 bg-[#0A0A0B]/90 backdrop-blur-md shadow-[4px_0_30px_rgba(0,0,0,0.4)] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="md:hidden fixed top-0 left-0 right-0 z-[85] h-[calc(56px_+_env(safe-area-inset-top))] flex items-center gap-1.5 px-2 border-b border-[#3C404A]/40 bg-[#0A0A0B]/90 backdrop-blur-md"
+        style={{ paddingTop: "max(0px, env(safe-area-inset-top))" }}
+        id="mobile-top-bar"
+      >
+        <button
+          onClick={handleLogoHome}
+          className="flex items-center gap-1 cursor-pointer select-none group shrink-0"
+          aria-label="TrustNode — Home"
+        >
+          <span className="font-display font-medium text-base tracking-tighter text-[#F5F5F0] group-hover:text-[#3B82F6] transition-colors">
+            Trust<span className="text-[#3B82F6]">Node</span>
+          </span>
+        </button>
+        <div className="flex-1" />
+        {renderEcoButton()}
+        {renderSeniorButton()}
+        <LanguageSwitcher variant="mobile" />
+        <button
+          onClick={() => handlePageNavigation("download")}
+          aria-label={t.header.rustore}
+          title={t.header.rustore}
+          className="w-9 h-9 inline-flex items-center justify-center rounded-xl bg-[#3B82F6]/15 border border-[#3B82F6]/40 text-[#3B82F6] hover:text-white hover:bg-[#3B82F6]/35 transition-colors cursor-pointer"
+        >
+          <Download className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => (isOpen ? closeMenu() : openMenu())}
+          className="w-9 h-9 inline-flex items-center justify-center rounded-xl bg-[#3C404A]/40 border border-[#3C404A]/50 text-gray-400 hover:text-[#3B82F6] hover:border-[#3B82F6]/40 transition-colors cursor-pointer"
+          aria-label={isOpen ? "Close menu" : "Open menu"}
+          aria-expanded={isOpen}
+          aria-controls="fullscreen-nav"
+          id="mobile-menu-toggle"
+        >
+          {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </header>
+
+      {/* Vertical sidebar rail — fixed on the left, full height (per reference).
+          DESKTOP ONLY (md+). On phones it's replaced by the compact top bar
+          below, so the cinematic intro logo stays centered and controls are
+          thumb-friendly. Scrolls (scrollbar hidden) on short screens like
+          landscape phones so the brand + toggles + socials never get cut off. */}
+      <header
+        className="hidden md:flex fixed top-0 left-0 bottom-0 z-[80] w-20 flex-col items-center border-r border-[#3C404A]/40 bg-[#0A0A0B]/90 backdrop-blur-md shadow-[4px_0_30px_rgba(0,0,0,0.4)] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{
           paddingTop: "max(0.75rem, env(safe-area-inset-top))",
           paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
@@ -249,7 +292,7 @@ export default function Header() {
       {isOpen &&
         createPortal(
           <div
-            className={`fixed top-0 bottom-0 left-16 sm:left-20 right-0 z-[70] flex flex-col overflow-hidden ${
+            className={`fixed top-[calc(56px_+_env(safe-area-inset-top))] md:top-0 bottom-0 left-0 md:left-20 right-0 z-[70] flex flex-col overflow-hidden ${
               isClosing ? "menu-slide-out" : "menu-slide-in"
             }`}
             role="dialog"
@@ -271,11 +314,11 @@ export default function Header() {
                 padding on phones so the big nav labels never clip horizontally. */}
             <div
               className="relative z-10 flex flex-col flex-1 overflow-y-auto pl-6 sm:pl-14 pr-3 sm:pr-10"
-              style={{ paddingTop: "max(0px, env(safe-area-inset-top))", paddingBottom: "max(0px, env(safe-area-inset-bottom))" }}
+              style={{ paddingBottom: "max(0px, env(safe-area-inset-bottom))" }}
             >
           {/* Overlay top row: brand (darkens to home). No dark backdrop — the
               star-sky field flows up right behind the company name. */}
-          <div className="flex items-center justify-between px-6 sm:px-12 py-4 border-b border-[#3C404A]/30">
+          <div className="hidden md:flex items-center justify-between px-6 sm:px-12 py-4 border-b border-[#3C404A]/30">
             <button
               onClick={handleLogoHome}
               className="flex items-center gap-3 cursor-pointer select-none"
@@ -396,6 +439,22 @@ export default function Header() {
               <span className="menu-item-in font-mono text-[11px] text-gray-500 uppercase tracking-widest truncate" style={{ animationDelay: "0.95s" }}>
                 {t.brand.tagline}
               </span>
+              {/* Socials for mobile — on desktop they live in the sidebar rail */}
+              <div className="md:hidden menu-item-in flex items-center justify-center gap-2 mt-4" style={{ animationDelay: "1.05s" }}>
+                {SOCIAL_LINKS.map(({ href, label, Icon }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    title={label}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-[#3C404A]/50 bg-[#0A0A0B]/60 text-gray-400 hover:text-[#3B82F6] hover:border-[#3B82F6]/40 transition-all duration-300"
+                  >
+                    <Icon className="w-4 h-4" />
+                  </a>
+                ))}
+              </div>
             </div>
             </div>
           </div>,

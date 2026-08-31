@@ -774,7 +774,7 @@ export default function App() {
 
   return (
     <div 
-      className="relative w-full max-w-full overflow-x-hidden bg-[#0A0A0B] selection:bg-[#3B82F6]/30 selection:text-[#F5F5F0] pl-16 sm:pl-20"
+      className="relative w-full max-w-full overflow-x-hidden bg-[#0A0A0B] selection:bg-[#3B82F6]/30 selection:text-[#F5F5F0] pt-[calc(56px_+_env(safe-area-inset-top))] md:pt-0 md:pl-20"
       style={{ minHeight: "100vh" }}
       id="app-container"
     >
@@ -792,9 +792,10 @@ export default function App() {
         </Suspense>
       </div>
 
-      {/* Universal Fixed Header (vertical sidebar on the left) - Displayed on all pages across the application */}
+      {/* Universal Fixed Header (vertical sidebar on md+, compact top bar on phones)
+          - Displayed on all pages across the application */}
       <div 
-        className="transition-opacity duration-300 fixed top-0 left-0 bottom-0 z-50 w-16 sm:w-20"
+        className="transition-opacity duration-300 fixed top-0 left-0 right-0 md:right-auto md:bottom-0 z-50 md:w-20"
         style={{ 
           opacity: showHeader ? 1 : 0, 
           pointerEvents: showHeader ? "auto" : "none" 
