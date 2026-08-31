@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { resetScrollLock } from "../lib/scrollLock";
+import { parseAppPath, buildAppPath } from "./path";
+import { useLanguage } from "../i18n/LanguageContext";
 
-export type PageId = "home" | "how-it-works" | "tech" | "about" | "early-access" | "comparison" | "not-found" | "admin" | "roadmap";
+export type PageId = "home" | "how-it-works" | "tech" | "about" | "download" | "comparison" | "news" | "not-found" | "roadmap" | "privacy" | "terms" | "features" | "research" | "privacy-architecture" | "sections" | "glossary" | "test" | "help";
 
 interface NavigationContextValue {
   activePage: PageId;
@@ -9,25 +12,37 @@ interface NavigationContextValue {
 
 const NavigationContext = createContext<NavigationContextValue | null>(null);
 
-function resolvePageFromPath(path: string): PageId {
-  const segments = path.split("/").filter(Boolean);
-  const isGhPages = segments[0]?.toLowerCase() === "trustnode-site";
-  const pagePath = isGhPages ? "/" + segments.slice(1).join("/") : path;
-  const normalized = pagePath.replace(/\/+$/, "") || "/";
-  if (normalized === "/" || normalized === "/index.html") return "home";
-  if (normalized === "/how-it-works") return "how-it-works";
-  if (normalized === "/tech") return "tech";
-  if (normalized === "/about") return "about";
-  if (normalized === "/early-access") return "early-access";
-  if (normalized === "/comparison") return "comparison";
-  if (normalized === "/admin") return "admin";
-  if (normalized === "/roadmap") return "roadmap";
-  return "not-found";
+/**
+ * Синхронный сигнал «пропустить кинематик-интро на главной».
+ * navigateTo ставит его ДО setActivePage, а App.tsx читает в рендере — так
+ * эффекты того же коммита уже видят skipIntro=true и не запускают кинематик
+ * и квиз с блокировкой скролла при якорном переходе во время сессии
+ * (например, «Сколько теряют…» из футера на другой странице).
+ */
+export const homeIntroSkipSignal = { current: false };
+
+function resolvePageFromPath(pathname: string): PageId {
+  return parseAppPath(pathname).page;
 }
 
+const NavigatePreferences = () => {
+  // respect prefers-reduced-motion: the smooth-scroll animation is pointless
+  // (and janky) for users who asked for less motion.
+  const reduced =
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  return reduced ? "auto" : "smooth";
+};
+
 export function NavigationProvider({ children }: { children: React.ReactNode }) {
+  const { language } = useLanguage();
+
   const [activePage, setActivePage] = useState<PageId>(() => {
-    return resolvePageFromPath(window.location.pathname);
+    const saved = sessionStorage.getItem("redirect");
+    if (saved) {
+      sessionStorage.removeItem("redirect");
+      return parseAppPath(saved).page;
+    }
+    return parseAppPath(window.location.pathname).page;
   });
 
   useEffect(() => {
@@ -40,10 +55,17 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const navigateTo = (page: PageId, anchorId?: string) => {
+    // Любая навигация гарантированно снимает скролл-локи (кинематик/квиз/меню):
+    // защита от «залипшего» overflow:hidden при уходе со страницы до снятия локов.
+    resetScrollLock();
+    // Deep-link на блок главной («Сколько теряют…» из футера и т.п.): пропускаем
+    // кинематик-интро и квиз, иначе пользователь попадает в 10-секундный лок.
+    if (page === "home" && anchorId) {
+      homeIntroSkipSignal.current = true;
+      try { sessionStorage.setItem("tn_home_skip_intro", "1"); } catch {}
+    }
     setActivePage(page);
-    const segments = window.location.pathname.split("/").filter(Boolean);
-    const ghPrefix = segments[0]?.toLowerCase() === "trustnode-site" ? "/TrustNode-site" : "";
-    const path = ghPrefix + (page === "home" ? "/" : `/${page}`);
+    const path = buildAppPath(language, page);
     
     // Update browser history
     if (window.location.pathname !== path) {
@@ -52,12 +74,21 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
 
     // Scroll to anchor or top of the page
     setTimeout(() => {
+      // Move focus into the page region so keyboard / screen-reader users
+      // land where the route changed (do NOT scroll here — the smooth
+      // scroll below does that, and preventScroll avoids a jump).
+      const main = document.getElementById("main-content");
+      if (main && !main.contains(document.activeElement)) {
+        main.setAttribute("tabindex", "-1");
+        main.focus({ preventScroll: true });
+      }
       if (anchorId) {
         let retries = 0;
+        const behavior = NavigatePreferences();
         const findAndScroll = () => {
           const element = document.getElementById(anchorId);
           if (element) {
-            element.scrollIntoView({ behavior: "smooth", block: "start" });
+            element.scrollIntoView({ behavior, block: "start" });
             return true;
           }
           return false;
@@ -73,7 +104,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
         }
         return;
       }
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0, behavior: NavigatePreferences() });
     }, 100);
   };
 

@@ -37,13 +37,13 @@ export default function NotFoundPage() {
   const t404 = translations[language] || translations["en"];
 
   return (
-    <div className="w-full min-h-[85vh] flex flex-col items-center justify-center px-4 pt-28 pb-16 text-center select-none bg-[#0A0A0B]">
-      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1F2937]/50 border border-[#2E7DFF]/40 text-[#2E7DFF] font-mono text-xs mb-6 tracking-widest shadow-[0_0_15px_rgba(46,125,255,0.2)]">
+    <div className="w-full min-h-[85vh] flex flex-col items-center justify-center px-4 pt-8 pb-16 text-center select-none bg-[#0A0A0B]">
+      <div className="inline-flex items-center gap-2 text-[#3B82F6] font-mono text-xs mb-6 tracking-widest">
         <ShieldAlert className="w-4 h-4 animate-pulse" />
         <span>{t404.badge}</span>
       </div>
 
-      <h1 className="font-display font-bold text-4xl sm:text-6xl text-[#F5F5F0] mb-4 max-w-2xl tracking-tight">
+      <h1 className="font-display font-medium text-4xl sm:text-6xl text-[#F5F5F0] mb-4 max-w-2xl tracking-tighter">
         {t404.title}
       </h1>
 
@@ -52,8 +52,8 @@ export default function NotFoundPage() {
       </p>
 
       <button
-        onClick={() => navigateTo("home")}
-        className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-[#2E7DFF] hover:bg-[#2E7DFF]/90 text-white font-sans font-semibold text-sm shadow-[0_0_25px_rgba(46,125,255,0.4)] transition-all duration-300 cursor-pointer hover:scale-105"
+        onClick={() => navigateTo("sections")}
+        className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-[#3B82F6] hover:bg-[#3B82F6]/90 text-white font-sans font-semibold text-sm shadow-glow-lg transition duration-300 cursor-pointer hover:scale-[1.05]"
       >
         <ArrowLeft className="w-4 h-4" />
         <span>{t404.btn}</span>

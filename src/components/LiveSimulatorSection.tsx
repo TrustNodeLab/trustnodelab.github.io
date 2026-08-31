@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, Bot, Phone, PhoneOff, AlertTriangle, ShieldCheck, Play, RotateCcw, Cpu, Terminal, Radio } from "lucide-react";
+import { Mic, Bot, Phone, PhoneOff, AlertTriangle, ShieldCheck, Play, RotateCcw, Cpu, Terminal } from "lucide-react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { LanguageCode } from "../i18n/languages";
 import { motion, AnimatePresence } from "motion/react";
+import SectionBadge from "./SectionBadge";
+import ScanCard from "./ScanCard";
 
 interface Scenario {
   id: string;
@@ -13,32 +15,35 @@ interface Scenario {
   triggers: string[]; // Keywords highlighted
 }
 
+// Combining marks, nukta/virama and variation selectors used across the
+// supported languages (Latin, Cyrillic, Devanagari/Hindi, Arabic, etc.).
+const COMBINING_MARKS_RE =
+  /[\u0300-\u036F\u0483-\u0489\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED\u0900-\u0903\u093A-\u094F\u0951-\u0957\u0962\u0963\u0A81-\u0A83\u0ABC\u0A3C\u0A41-\u0A42\u0A47\u0A48\u0A4B-\u0A4D\u1AB0-\u1AFF\u1DC0-\u1DFF\u20D0-\u20FF\uFE00-\uFE0F\uFE20-\uFE2F]/;
+
 const SIMULATOR_TITLE: Partial<Record<LanguageCode, string>> = {
-  ru: "Интерактивный симулятор PHANTOM 2.0",
-  en: "Interactive PHANTOM 2.0 Simulator",
-  es: "Simulador Interactivo PHANTOM 2.0",
-  zh: "PHANTOM 2.0 互动模拟终端",
-  hi: "इंटरैक्टिव फैंटम (PHANTOM) 2.0 सिमुलेटर",
-  ar: "محاكي PHANTOM 2.0 التفاعلي",
-  pt: "Simulador Interativo PHANTOM 2.0",
-  fr: "Simulateur Interactif PHANTOM 2.0",
-  de: "Interaktiver PHANTOM 2.0 Simulator",
-  ja: "インタラクティブ PHANTOM 2.0 シミュレーター",
-  tr: "İnteraktif PHANTOM 2.0 Simülatörü"
+  ru: "Интерактивный симулятор TrustNode 2.0",
+  en: "Interactive TrustNode 2.0 Simulator",
+  es: "Simulador Interactivo TrustNode 2.0",
+  zh: "TrustNode 2.0 互动模拟终端",
+  hi: "इंटरैक्टिव TrustNode 2.0 सिमुलेटर",
+  ar: "محاكي TrustNode 2.0 التفاعلي",
+  pt: "Simulador Interativo TrustNode 2.0",
+  fr: "Simulateur Interactif TrustNode 2.0",
+  de: "Interaktiver TrustNode 2.0 Simulator",
+  ja: "インタラクティブ TrustNode 2.0 シミュレーター"
 };
 
 const SIMULATOR_SUBTITLE: Partial<Record<LanguageCode, string>> = {
-  ru: "Запустите один из сценариев угроз и посмотрите, как 7 оборонных слоев TrustNode анализируют семантику диалога в реальном времени прямо в ОЗУ устройства.",
-  en: "Trigger a social engineering attack scenario and observe how TrustNode's 7 security layers parse call semantics in real-time, 100% on-device.",
-  es: "Inicie uno de los escenarios de amenazas y observe cómo las 7 capas de seguridad de TrustNode analizan la semántica del diálogo en tiempo real directamente en la RAM.",
-  zh: "启动以下社交工程威胁场景，亲眼见证 TrustNode 的 7 重防御层如何在设备运行内存（RAM）中实时解析对话语义并拦截攻击。",
-  hi: "एक सामाजिक इंजीनियरिंग हमले के परिदृश्य को शुरू करें और देखें कि कैसे TrustNode के 7 सुरक्षा परतें वास्तविक समय में कॉल सिमेंटिक्स का विश्लेषण करती हैं, 100% ऑन-डिवाइस।",
-  ar: "قم بتشغيل أحد سيناريوهات التهديد وشاهد كيف تقوم طبقات الدفاع السبع لـ TrustNode بتحليل دلالات الحوار في الوقت الفعلي مباشرة في ذاكرة الوصول العشوائي للجهاز.",
-  pt: "Inicie um dos cenários de ameaça e veja como as 7 camadas de segurança do TrustNode analisam a semântica do diálogo em tempo real diretamente na RAM do aparelho.",
-  fr: "Lancez un scénario d'attaque et observez comment les 7 couches de sécurité de TrustNode analysent la sémantique de l'appel en temps réel, entièrement sur l'appareil.",
-  de: "Starten Sie eines der Bedrohungsszenarien und beobachten Sie, wie die 7 Schutzebenen von TrustNode die Gesprächssemantik in Echtzeit lokal im RAM analysieren.",
-  ja: "ソーシャルエンジニアリング攻撃のシナリオを実行し、TrustNodeの7つの防御レイヤーがスマートフォンのRAM上で、どのようにリアルタイムにダイアログのセマンティクスを解析・遮断するかをご覧ください。",
-  tr: "Bir sosyal mühendislik saldırı senaryosunu başlatın ve TrustNode'un 7 güvenlik katmanının, cihazın RAM'i üzerinde %100 yerel olarak konuşma anlamını nasıl gerçek zamanlı çözümlediğini izleyin."
+  ru: "Запустите сценарий угроз и посмотрите, как TrustNode защищает в реальном времени: ML-классификация ruBERT и поведенческий контур ECHO работают на устройстве. Акустические признаки (RMS, энергия, паузы) считаются экспериментально на устройстве; распознавание речи — в дорожной карте (оценка Vosk / W2V BERT).",
+  en: "Trigger a threat scenario and watch TrustNode defend in real time: ruBERT ML classification and the ECHO behavioral layer run on-device. Acoustic features (RMS, energy, pauses) are computed experimentally on-device; speech recognition is on the roadmap (evaluating Vosk / W2V BERT).",
+  es: "Inicie uno de los escenarios de amenazas y vea cómo TrustNode defiende en tiempo real: la clasificación ML ruBERT y la capa conductual ECHO funcionan en el dispositivo. Las características acústicas (RMS, energía, pausas) se calculan de forma experimental en el dispositivo; el reconocimiento de voz está en la hoja de ruta (evaluando Vosk / W2V BERT).",
+  zh: "启动以下社交工程威胁场景，看看 TrustNode 如何实时防御：ruBERT ML 分类与 ECHO 行为层在设备端运行。声学特征（RMS、能量、停顿）在设备端以实验方式计算；语音识别在路线图中（评估 Vosk / W2V BERT）。",
+  hi: "एक सामाजिक इंजीनियरिंग हमले का परिदृश्य शुरू करें और देखें कि TrustNode वास्तविक समय में कैसे बचाव करता है: ruBERT ML वर्गीकरण और ECHO व्यवहार परत डिवाइस पर चलती हैं। ध्वनिक विशेषताएँ (RMS, ऊर्जा, ठहराव) डिवाइस पर प्रयोगात्मक रूप से गणना की जाती हैं; वाक् पहचान रोडमैप में है (Vosk / W2V BERT का मूल्यांकन)।",
+  ar: "قم بتشغيل أحد سيناريوهات التهديد وشاهد كيف يدافع TrustNode في الوقت الفعلي: تصنيف التعلم الآلي ruBERT وطبقة السلوك ECHO يعملان على الجهاز. تُحسب الميزات الصوتية (RMS، الطاقة، التوقفات) بشكل تجريبي على الجهاز؛ التعرف على الكلام في خارطة الطريق (تقييم Vosk / W2V BERT).",
+  pt: "Inicie um dos cenários de ameaça e veja como o TrustNode defende em tempo real: a classificação ML ruBERT e a camada comportamental ECHO rodam no dispositivo. Os recursos acústicos (RMS, energia, pausas) são calculados experimentalmente no dispositivo; o reconhecimento de fala está no roadmap (avaliando Vosk / W2V BERT).",
+  fr: "Lancez un scénario d'attaque et observez comment TrustNode défend en temps réel : la classification ML ruBERT et la couche comportementale ECHO fonctionnent sur l'appareil. Les caractéristiques acoustiques (RMS, énergie, pauses) sont calculées expérimentalement sur l'appareil ; la reconnaissance vocale est dans la feuille de route (évaluation Vosk / W2V BERT).",
+  de: "Starten Sie eines der Bedrohungsszenarien und sehen Sie, wie TrustNode in Echtzeit schützt: ML-Klassifikation ruBERT und die Verhaltensebene ECHO laufen auf dem Gerät. Akustische Merkmale (RMS, Energie, Pausen) werden experimentell auf dem Gerät berechnet; die Spracherkennung ist in der Roadmap (Bewertung Vosk / W2V BERT).",
+  ja: "ソーシャルエンジニアリング攻撃のシナリオを実行して、TrustNodeがリアルタイムにどう守るかご覧ください：ruBERT のML分類と ECHO 行動レイヤーは端末上で稼働します。音響特徴（RMS、エネルギー、間）は端末上で実験的に計算され、音声認識はロードマップに掲載（Vosk / W2V BERT を評価中）。"
 };
 
 const SCENARIOS_BY_LANG: Partial<Record<LanguageCode, Scenario[]>> = {
@@ -133,399 +138,561 @@ const SCENARIOS_BY_LANG: Partial<Record<LanguageCode, Scenario[]>> = {
   es: [
     {
       id: "bank",
-      name: "Falsa Seguridad Bancaria",
-      caller: "Detective / Seguridad del Banco",
+      name: "Falsa seguridad bancaria",
+      caller: "Policía Federal / Seguridad Bancaria",
       speech: [
-        "¡Hola! Soy el detective Ramírez de la Unidad de Delitos Financieros, le llamo por su cuenta.",
-        "Detectamos un intento de transferencia no autorizada de $1.500 desde un dispositivo desconocido.",
-        "Para proteger su saldo, debemos transferir sus fondos restantes a nuestra bóveda temporal segura.",
-        "Por favor, indique el código de verificación que le acabamos de enviar para autorizar la transferencia.",
-        "No cuelgue ni hable con nadie, o será legalmente responsable por ayudar a ciberdelincuentes."
+        "¡Hola! Le habla el detective Miller de la Unidad de Delitos Financieros, sobre su cuenta.",
+        "Hemos detectado un intento de transferencia no autorizada de 1.500 $ desde un dispositivo desconocido.",
+        "Para proteger su saldo, debemos trasladar todos sus fondos a nuestra caja fuerte temporal protegida.",
+        "Por favor, indíquenos el código de verificación de un solo uso que le enviamos por SMS para autorizar la transferencia.",
+        "No cuelgue ni hable con nadie, o será considerado responsable legalmente por colaborar con ciberdelincuentes.",
       ],
       threatMilestones: [15, 40, 65, 88, 98],
-      triggers: ["Unidad de Delitos Financieros", "transferencia no autorizada", "bóveda temporal segura", "código de verificación", "legalmente responsable"]
+      triggers: [
+        "Delitos Financieros",
+        "transferencia no autorizada",
+        "caja fuerte",
+        "código de verificación",
+        "responsable legalmente",
+      ],
     },
     {
       id: "delivery",
-      name: "Phishing de Paquetería",
-      caller: "Bot Automático de Mensajería",
+      name: "Estafa de paquetería",
+      caller: "Bot automatizado del servicio de mensajería",
       speech: [
         "Hola, la entrega de su paquete se ha suspendido por un número de apartamento incompleto.",
-        "Su paquete está retenido en nuestro centro de distribución; desde mañana se aplicarán cargos de devolución.",
-        "Visite trustnode-tracking-secure.com/id824 de inmediato y pague una pequeña tarifa de verificación de $1,50.",
-        "Deberá introducir los datos de su tarjeta y dirección de facturación completa para verificar su identidad.",
-        "Si no verifica su identidad en 2 horas, el paquete será destruido automáticamente."
+        "El paquete está retenido en nuestro centro de clasificación y desde mañana se aplican cargos por devolución.",
+        "Entre ahora en trustnode-tracking-secure.com/id824 para pagar la pequeña tasa de verificación de 1,50 $.",
+        "Deberá introducir los datos de su tarjeta de crédito y su dirección completa para verificar la propiedad.",
+        "Si no verifica la propiedad en 2 horas, el paquete se destruirá automáticamente.",
       ],
       threatMilestones: [10, 25, 55, 82, 95],
-      triggers: ["suspendida", "trustnode-tracking-secure.com", "tarifa de verificación", "datos de su tarjeta", "destruido"]
+      triggers: [
+        "suspendido",
+        "trustnode-tracking-secure.com",
+        "tasa de verificación",
+        "tarjeta de crédito",
+        "destruirá",
+      ],
     },
     {
       id: "investment",
-      name: "Inversión Cripto VIP",
-      caller: "Broker Senior de TrustCapital",
+      name: "Inversión VIP en criptomonedas",
+      caller: "Broker senior de TrustCapital",
       speech: [
-        "¡Hola! Felicidades, su perfil fue seleccionado para nuestro nivel VIP exclusivo de alto rendimiento.",
-        "Nuestro software de IA propietario garantiza un 100% de acierto en derivados cripto modernos.",
-        "Solo necesita hacer hoy un depósito inicial rápido de $100 para activar su terminal premium.",
-        "Mañana por la mañana recibirá $500 de ganancia pasiva directamente en su tarjeta Visa.",
-        "Los cupos son limitados, solo quedan 2. ¡Envíe la transferencia ahora mismo para reclamarlo!"
+        "¡Hola! Enhorabuena, su perfil fue seleccionado para nuestro nivel VIP exclusivo de alto rendimiento.",
+        "Nuestro software de IA garantiza un 100 % de acierto en derivados cripto modernos.",
+        "Solo necesita hacer hoy un depósito inicial de 100 $ para activar su terminal premium.",
+        "Mañana por la mañana recibirá 500 $ de beneficio pasivo directos a su tarjeta Visa.",
+        "Las plazas son limitadas, solo quedan 2. ¡Transfiera ahora mismo para reservar la suya!",
       ],
       threatMilestones: [12, 32, 60, 85, 97],
-      triggers: ["VIP de alto rendimiento", "garantiza un 100%", "depósito inicial", "ganancia pasiva", "ahora mismo"]
-    }
+      triggers: [
+        "alto rendimiento",
+        "100 % de acierto",
+        "depósito inicial",
+        "beneficio pasivo",
+        "ahora mismo",
+      ],
+    },
   ],
   zh: [
     {
       id: "bank",
-      name: "虚假银行安全部门",
-      caller: "警官 / 银行安全部",
+      name: "假冒银行安全部门",
+      caller: "联邦警察 / 银行安全部门",
       speech: [
-        "您好！我是金融犯罪调查处的米勒警官，就您的账户情况与您联系。",
-        "系统检测到有人从未知设备发起一笔1500美元的未授权转账。",
-        "为保护您的资金，我们必须将您剩余的资金转入我们的临时安全保险账户。",
-        "请提供我们刚发送到您手机的一次性验证码，以便授权此次转账。",
-        "请不要挂断电话或与任何人交谈，否则您将因协助网络犯罪而承担法律责任。"
+        "您好！我是金融犯罪调查部门的米勒探员，现就您的账户问题来电。",
+        "我们检测到一笔来自未知设备的未经授权转账操作，金额为 1,500 美元。",
+        "为保护您的余额，我们必须将您剩余的资金转入临时的安全保管账户。",
+        "请提供我们刚刚发送到您手机的一次性验证码，以授权这笔转账。",
+        "请勿挂断或与任何人交谈，否则您将被视为协助网络犯罪分子而承担法律责任。",
       ],
       threatMilestones: [15, 40, 65, 88, 98],
-      triggers: ["金融犯罪调查处", "未授权转账", "安全保险账户", "验证码", "法律责任"]
+      triggers: [
+        "金融犯罪调查",
+        "未经授权转账",
+        "安全保管账户",
+        "验证码",
+        "法律责任",
+      ],
     },
     {
       id: "delivery",
-      name: "虚假快递钓鱼信息",
-      caller: "快递公司自动机器人",
+      name: "包裹快递钓鱼诈骗",
+      caller: "快递服务自动机器人",
       speech: [
-        "您好，由于门牌号信息不完整，您的包裹配送已被暂停。",
+        "您好，由于您的公寓门牌号不完整，您的包裹派送已被暂停。",
         "包裹目前存放在我们的分拣中心，从明天起将收取退件费用。",
-        "请立即访问 trustnode-tracking-secure.com/id824 并支付1.5美元的小额验证费。",
-        "您需要输入信用卡信息和完整账单地址以验证所有权。",
-        "如果2小时内未完成验证，包裹将被自动销毁。"
+        "请立即访问 trustnode-tracking-secure.com/id824 支付 1.50 美元的小额验证费。",
+        "您需要输入您的信用卡信息和完整账单地址以验证身份。",
+        "若 2 小时内未能完成验证，包裹将被自动销毁。",
       ],
       threatMilestones: [10, 25, 55, 82, 95],
-      triggers: ["已暂停", "trustnode-tracking-secure.com", "验证费", "信用卡信息", "销毁"]
+      triggers: [
+        "暂停",
+        "trustnode-tracking-secure.com",
+        "验证费",
+        "信用卡信息",
+        "销毁",
+      ],
     },
     {
       id: "investment",
-      name: "VIP加密货币投资",
-      caller: "TrustCapital高级经纪人",
+      name: "VIP 加密货币投资",
+      caller: "TrustCapital 高级经纪人",
       speech: [
-        "您好！恭喜您，您的账户已被选中加入我们独家的高收益VIP等级。",
-        "我们专有的AI神经网络软件可保证现代加密货币衍生品交易100%胜率。",
-        "您只需今天完成100美元的快速初始存款即可激活您的高级终端。",
-        "明天早上，您将直接在您的Visa卡上收到500美元的纯被动收益。",
-        "名额非常有限，仅剩2个。请立即转账以锁定名额！"
+        "您好！恭喜您，您的账户已被选入我们专属的高收益 VIP 席位。",
+        "我们专有的 AI 神经网络软件保证在现代加密货币衍生品上拥有 100% 的胜率。",
+        "您只需在今天完成 100 美元的快速初始入金，即可激活您的尊享终端。",
+        "到明早，您将直接收到 500 美元的纯被动收益，返回到您的 Visa 卡。",
+        "名额极其有限，仅剩 2 个。请立即转账加密货币或银行汇款以锁定名额！",
       ],
       threatMilestones: [12, 32, 60, 85, 97],
-      triggers: ["高收益VIP", "保证100%胜率", "初始存款", "被动收益", "立即"]
-    }
+      triggers: [
+        "高收益 VIP",
+        "100% 的胜率",
+        "初始入金",
+        "被动收益",
+        "立即转账",
+      ],
+    },
   ],
-  ar: [
+  tr: [
     {
       id: "bank",
-      name: "أمن مصرفي مزيف",
-      caller: "محقق / أمن البنك",
+      name: "Sahte banka güvenliği",
+      caller: "Federal Polis / Banka Güvenliği",
       speech: [
-        "مرحبا! معك المحقق ميلر من وحدة الجرائم المالية، أتصل بخصوص حسابك.",
-        "رصدنا محاولة تحويل غير مصرح بها بقيمة 1500 دولار من جهاز مجهول.",
-        "لحماية رصيدك، يجب علينا تحويل أموالك المتبقية إلى خزنتنا الآمنة المؤقتة.",
-        "يرجى تزويدنا برمز التحقق الذي أرسلناه للتو إلى هاتفك لتفويض عملية التحويل.",
-        "لا تُغلق الخط ولا تتحدث مع أي أحد، وإلا ستكون مسؤولا قانونيا عن مساعدة مجرمي الإنترنت."
+        "Merhaba! Mali Suçlar Birimi'nden Dedektif Miller, hesabınızla ilgili arıyorum.",
+        "Bilinmeyen bir cihazdan 1.500 $ tutarında yetkisiz transfer girişimi tespit ettik.",
+        "Bakiyenizi korumak için tüm paranızı geçici güvenli kasamıza aktarmamız gerekiyor.",
+        "Lütfen transferi onaylamak için telefonunuza gönderdiğimiz tek kullanımlık doğrulama kodunu verin.",
+        "Sakın kapatmayın veya kimseyle konuşmayın, aksi halde siber suçlulara yardım etmekten yasal olarak sorumlu tutulursunuz.",
       ],
       threatMilestones: [15, 40, 65, 88, 98],
-      triggers: ["وحدة الجرائم المالية", "تحويل غير مصرح", "خزنتنا الآمنة", "رمز التحقق", "مسؤولا قانونيا"]
+      triggers: [
+        "Mali Suçlar",
+        "yetkisiz transfer",
+        "güvenli kasa",
+        "doğrulama kodu",
+        "yasal olarak sorumlu",
+      ],
     },
     {
       id: "delivery",
-      name: "احتيال توصيل الطرود",
-      caller: "روبوت آلي لشركة التوصيل",
+      name: "Paket teslimatı kimlik avı",
+      caller: "Kargo Hizmeti Otomatik Botu",
       speech: [
-        "مرحبا، تم تعليق توصيل طردك بسبب رقم شقة غير مكتمل.",
-        "طردك محتجز حاليا في مركز الفرز، وستُطبّق رسوم إعادة الإرسال بدءا من الغد.",
-        "يرجى زيارة trustnode-tracking-secure.com/id824 فورا ودفع رسوم تحقق بسيطة قدرها 1.50 دولار.",
-        "ستحتاج إلى إدخال بيانات بطاقتك الائتمانية وعنوان الفوترة الكامل للتحقق من الملكية.",
-        "عدم التحقق خلال ساعتين سيؤدي إلى إتلاف الطرد تلقائيا."
+        "Merhaba, daire numaranız eksik olduğu için paket teslimatınız askıya alındı.",
+        "Paketiniz şu anda ayrıştırma merkezimizde tutuluyor ve yarından itibaren iade ücreti uygulanacak.",
+        "Lütfen hemen trustnode-tracking-secure.com/id824 adresine girip küçük 1,50 $ doğrulama ücretini ödeyin.",
+        "Sahipliği doğrulamak için kredi kartı bilgilerinizi ve tam fatura adresinizi girmeniz gerekecek.",
+        "2 saat içinde doğrulama yapılmazsa paketiniz otomatik olarak imha edilecektir.",
       ],
       threatMilestones: [10, 25, 55, 82, 95],
-      triggers: ["تم تعليق", "trustnode-tracking-secure.com", "رسوم تحقق", "بطاقتك الائتمانية", "إتلاف"]
+      triggers: [
+        "askıya alındı",
+        "trustnode-tracking-secure.com",
+        "doğrulama ücreti",
+        "kredi kartı",
+        "imha",
+      ],
     },
     {
       id: "investment",
-      name: "استثمار كريبتو VIP",
-      caller: "وسيط أول في TrustCapital",
+      name: "VIP Kripto Yatırımı",
+      caller: "TrustCapital Kıdemli Broker",
       speech: [
-        "مرحبا! تهانينا، تم اختيار ملفك للانضمام إلى فئتنا الحصرية عالية العائد VIP.",
-        "برنامجنا الخاص بالذكاء الاصطناعي يضمن نسبة نجاح 100% في مشتقات العملات الرقمية الحديثة.",
-        "كل ما عليك هو إيداع مبدئي سريع بقيمة 100 دولار اليوم لتفعيل طرفيتك المميزة.",
-        "بحلول صباح الغد، ستحصل على 500 دولار كأرباح سلبية خالصة مباشرة إلى بطاقة فيزا الخاصة بك.",
-        "الأماكن محدودة جدا، تبقى مكانان فقط. أرسل التحويل الآن للمطالبة به!"
+        "Merhaba! Tebrikler, profiliniz özel yüksek getirili VIP katmanımız için seçildi.",
+        "Özel yapay zeka yazılımımız modern kripto türevlerinde %100 kazanç oranı garanti eder.",
+        "Tek yapmanız gereken bugün 100 $ tutarında hızlı bir başlangıç yatırımı yaparak premium terminalinizi aktifleştirmek.",
+        "Yarın sabaha kadar Visa kartınıza 500 $ saf pasif kazanç olarak geri dönecek.",
+        "Kontenjan çok sınırlı, sadece 2 kişi kaldı. Hemen şimdi kripto veya banka havalesi göndererek yerinizi alın!",
       ],
       threatMilestones: [12, 32, 60, 85, 97],
-      triggers: ["VIP عالية العائد", "يضمن نسبة نجاح 100%", "إيداع مبدئي", "أرباح سلبية", "الآن"]
-    }
-  ],
-  fr: [
-    {
-      id: "bank",
-      name: "Fausse Sécurité Bancaire",
-      caller: "Inspecteur / Sécurité de la Banque",
-      speech: [
-        "Bonjour ! Je suis l'inspecteur Miller de l'unité des crimes financiers, au sujet de votre compte.",
-        "Nous avons détecté une tentative de virement non autorisé de 1500 $ depuis un appareil inconnu.",
-        "Pour protéger votre solde, nous devons transférer vos fonds restants vers notre coffre sécurisé temporaire.",
-        "Veuillez fournir le code de vérification que nous venons de vous envoyer pour autoriser le virement.",
-        "Ne raccrochez pas et ne parlez à personne, sinon vous serez tenu légalement responsable d'avoir aidé des cybercriminels."
+      triggers: [
+        "yüksek getirili",
+        "%100 kazanç",
+        "başlangıç yatırımı",
+        "pasif kazanç",
+        "Hemen şimdi",
       ],
-      threatMilestones: [15, 40, 65, 88, 98],
-      triggers: ["unité des crimes financiers", "virement non autorisé", "coffre sécurisé", "code de vérification", "tenu légalement responsable"]
     },
-    {
-      id: "delivery",
-      name: "Phishing de Livraison de Colis",
-      caller: "Bot Automatisé du Service de Livraison",
-      speech: [
-        "Bonjour, la livraison de votre colis a été suspendue en raison d'un numéro d'appartement incomplet.",
-        "Votre colis est actuellement retenu à notre centre de tri, des frais de retour s'appliqueront dès demain.",
-        "Veuillez visiter trustnode-tracking-secure.com/id824 immédiatement et payer de petits frais de vérification de 1,50 $.",
-        "Vous devrez saisir les informations de votre carte bancaire et votre adresse de facturation complète pour vérifier la propriété.",
-        "Le défaut de vérification sous 2 heures entraînera la destruction automatique du colis."
-      ],
-      threatMilestones: [10, 25, 55, 82, 95],
-      triggers: ["suspendue", "trustnode-tracking-secure.com", "frais de vérification", "carte bancaire", "destruction"]
-    },
-    {
-      id: "investment",
-      name: "Investissement Crypto VIP",
-      caller: "Courtier Senior chez TrustCapital",
-      speech: [
-        "Bonjour ! Félicitations, votre profil a été sélectionné pour notre niveau VIP exclusif à haut rendement.",
-        "Notre logiciel d'IA propriétaire garantit un taux de réussite de 100% sur les dérivés crypto modernes.",
-        "Il vous suffit d'effectuer aujourd'hui un dépôt initial rapide de 100 $ pour activer votre terminal premium.",
-        "Dès demain matin, vous recevrez 500 $ de profit passif directement sur votre carte Visa.",
-        "Les places sont très limitées, il n'en reste que 2. Envoyez le virement dès maintenant pour la réserver !"
-      ],
-      threatMilestones: [12, 32, 60, 85, 97],
-      triggers: ["VIP à haut rendement", "garantit un taux de réussite de 100%", "dépôt initial", "profit passif", "dès maintenant"]
-    }
-  ],
-  de: [
-    {
-      id: "bank",
-      name: "Gefälschte Banksicherheit",
-      caller: "Ermittler / Bank-Sicherheitsdienst",
-      speech: [
-        "Hallo! Hier ist Ermittler Miller von der Abteilung für Finanzkriminalität, es geht um Ihr Konto.",
-        "Wir haben einen nicht autorisierten Überweisungsversuch von 1.500 $ von einem unbekannten Gerät festgestellt.",
-        "Um Ihr Guthaben zu schützen, müssen wir Ihr verbleibendes Guthaben in unseren temporären Sicherheitstresor überweisen.",
-        "Bitte geben Sie den Verifizierungscode an, den wir soeben an Ihr Telefon gesendet haben, um die Überweisung zu autorisieren.",
-        "Legen Sie nicht auf und sprechen Sie mit niemandem, sonst haften Sie rechtlich für die Unterstützung von Cyberkriminellen."
-      ],
-      threatMilestones: [15, 40, 65, 88, 98],
-      triggers: ["Abteilung für Finanzkriminalität", "nicht autorisierten Überweisung", "Sicherheitstresor", "Verifizierungscode", "rechtlich haften"]
-    },
-    {
-      id: "delivery",
-      name: "Paketzustellungs-Phishing",
-      caller: "Automatisierter Bot des Zustelldienstes",
-      speech: [
-        "Hallo, die Zustellung Ihres Pakets wurde aufgrund einer unvollständigen Wohnungsnummer ausgesetzt.",
-        "Ihr Paket wird derzeit in unserem Sortierzentrum aufbewahrt, ab morgen fallen Rücksendegebühren an.",
-        "Bitte besuchen Sie sofort trustnode-tracking-secure.com/id824 und zahlen Sie eine kleine Verifizierungsgebühr von 1,50 $.",
-        "Sie müssen Ihre Kreditkartendaten und die vollständige Rechnungsadresse eingeben, um den Besitz zu verifizieren.",
-        "Wird der Besitz nicht innerhalb von 2 Stunden verifiziert, wird das Paket automatisch vernichtet."
-      ],
-      threatMilestones: [10, 25, 55, 82, 95],
-      triggers: ["ausgesetzt", "trustnode-tracking-secure.com", "Verifizierungsgebühr", "Kreditkartendaten", "vernichtet"]
-    },
-    {
-      id: "investment",
-      name: "VIP-Krypto-Investment",
-      caller: "Senior-Broker bei TrustCapital",
-      speech: [
-        "Hallo! Herzlichen Glückwunsch, Ihr Profil wurde für unsere exklusive Hochrendite-VIP-Stufe ausgewählt.",
-        "Unsere proprietäre KI-Software garantiert eine Erfolgsquote von 100% bei modernen Krypto-Derivaten.",
-        "Sie müssen lediglich heute eine schnelle Ersteinzahlung von 100 $ tätigen, um Ihr Premium-Terminal zu aktivieren.",
-        "Bereits morgen früh erhalten Sie 500 $ reinen passiven Gewinn direkt auf Ihre Visa-Karte.",
-        "Die Plätze sind streng limitiert, nur noch 2 übrig. Senden Sie die Überweisung jetzt, um sich Ihren Platz zu sichern!"
-      ],
-      threatMilestones: [12, 32, 60, 85, 97],
-      triggers: ["Hochrendite-VIP", "garantiert eine Erfolgsquote von 100%", "Ersteinzahlung", "passiven Gewinn", "jetzt"]
-    }
-  ],
-  pt: [
-    {
-      id: "bank",
-      name: "Falsa Segurança Bancária",
-      caller: "Detetive / Segurança do Banco",
-      speech: [
-        "Olá! Aqui é o detetive Miller, da Unidade de Crimes Financeiros, ligando sobre sua conta.",
-        "Detectamos uma tentativa de transferência não autorizada de $1.500 a partir de um dispositivo desconhecido.",
-        "Para proteger seu saldo, precisamos transferir seus fundos restantes para nosso cofre temporário seguro.",
-        "Por favor, informe o código de verificação que acabamos de enviar ao seu telefone para autorizar a transferência.",
-        "Não desligue nem fale com ninguém, ou você será legalmente responsabilizado por ajudar cibercriminosos."
-      ],
-      threatMilestones: [15, 40, 65, 88, 98],
-      triggers: ["Unidade de Crimes Financeiros", "transferência não autorizada", "cofre temporário seguro", "código de verificação", "legalmente responsabilizado"]
-    },
-    {
-      id: "delivery",
-      name: "Phishing de Entrega de Pacotes",
-      caller: "Bot Automatizado da Transportadora",
-      speech: [
-        "Olá, a entrega do seu pacote foi suspensa devido a um número de apartamento incompleto.",
-        "Seu pacote está retido em nosso centro de triagem; taxas de devolução serão aplicadas a partir de amanhã.",
-        "Acesse trustnode-tracking-secure.com/id824 imediatamente e pague uma pequena taxa de verificação de $1,50.",
-        "Você precisará informar os dados do seu cartão de crédito e o endereço de cobrança completo para verificar a propriedade.",
-        "A falha em verificar a propriedade em 2 horas resultará na destruição automática do pacote."
-      ],
-      threatMilestones: [10, 25, 55, 82, 95],
-      triggers: ["suspensa", "trustnode-tracking-secure.com", "taxa de verificação", "dados do seu cartão", "destruição"]
-    },
-    {
-      id: "investment",
-      name: "Investimento Cripto VIP",
-      caller: "Corretor Sênior da TrustCapital",
-      speech: [
-        "Olá! Parabéns, seu perfil foi selecionado para nosso nível VIP exclusivo de alto rendimento.",
-        "Nosso software proprietário de IA garante 100% de taxa de acerto em derivativos cripto modernos.",
-        "Basta fazer hoje um depósito inicial rápido de $100 para ativar seu terminal premium.",
-        "Já amanhã de manhã, você receberá $500 em lucro passivo puro diretamente no seu cartão Visa.",
-        "As vagas são estritamente limitadas, restam apenas 2. Envie a transferência agora mesmo para garantir a sua!"
-      ],
-      threatMilestones: [12, 32, 60, 85, 97],
-      triggers: ["VIP de alto rendimento", "garante 100% de taxa de acerto", "depósito inicial", "lucro passivo", "agora mesmo"]
-    }
   ],
   hi: [
     {
       id: "bank",
       name: "नकली बैंक सुरक्षा",
-      caller: "जासूस / बैंक सुरक्षा",
+      caller: "संघीय पुलिस / बैंक सुरक्षा",
       speech: [
-        "नमस्ते! मैं वित्तीय अपराध इकाई से जासूस मिलर बोल रहा हूँ, आपके खाते के संबंध में कॉल कर रहा हूँ।",
-        "हमने एक अज्ञात डिवाइस से $1,500 के एक अनधिकृत ट्रांसफर के प्रयास का पता लगाया है।",
-        "आपके शेष धन की सुरक्षा के लिए, हमें आपकी बची हुई राशि हमारे अस्थायी सुरक्षित वॉल्ट में स्थानांतरित करनी होगी।",
-        "कृपया वह वन-टाइम सत्यापन कोड बताएं जो हमने अभी आपके फोन पर भेजा है, ताकि ट्रांसफर अधिकृत हो सके।",
-        "फोन मत काटिए और किसी से बात मत कीजिए, वरना साइबर अपराधियों की मदद करने के लिए आप कानूनी रूप से जिम्मेदार होंगे।"
+        "नमस्ते! मैं वित्तीय अपराध इकाई से डिटेक्टिव मिलर हूँ, आपके खाते के बारे में कॉल कर रहा हूँ।",
+        "हमें किसी अज्ञात डिवाइस से 1,500 डॉलर का अनधिकृत ट्रांसफर प्रयास मिला है।",
+        "आपकी राशि की सुरक्षा के लिए हमें आपके बाकी फंड को हमारे अस्थायी सुरक्षित वॉल्ट में ट्रांसफर करना होगा।",
+        "ट्रांसफर की अनुमति के लिए कृपया वह एक-बार वाला वेरिफिकेशन कोड दें जो हमने अभी आपके फोन पर भेजा है।",
+        "फोन मत काटिए या किसी से बात मत कीजिए, नहीं तो साइबर अपराधियों की मदद करने के लिए आप कानूनी रूप से ज़िम्मेदार होंगे।",
       ],
       threatMilestones: [15, 40, 65, 88, 98],
-      triggers: ["वित्तीय अपराध इकाई", "अनधिकृत ट्रांसफर", "सुरक्षित वॉल्ट", "सत्यापन कोड", "कानूनी रूप से जिम्मेदार"]
+      triggers: [
+        "वित्तीय अपराध",
+        "अनधिकृत ट्रांसफर",
+        "सुरक्षित वॉल्ट",
+        "वेरिफिकेशन कोड",
+        "कानूनी रूप से",
+      ],
     },
     {
       id: "delivery",
-      name: "पैकेज डिलीवरी फ़िशिंग",
-      caller: "कूरियर सेवा का स्वचालित बॉट",
+      name: "पार्सल डिलीवरी फ़िशिंग",
+      caller: "कूरियर सेवा स्वचालित बॉट",
       speech: [
-        "नमस्ते, अधूरे अपार्टमेंट नंबर के कारण आपके पैकेज की डिलीवरी रोक दी गई है।",
-        "आपका पैकेज हमारे सॉर्टिंग सेंटर में रखा हुआ है, कल से रिटर्न शुल्क लागू होगा।",
-        "कृपया तुरंत trustnode-tracking-secure.com/id824 पर जाएं और $1.50 का छोटा सत्यापन शुल्क चुकाएं।",
-        "स्वामित्व सत्यापित करने के लिए आपको अपने क्रेडिट कार्ड का विवरण और पूरा बिलिंग पता दर्ज करना होगा।",
-        "2 घंटे के भीतर स्वामित्व सत्यापित न करने पर पैकेज स्वतः नष्ट कर दिया जाएगा।"
+        "नमस्ते, अपार्टमेंट नंबर अधूरा होने के कारण आपकी पार्सल डिलीवरी रोक दी गई है।",
+        "पार्सल फिलहाल हमारे सॉर्टिंग सेंटर में है, और कल से वापसी शुल्क लागू होगा।",
+        "कृपया तुरंत trustnode-tracking-secure.com/id824 पर जाएँ और 1.50 डॉलर का छोटा सत्यापन शुल्क दें।",
+        "स्वामित्व सत्यापित करने के लिए आपको अपना क्रेडिट कार्ड विवरण और पूरा बिलिंग पता देना होगा।",
+        "2 घंटे के भीतर सत्यापन न करने पर पार्सल अपने आप नष्ट कर दिया जाएगा।",
       ],
       threatMilestones: [10, 25, 55, 82, 95],
-      triggers: ["रोक दी गई", "trustnode-tracking-secure.com", "सत्यापन शुल्क", "क्रेडिट कार्ड का विवरण", "नष्ट"]
+      triggers: [
+        "रोक दी",
+        "trustnode-tracking-secure.com",
+        "सत्यापन शुल्क",
+        "क्रेडिट कार्ड",
+        "नष्ट",
+      ],
     },
     {
       id: "investment",
       name: "VIP क्रिप्टो निवेश",
-      caller: "TrustCapital का वरिष्ठ ब्रोकर",
+      caller: "TrustCapital के वरिष्ठ ब्रोकर",
       speech: [
-        "नमस्ते! बधाई हो, आपकी प्रोफ़ाइल हमारे विशेष उच्च-प्रतिफल VIP स्तर के लिए चुनी गई है।",
-        "हमारा स्वामित्व वाला AI सॉफ़्टवेयर आधुनिक क्रिप्टो डेरिवेटिव्स पर 100% जीत-दर की गारंटी देता है।",
-        "आपको बस आज अपने प्रीमियम टर्मिनल को सक्रिय करने के लिए $100 की त्वरित शुरुआती जमा राशि देनी है।",
-        "कल सुबह तक, आपको सीधे आपके वीज़ा कार्ड पर $500 का शुद्ध निष्क्रिय लाभ प्राप्त होगा।",
-        "स्थान बेहद सीमित हैं, केवल 2 बचे हैं। इसे पाने के लिए अभी ट्रांसफर भेजें!"
+        "नमस्ते! बधाई हो, आपकी प्रोफ़ाइल हमारे विशेष उच्च-रिटर्न VIP स्तर के लिए चुनी गई है।",
+        "हमारा स्वामित्व वाला AI न्यूरल सॉफ्टवेयर आधुनिक क्रिप्टो डेरिवेटिव पर 100% जीत दर की गारंटी देता है।",
+        "आपको बस आज 100 डॉलर का त्वरित प्रारंभिक जमा करना है ताकि आपका प्रीमियम टर्मिनल सक्रिय हो जाए।",
+        "कल सुबह तक आपको 500 डॉलर का शुद्ध निष्क्रिय लाभ सीधे आपके Visa कार्ड पर मिलेगा।",
+        "सीटें बहुत सीमित हैं, केवल 2 बची हैं। अपनी सीट पाने के लिए अभी क्रिप्टो या बैंक ट्रांसफर भेजें!",
       ],
       threatMilestones: [12, 32, 60, 85, 97],
-      triggers: ["उच्च-प्रतिफल VIP", "100% जीत-दर की गारंटी", "शुरुआती जमा", "निष्क्रिय लाभ", "अभी"]
-    }
+      triggers: [
+        "उच्च-रिटर्न",
+        "100% जीत दर",
+        "प्रारंभिक जमा",
+        "निष्क्रिय लाभ",
+        "अभी",
+      ],
+    },
+  ],
+  ar: [
+    {
+      id: "bank",
+      name: "أمان مصرفي مزيف",
+      caller: "الشرطة الفيدرالية / أمن البنك",
+      speech: [
+        "مرحباً! أنا المحقق ميلر من وحدة الجرائم المالية، أتصل بشأن حسابك.",
+        "رصدنا محاولة تحويل غير مصرح به بمبلغ 1500 دولار من جهاز غير معروف.",
+        "لحماية رصيدك يجب علينا تحويل أموالك المتبقية إلى الخزنة الآمنة المؤقتة لدينا.",
+        "يرجى تزويدنا برمز التحقق لمرة واحدة الذي أرسلناه للتو إلى هاتفك لتأكيد التحويل.",
+        "لا تغلق الخط ولا تتحدث مع أحد، وإلا ستتحمل مسؤولية قانونية عن مساعدة مجرمي الإنترنت.",
+      ],
+      threatMilestones: [15, 40, 65, 88, 98],
+      triggers: [
+        "الجرائم المالية",
+        "تحويل غير مصرح",
+        "الخزنة الآمنة",
+        "رمز التحقق",
+        "مسؤولية قانونية",
+      ],
+    },
+    {
+      id: "delivery",
+      name: "التصيد عبر توصيل الطرود",
+      caller: "بوت خدمة التوصيل الآلي",
+      speech: [
+        "مرحباً، تم تعليق توصيل طردك بسبب رقم شقة غير مكتمل.",
+        "الطرد محفوظ حالياً في مركز الفرز لدينا، وستُطبق رسوم إعادة الإرسال ابتداءً من الغد.",
+        "يرجى زيارة trustnode-tracking-secure.com/id824 فوراً لدفع رسوم تحقق صغيرة قدرها 1.50 دولار.",
+        "ستحتاج إلى إدخال تفاصيل بطاقتك الائتمانية وعنوان الفوترة الكامل للتحقق من الملكية.",
+        "إذا لم تتحقق من الملكية خلال ساعتين، فسيتم إتلاف الطرد تلقائياً.",
+      ],
+      threatMilestones: [10, 25, 55, 82, 95],
+      triggers: [
+        "تعليق",
+        "trustnode-tracking-secure.com",
+        "رسوم تحقق",
+        "بطاقتك الائتمانية",
+        "إتلاف",
+      ],
+    },
+    {
+      id: "investment",
+      name: "استثمار عملات رقمية VIP",
+      caller: "وسيط أول في TrustCapital",
+      speech: [
+        "مرحباً! تهانينا، تم اختيار حسابك لمستوانا الحصري VIP عالي العائد.",
+        "برنامجنا الحصري بالذكاء الاصطناعي يضمن نسبة ربح 100% في مشتقات العملات الرقمية الحديثة.",
+        "كل ما عليك هو إيداع مبلغ 100 دولار اليوم لتفعيل محطتك المميزة.",
+        "بحلول صباح الغد ستحصل على 500 دولار من الأرباح السلبية الصافية مباشرة على بطاقة فيزا الخاصة بك.",
+        "المقاعد محدودة للغاية، بقي مقعدان فقط. أرسل التحويل الآن لتأمين مقعدك!",
+      ],
+      threatMilestones: [12, 32, 60, 85, 97],
+      triggers: [
+        "عالي العائد",
+        "نسبة ربح 100%",
+        "إيداع",
+        "الأرباح السلبية",
+        "الآن",
+      ],
+    },
+  ],
+  pt: [
+    {
+      id: "bank",
+      name: "Falsa segurança bancária",
+      caller: "Polícia Federal / Segurança do Banco",
+      speech: [
+        "Olá! Aqui é o detetive Miller da Unidade de Crimes Financeiros, ligando a respeito da sua conta.",
+        "Detectamos uma tentativa de transferência não autorizada de 1.500 dólares a partir de um dispositivo desconhecido.",
+        "Para proteger o seu saldo, precisamos transferir seus fundos restantes para o nosso cofre temporário protegido.",
+        "Por favor, forneça o código de verificação de uso único que acabamos de enviar ao seu celular para autorizar a transferência.",
+        "Não desligue nem fale com ninguém, ou você será legalmente responsabilizado por ajudar criminosos cibernéticos.",
+      ],
+      threatMilestones: [15, 40, 65, 88, 98],
+      triggers: [
+        "Crimes Financeiros",
+        "transferência não autorizada",
+        "cofre",
+        "código de verificação",
+        "legalmente responsabilizado",
+      ],
+    },
+    {
+      id: "delivery",
+      name: "Phishing de entrega de pacotes",
+      caller: "Bot automatizado do serviço de entregas",
+      speech: [
+        "Olá, a entrega do seu pacote foi suspensa devido a um número de apartamento incompleto.",
+        "O pacote está retido no nosso centro de triagem e taxas de devolução serão aplicadas a partir de amanhã.",
+        "Acesse agora trustnode-tracking-secure.com/id824 para pagar a pequena taxa de verificação de 1,50 dólar.",
+        "Você precisará informar os dados do seu cartão de crédito e o endereço de cobrança completo para verificar a propriedade.",
+        "Se a verificação não for feita em 2 horas, o pacote será destruído automaticamente.",
+      ],
+      threatMilestones: [10, 25, 55, 82, 95],
+      triggers: [
+        "suspensa",
+        "trustnode-tracking-secure.com",
+        "taxa de verificação",
+        "cartão de crédito",
+        "destruído",
+      ],
+    },
+    {
+      id: "investment",
+      name: "Investimento VIP em cripto",
+      caller: "Corretor sênior da TrustCapital",
+      speech: [
+        "Olá! Parabéns, seu perfil foi selecionado para o nosso nível VIP exclusivo de alto retorno.",
+        "Nosso software proprietário de IA garante 100% de taxa de acerto em derivativos cripto modernos.",
+        "Você só precisa fazer um depósito inicial rápido de 100 dólares hoje para ativar seu terminal premium.",
+        "Até amanhã de manhã, você receberá 500 dólares em lucro passivo puro direto no seu cartão Visa.",
+        "As vagas são limitadas, restam apenas 2. Envie a transferência cripto ou bancária agora mesmo para garantir a sua!",
+      ],
+      threatMilestones: [12, 32, 60, 85, 97],
+      triggers: [
+        "alto retorno",
+        "100% de taxa de acerto",
+        "depósito inicial",
+        "lucro passivo",
+        "agora mesmo",
+      ],
+    },
+  ],
+  fr: [
+    {
+      id: "bank",
+      name: "Fausse sécurité bancaire",
+      caller: "Police fédérale / Sécurité bancaire",
+      speech: [
+        "Bonjour ! Ici l'inspecteur Miller de la brigade des délits financiers, à propos de votre compte.",
+        "Nous avons détecté une tentative de virement non autorisé de 1 500 dollars depuis un appareil inconnu.",
+        "Pour protéger votre solde, nous devons transférer vos fonds restants vers notre coffre sécurisé temporaire.",
+        "Merci de nous communiquer le code de vérification à usage unique que nous venons de vous envoyer par SMS pour autoriser le virement.",
+        "Ne raccrochez pas et ne parlez à personne, sinon vous serez tenu légalement responsable d'aide à des cybercriminels.",
+      ],
+      threatMilestones: [15, 40, 65, 88, 98],
+      triggers: [
+        "délits financiers",
+        "virement non autorisé",
+        "coffre sécurisé",
+        "code de vérification",
+        "légalement responsable",
+      ],
+    },
+    {
+      id: "delivery",
+      name: "Hameçonnage de livraison",
+      caller: "Bot automatisé du service de livraison",
+      speech: [
+        "Bonjour, la livraison de votre colis a été suspendue en raison d'un numéro d'appartement incomplet.",
+        "Le colis est conservé dans notre centre de tri et des frais de renvoi s'appliqueront à partir de demain.",
+        "Veuillez vous rendre immédiatement sur trustnode-tracking-secure.com/id824 pour régler les frais de vérification de 1,50 dollar.",
+        "Vous devrez saisir les coordonnées de votre carte bancaire et votre adresse de facturation complète pour vérifier la propriété.",
+        "Si la vérification n'est pas effectuée sous 2 heures, le colis sera automatiquement détruit.",
+      ],
+      threatMilestones: [10, 25, 55, 82, 95],
+      triggers: [
+        "suspendue",
+        "trustnode-tracking-secure.com",
+        "frais de vérification",
+        "carte bancaire",
+        "détruit",
+      ],
+    },
+    {
+      id: "investment",
+      name: "Investissement crypto VIP",
+      caller: "Courtier senior chez TrustCapital",
+      speech: [
+        "Bonjour ! Félicitations, votre profil a été sélectionné pour notre niveau VIP exclusif à haut rendement.",
+        "Notre logiciel d'IA propriétaire garantit un taux de réussite de 100 % sur les dérivés crypto modernes.",
+        "Il vous suffit d'effectuer aujourd'hui un dépôt initial rapide de 100 dollars pour activer votre terminal premium.",
+        "D'ici demain matin, vous recevrez 500 dollars de profit passif pur directement sur votre carte Visa.",
+        "Les places sont très limitées, il n'en reste que 2. Envoyez le virement crypto ou bancaire maintenant pour réserver la vôtre !",
+      ],
+      threatMilestones: [12, 32, 60, 85, 97],
+      triggers: [
+        "haut rendement",
+        "taux de réussite de 100 %",
+        "dépôt initial",
+        "profit passif",
+        "maintenant",
+      ],
+    },
+  ],
+  de: [
+    {
+      id: "bank",
+      name: "Falsche Bankensicherheit",
+      caller: "Bundespolizei / Bankensicherheit",
+      speech: [
+        "Hallo! Hier ist Detective Miller von der Abteilung für Finanzkriminalität, ich rufe wegen Ihres Kontos an.",
+        "Wir haben einen nicht autorisierten Überweisungsversuch über 1.500 $ von einem unbekannten Gerät festgestellt.",
+        "Um Ihr Guthaben zu schützen, müssen wir Ihre restlichen Mittel in unseren temporären gesicherten Tresor überweisen.",
+        "Bitte nennen Sie uns den Einmal-Code, den wir Ihnen soeben per SMS gesendet haben, um die Überweisung zu bestätigen.",
+        "Legen Sie nicht auf und sprechen Sie mit niemandem, sonst werden Sie für die Unterstützung von Cyberkriminellen rechtlich haftbar gemacht.",
+      ],
+      threatMilestones: [15, 40, 65, 88, 98],
+      triggers: [
+        "Finanzkriminalität",
+        "nicht autorisierten Überweisungsversuch",
+        "gesicherten Tresor",
+        "Einmal-Code",
+        "rechtlich haftbar",
+      ],
+    },
+    {
+      id: "delivery",
+      name: "Paketlieferung-Phishing",
+      caller: "Automatisierter Kurierdienst-Bot",
+      speech: [
+        "Hallo, die Zustellung Ihres Pakets wurde wegen einer unvollständigen Wohnungsnummer ausgesetzt.",
+        "Das Paket liegt in unserem Sortierzentrum, und ab morgen fallen Rücksendegebühren an.",
+        "Bitte rufen Sie sofort trustnode-tracking-secure.com/id824 auf und zahlen Sie die kleine Verifizierungsgebühr von 1,50 $.",
+        "Sie müssen Ihre Kreditkartendaten und Ihre vollständige Rechnungsadresse eingeben, um das Eigentum zu bestätigen.",
+        "Wenn Sie das Eigentum nicht innerhalb von 2 Stunden bestätigen, wird das Paket automatisch vernichtet.",
+      ],
+      threatMilestones: [10, 25, 55, 82, 95],
+      triggers: [
+        "ausgesetzt",
+        "trustnode-tracking-secure.com",
+        "Verifizierungsgebühr",
+        "Kreditkartendaten",
+        "vernichtet",
+      ],
+    },
+    {
+      id: "investment",
+      name: "VIP-Krypto-Investition",
+      caller: "Senior-Broker bei TrustCapital",
+      speech: [
+        "Hallo! Herzlichen Glückwunsch, Ihr Profil wurde für unsere exklusive VIP-Stufe mit hoher Rendite ausgewählt.",
+        "Unsere eigene KI-Software garantiert eine Gewinnquote von 100 % bei modernen Krypto-Derivaten.",
+        "Sie müssen nur heute eine schnelle Ersteinzahlung von 100 $ leisten, um Ihr Premium-Terminal zu aktivieren.",
+        "Bis morgen früh erhalten Sie 500 $ reinen passiven Gewinn direkt auf Ihre Visa-Karte.",
+        "Die Plätze sind stark begrenzt, es sind nur noch 2 frei. Senden Sie jetzt sofort die Krypto- oder Banküberweisung, um Ihren Platz zu sichern!",
+      ],
+      threatMilestones: [12, 32, 60, 85, 97],
+      triggers: [
+        "hoher Rendite",
+        "Gewinnquote von 100 %",
+        "Ersteinzahlung",
+        "passiven Gewinn",
+        "jetzt sofort",
+      ],
+    },
   ],
   ja: [
     {
       id: "bank",
       name: "偽の銀行セキュリティ",
-      caller: "刑事 / 銀行セキュリティ",
+      caller: "連邦警察 / 銀行セキュリティ",
       speech: [
-        "もしもし、金融犯罪対策課のミラー刑事です。お客様の口座についてご連絡しました。",
-        "身元不明の端末から1,500ドルの不正送金の試みが検出されました。",
-        "残高を保護するため、残りの資金を当行の一時的な安全金庫へ移していただく必要があります。",
-        "送金を承認するため、今お送りしたワンタイム認証コードを教えてください。",
-        "電話を切ったり誰かに相談したりしないでください。さもないとサイバー犯罪者への幇助として法的責任を問われます。"
+        "こんにちは！金融犯罪対策ユニットのミラー刑事です。あなたの口座についてご連絡しました。",
+        "未知のデバイスから 1,500 ドルの不正送金の試みを検知しました。",
+        "残高を保護するため、残りの資金を当行の一時的な安全な保管口座へ移す必要があります。",
+        "送金を承認するため、先ほどお客様の携帯に送信したワンタイム認証コードをお知らせください。",
+        "電話を切らず誰にも話さないでください。サイバー犯罪者を助けた場合、法的責任を負うことになります。",
       ],
       threatMilestones: [15, 40, 65, 88, 98],
-      triggers: ["金融犯罪対策課", "不正送金", "安全金庫", "認証コード", "法的責任"]
+      triggers: [
+        "金融犯罪",
+        "不正送金",
+        "安全な保管口座",
+        "認証コード",
+        "法的責任",
+      ],
     },
     {
       id: "delivery",
-      name: "荷物配送フィッシング",
-      caller: "配送業者の自動応答ボット",
+      name: "荷物配達フィッシング",
+      caller: "配達サービス自動ボット",
       speech: [
-        "こんにちは、アパートの部屋番号が不完全なため、お荷物の配送が保留されています。",
-        "お荷物は現在仕分けセンターに保管されており、明日から返送手数料が発生します。",
-        "至急 trustnode-tracking-secure.com/id824 にアクセスし、1.50ドルの少額確認手数料をお支払いください。",
-        "所有者確認のため、クレジットカード情報と請求先住所を全て入力する必要があります。",
-        "2時間以内に確認が完了しない場合、荷物は自動的に廃棄されます。"
+        "こんにちは。部屋番号が不完全なため、お荷物の配達を一時停止しました。",
+        "荷物は現在仕分けセンターに保管されており、明日から返送料が発生します。",
+        "すぐに trustnode-tracking-secure.com/id824 にアクセスし、1.50 ドルの少額の確認手数料をお支払いください。",
+        "所有権を確認するため、クレジットカード情報と請求先住所の入力をお願いします。",
+        "2 時間以内に確認が完了しない場合、荷物は自動的に破棄されます。",
       ],
       threatMilestones: [10, 25, 55, 82, 95],
-      triggers: ["保留", "trustnode-tracking-secure.com", "確認手数料", "クレジットカード情報", "廃棄"]
+      triggers: [
+        "一時停止",
+        "trustnode-tracking-secure.com",
+        "確認手数料",
+        "クレジットカード",
+        "破棄",
+      ],
     },
     {
       id: "investment",
-      name: "VIP暗号資産投資",
-      caller: "TrustCapitalのシニアブローカー",
+      name: "VIP 暗号資産投資",
+      caller: "TrustCapital 上級ブローカー",
       speech: [
-        "こんにちは！おめでとうございます、お客様のプロフィールが当社の特別高利回りVIP会員に選ばれました。",
-        "当社独自のAIソフトウェアは最新の暗号資産デリバティブで100%の勝率を保証します。",
-        "本日100ドルの初期入金をしていただくだけで、プレミアム端末が有効化されます。",
-        "明日の朝までに、純粋な受動的利益500ドルが直接あなたのVisaカードに入金されます。",
-        "枠は非常に限られており、残り2枠のみです。今すぐ送金してこの権利を確保してください！"
+        "こんにちは！おめでとうございます。あなたのアカウントが、当社の高利回り VIP 枠に選ばれました。",
+        "当社独自の AI ニューラルソフトウェアは、最新の暗号資産デリバティブで 100% の勝率を保証します。",
+        "今日 100 ドルの初期入金を行うだけで、プレミアムターミナルが有効になります。",
+        "明朝までに 500 ドルの純粋な受動的利益が Visa カードに直接振り込まれます。",
+        "席は非常に限られており、残り 2 枠です。今すぐ送金して席を確保してください！",
       ],
       threatMilestones: [12, 32, 60, 85, 97],
-      triggers: ["高利回りVIP", "100%の勝率を保証", "初期入金", "受動的利益", "今すぐ"]
-    }
+      triggers: [
+        "高利回り",
+        "100% の勝率",
+        "初期入金",
+        "受動的利益",
+        "今すぐ",
+      ],
+    },
   ],
-  tr: [
-    {
-      id: "bank",
-      name: "Sahte Banka Güvenliği",
-      caller: "Dedektif / Banka Güvenliği",
-      speech: [
-        "Merhaba! Ben Mali Suçlar Biriminden Dedektif Miller, hesabınızla ilgili arıyorum.",
-        "Bilinmeyen bir cihazdan 1.500 dolarlık yetkisiz bir transfer girişimi tespit ettik.",
-        "Bakiyenizi korumak için, kalan fonlarınızı geçici güvenli kasamıza aktarmamız gerekiyor.",
-        "Transferi onaylamak için telefonunuza az önce gönderdiğimiz tek kullanımlık doğrulama kodunu belirtin.",
-        "Telefonu kapatmayın ve kimseyle konuşmayın, aksi halde siber suçlulara yardım etmekten yasal olarak sorumlu tutulursunuz."
-      ],
-      threatMilestones: [15, 40, 65, 88, 98],
-      triggers: ["Mali Suçlar Birimi", "yetkisiz transfer", "güvenli kasa", "doğrulama kodu", "yasal olarak sorumlu"]
-    },
-    {
-      id: "delivery",
-      name: "Sahte Kargo Teslimatı",
-      caller: "Kargo Şirketi Otomatik Botu",
-      speech: [
-        "Merhaba, eksik daire numarası nedeniyle paket teslimatınız askıya alındı.",
-        "Paketiniz şu anda ayrım merkezimizde tutuluyor, yarından itibaren iade ücreti uygulanacak.",
-        "Lütfen hemen trustnode-tracking-secure.com/id824 adresini ziyaret edin ve 1,50 dolarlık küçük bir doğrulama ücreti ödeyin.",
-        "Sahipliği doğrulamak için kredi kartı bilgilerinizi ve tam fatura adresinizi girmeniz gerekecek.",
-        "2 saat içinde doğrulama yapılmazsa paket otomatik olarak imha edilecektir."
-      ],
-      threatMilestones: [10, 25, 55, 82, 95],
-      triggers: ["askıya alındı", "trustnode-tracking-secure.com", "doğrulama ücreti", "kredi kartı bilgileri", "imha"]
-    },
-    {
-      id: "investment",
-      name: "VIP Kripto Yatırımı",
-      caller: "TrustCapital Kıdemli Brokeri",
-      speech: [
-        "Merhaba! Tebrikler, profiliniz özel yüksek getirili VIP kadememiz için seçildi.",
-        "Özel yapay zeka yazılımımız modern kripto türevlerinde %100 kazanma oranı garanti ediyor.",
-        "Premium terminalinizi etkinleştirmek için bugün sadece 100 dolarlık hızlı bir başlangıç yatırımı yapmanız yeterli.",
-        "Yarın sabaha kadar, doğrudan Visa kartınıza 500 dolar tamamen pasif kâr olarak yatırılacak.",
-        "Kontenjan kesinlikle sınırlı, sadece 2 yer kaldı. Hemen şimdi transfer göndererek yerinizi ayırtın!"
-      ],
-      threatMilestones: [12, 32, 60, 85, 97],
-      triggers: ["yüksek getirili VIP", "%100 kazanma oranı garanti", "başlangıç yatırımı", "pasif kâr", "hemen şimdi"]
-    }
-  ]
 };
 
 // Map default scenarios for languages not defined to EN
@@ -535,103 +702,103 @@ const getScenarios = (lang: LanguageCode): Scenario[] => {
 
 const LAYER_LABELS_BY_LANG: Partial<Record<LanguageCode, string[]>> = {
   ru: [
-    "Слой 1: Анализ голоса и интонаций (распознавание волнения и стресса)",
-    "Слой 2: Проверка темпа речи (выявление чтения мошеннического текста)",
-    "Слой 3: Анализ ключевых слов (поиск фраз-триггеров мошенников)",
-    "Слой 4: Оценка давления на жертву (обнаружение психологического контроля)",
-    "Слой 5: Контроль срочности (анализ требований немедленного перевода денег)",
-    "Слой 6: Быстрая локальная сверка (проверка по известным номерам и базам)",
-    "Слой 7: Итоговый вердикт купола (принятие решения о блокировке звонка)"
+    "Слой 1: Акустические признаки (RMS, паузы, энергия) на устройстве — experimental",
+    "Слой 2: ML-классификация ruBERT (текст и метаданные) — работает",
+    "Слой 3: Распознавание речи (ASR) — Roadmap (Vosk / W2V BERT)",
+    "Слой 4: Семантический анализ содержания — Roadmap",
+    "Слой 5: Репутационный контур (PCD) — Roadmap",
+    "Слой 6: Сверка с базой номеров — Roadmap",
+    "Слой 7: Итоговый вердикт · ECHO — работает"
   ],
   en: [
-    "Layer 1: Voice & Vocal Stress (detecting background stress & nervous tension)",
-    "Layer 2: Speech Rate & Pacing (identifying robotic script reading)",
-    "Layer 3: Word & Phrase Analysis (searching for known manipulative keywords)",
-    "Layer 4: Psychological Pressure (modeling tactics of verbal intimidation)",
-    "Layer 5: Forced Urgency Control (evaluating claims of fake emergency)",
-    "Layer 6: Local Safe Database Match (hashing against local offline threat lists)",
-    "Layer 7: Smart Decision Engine (compiling final security score & quick alerts)"
+    "Layer 1: Acoustic features (RMS, pauses, energy) on-device — experimental",
+    "Layer 2: ML Classification ruBERT (text & metadata) — live",
+    "Layer 3: Speech Recognition (ASR) — Roadmap (Vosk / W2V BERT)",
+    "Layer 4: Semantic Content Analysis — Roadmap",
+    "Layer 5: Reputation Loop (PCD) — Roadmap",
+    "Layer 6: Local Number Database Check — Roadmap",
+    "Layer 7: Final Verdict · ECHO — live"
   ],
   es: [
-    "Capa 1: Acústico-Prosódico (ruido de fondo y estrés de voz)",
-    "Capa 2: Fonético-Intonativo (pausas anormales y lectura de guion)",
-    "Capa 3: Léxico-Semántico (búsqueda de frases clave de estafa)",
-    "Capa 4: Sintáctico-Discursivo (estructura de manipulación psicológica)",
-    "Capa 5: Pragmático-Contextual (evaluación de urgencia falsa)",
-    "Capa 6: Coincidencia de registro local (cotejo de hashes de amenazas)",
-    "Capa 7: Matriz de decisión heurística (cálculo de puntuación final)"
+    "Capa 1: Características acústicas (RMS, pausas, energía) en el dispositivo — experimental",
+    "Capa 2: Clasificación ML ruBERT (texto y metadatos) — activa",
+    "Capa 3: Reconocimiento de voz (ASR) — Roadmap (Vosk / W2V BERT)",
+    "Capa 4: Análisis semántico del contenido — Roadmap",
+    "Capa 5: Contorno de reputación (PCD) — Roadmap",
+    "Capa 6: Verificación contra la base de números — Roadmap",
+    "Capa 7: Veredicto final · ECHO — activo"
   ],
   zh: [
-    "第 1 层：声学与韵律分析（分析背景噪音、语调和情绪压力）",
-    "第 2 层：语音与语调分析（检测不自然停顿和脚本读音模式）",
-    "第 3 层：词汇与语义分析（提取欺诈和诱导性敏感词组）",
-    "第 4 层：句法与话语分析（识别心理控制和诱导施压框架）",
-    "第 5 层：语用与语境分析（评估假冒权威与人为紧急情绪）",
-    "第 6 层：本地威胁库碰撞（在本地安全数据库中高速碰撞特征）",
-    "第 7 层：启发式决策矩阵（加权计算综合威胁度并触发报警拦截）"
-  ],
-  hi: [
-    "परत 1: ध्वनिक-प्रोसॉडिक (पृष्ठभूमि शोर और मुखर तनाव का विश्लेषण)",
-    "परत 2: ध्वन्यात्मक-intonational (असामान्य ठहराव और स्क्रिप्ट पढ़ने का पता लगाना)",
-    "परत 3: लेक्सिको-सिमेंटिक (हेरफेर वाले घोटाले के शब्दों को खोजना)",
-    "परत 4: सिंटैक्टिक-प्रवचन (मनोवैज्ञानिक नियंत्रण का संरचनात्मक मॉडलिंग)",
-    "परत 5: व्यावहारिक-प्रासंगिक (जबरन तात्कालिकता और अधिकार का मूल्यांकन)",
-    "परत 6: स्थानीय रजिस्ट्री क्रॉस-मैच (स्थानीय खतरे के खिलाफ मिलान)",
-    "परt 7: हेयुरिस्टिक डिसीजन मैट्रिक्स (अंतिम खतरे के स्कोर संकलन)"
-  ],
-  ar: [
-    "الطبقة 1: الصوتية العروضية (تحليل ضوضاء الخلفية والتوتر الصوتي)",
-    "الطبقة 2: الفونيمية التنغيمية (كشف السكتات غير الطبيعية وقراءة النصوص)",
-    "الطبقة 3: المعجمية الدلالية (رصد الكلمات المفتاحية الاحتيالية والمضللة)",
-    "الطبقة 4: النحوية الخطابية (نمذجة هيكل الضغط النفسي والسيطرة)",
-    "الطبقة 5: التداولية السياقية (تقييم دوافع الاستعجال والضغط الوهمي)",
-    "الطبقة 6: مقارنة السجلات المحلية (مطابقة البصمات مع قواعد التهديد المحلية)",
-    "الطبقة 7: مصفوفة القرار الاستدلالي (تجميع الدرجات النهائية وإطلاق التحذير)"
-  ],
-  pt: [
-    "Camada 1: Acústico-Prosódico (ruído de fundo e estresse vocal)",
-    "Camada 2: Fonético-Entonacional (pausas anômalas e leitura de roteiro)",
-    "Camada 3: Léxico-Semântico (palavras-chave e frases de engenharia social)",
-    "Camada 4: Sintático-Discursivo (estrutura de manipulação psicológica)",
-    "Camada 5: Pragmático-Contextual (análise de falsa urgência e autoridade)",
-    "Camada 6: Comparação de Registro Local (verificação contra banco de ameaças local)",
-    "Camada 7: Matriz de Decisão Heurística (cálculo de risco final e alertas)"
-  ],
-  fr: [
-    "Couche 1 : Acoustico-prosodique (analyse du bruit de fond et du stress vocal)",
-    "Couche 2 : Phonético-intonative (détection des pauses anormales et lecture de script)",
-    "Couche 3 : Lexico-sémantique (identification des phrases clés de manipulation)",
-    "Couche 4 : Syntactico-discursive (modélisation de l'emprise psychologique)",
-    "Couche 5 : Pragmatico-contextuelle (évaluation de l'urgence forcée et de l'autorité)",
-    "Couche 6 : Concordance locale (hachage et comparaison avec la base locale de menaces)",
-    "Couche 7 : Matrice de décision heuristique (compilation du score de menace final)"
-  ],
-  de: [
-    "Ebene 1: Akustisch-Prosodisch (Hintergrundgeräusche und Stimmenstress)",
-    "Ebene 2: Phonemisch-Intonatorisch (anormale Pausen und Skriptlesen)",
-    "Ebene 3: Lexikalisch-Semantisch (manipulative Betrugs-Schlüsselwörter)",
-    "Ebene 4: Syntaktisch-Diskursiv (Modellierung psychologischer Kontrolle)",
-    "Ebene 5: Pragmatisch-Kontextuell (Dringlichkeitsprüfung & Autoritätstrigger)",
-    "Ebene 6: Lokaler Signatur-Abgleich (Abgleich mit der lokalen Bedrohungsdatenbank)",
-    "Ebene 7: Heuristische Entscheidungsmatrix (Berechnung des finalen Bedrohungsscores)"
-  ],
-  ja: [
-    "第1レイヤー：音響・プロソディ解析（背景ノイズ・感情ストレスの検知）",
-    "第2レイヤー：音韻・イントネーション解析（不自然なポーズや読み上げ検出）",
-    "第3レイヤー：語彙・セマンティック解析（詐欺的な誘導・キーワードの抽出）",
-    "第4レイヤー：構文・ディスコース解析（心理的コントロールや圧力パターンの構造化）",
-    "第5レイヤー：プラグマティック・コンテキスト解析（偽りの緊急性や権威の利用判定）",
-    "第6レイヤー：ローカルデータベース照合（ローカル脅威情報の高速シグネチャ検索）",
-    "第7レイヤー：ヒューリスティック意思決定マトリクス（加权による統合的な脅威度判定と警告）"
+    "第 1 层：声学特征（RMS、停顿、能量）在设备端 — 实验性",
+    "第 2 层：ML 分类 ruBERT（文本与元数据）— 已运行",
+    "第 3 层：语音识别（ASR）— Roadmap (Vosk / W2V BERT)",
+    "第 4 层：语义内容分析 — Roadmap",
+    "第 5 层：声誉评估环（PCD）— Roadmap",
+    "第 6 层：号码库比对 — Roadmap",
+    "第 7 层：最终裁决 · ECHO — 已运行"
   ],
   tr: [
-    "Katman 1: Akustik-Prozodik Analiz (arka plan gürültüsü ve ses stresinin tespiti)",
-    "Katman 2: Fonetik-Tonlama Analizi (anormal duraklamalar ve senaryo okuma tespiti)",
-    "Katman 3: Sözcüksel-Anlamsal Analiz (manipülatif dolandırıcılık anahtar kelimelerinin taranması)",
-    "Katman 4: Sözdizimsel-Söylem Analizi (psikolojik baskı taktiklerinin modellenmesi)",
-    "Katman 5: Bağlamsal Aciliyet Kontrolü (sahte acil durum iddialarının değerlendirilmesi)",
-    "Katman 6: Yerel Veritabanı Eşleştirmesi (yerel tehdit listeleriyle hızlı karşılaştırma)",
-    "Katman 7: Akıllı Karar Motoru (nihai güvenlik skorunun ve hızlı uyarıların derlenmesi)"
+    "Katman 1: Akustik özellikler (RMS, duraklamalar, enerji) cihazda — deneysel",
+    "Katman 2: ML Sınıflandırma ruBERT (metin ve meta veriler) — aktif",
+    "Katman 3: Konuşma Tanıma (ASR) — Roadmap (Vosk / W2V BERT)",
+    "Katman 4: İçeriğin Semantik Analizi — Roadmap",
+    "Katman 5: İtibar Döngüsü (PCD) — Roadmap",
+    "Katman 6: Numara Veritabanı Kontrolü — Roadmap",
+    "Katman 7: Nihai Karar · ECHO — aktif"
+  ],
+  hi: [
+    "परत 1: ध्वनिक विशेषताएँ (RMS, ठहराव, ऊर्जा) डिवाइस पर — प्रयोगात्मक",
+    "परत 2: ML वर्गीकरण ruBERT (टेक्स्ट और मेटाडेटा) — सक्रिय",
+    "परत 3: वाक् पहचान (ASR) — Roadmap (Vosk / W2V BERT)",
+    "परत 4: सामग्री का सिमेंटिक विश्लेषण — Roadmap",
+    "परत 5: प्रतिष्ठा लूप (PCD) — Roadmap",
+    "परत 6: नंबर डेटाबेस से जाँच — Roadmap",
+    "परत 7: अंतिम निर्णय · ECHO — सक्रिय"
+  ],
+  ar: [
+    "الطبقة 1: ميزات صوتية (RMS، التوقفات، الطاقة) على الجهاز — تجريبي",
+    "الطبقة 2: تصنيف التعلم الآلي ruBERT (النص والبيانات الوصفية) — نشط",
+    "الطبقة 3: التعرف على الكلام (ASR) — Roadmap (Vosk / W2V BERT)",
+    "الطبقة 4: التحليل الدلالي للمحتوى — Roadmap",
+    "الطبقة 5: حلقة السمعة (PCD) — Roadmap",
+    "الطبقة 6: التحقق من قاعدة الأرقام — Roadmap",
+    "الطبقة 7: الحكم النهائي · ECHO — نشط"
+  ],
+  pt: [
+    "Camada 1: Recursos acústicos (RMS, pausas, energia) no dispositivo — experimental",
+    "Camada 2: Classificação ML ruBERT (texto e metadados) — ativa",
+    "Camada 3: Reconhecimento de fala (ASR) — Roadmap (Vosk / W2V BERT)",
+    "Camada 4: Análise semântica do conteúdo — Roadmap",
+    "Camada 5: Circuito de reputação (PCD) — Roadmap",
+    "Camada 6: Verificação na base de números — Roadmap",
+    "Camada 7: Veredito final · ECHO — ativo"
+  ],
+  fr: [
+    "Couche 1 : Caractéristiques acoustiques (RMS, pauses, énergie) sur l'appareil — expérimental",
+    "Couche 2 : Classification ML ruBERT (texte et métadonnées) — active",
+    "Couche 3 : Reconnaissance vocale (ASR) — Roadmap (Vosk / W2V BERT)",
+    "Couche 4 : Analyse sémantique du contenu — Roadmap",
+    "Couche 5 : Boucle de réputation (PCD) — Roadmap",
+    "Couche 6 : Vérification dans la base de numéros — Roadmap",
+    "Couche 7 : Verdict final · ECHO — actif"
+  ],
+  de: [
+    "Ebene 1: Akustische Merkmale (RMS, Pausen, Energie) auf dem Gerät — experimentell",
+    "Ebene 2: ML-Klassifikation ruBERT (Text & Metadaten) — aktiv",
+    "Ebene 3: Spracherkennung (ASR) — Roadmap (Vosk / W2V BERT)",
+    "Ebene 4: Semantische Inhaltsanalyse — Roadmap",
+    "Ebene 5: Reputationsschleife (PCD) — Roadmap",
+    "Ebene 6: Abgleich mit der Nummerndatenbank — Roadmap",
+    "Ebene 7: Endgültiger Befund · ECHO — aktiv"
+  ],
+  ja: [
+    "第1レイヤー：音響特徴（RMS・間・エネルギー）端末上 — 実験的",
+    "第2レイヤー：ML分類 ruBERT（テキストとメタデータ）— 稼働中",
+    "第3レイヤー：音声認識（ASR）— Roadmap (Vosk / W2V BERT)",
+    "第4レイヤー：内容の意味解析 — Roadmap",
+    "第5レイヤー：評判ループ（PCD）— Roadmap",
+    "第6レイヤー：番号データベース照合 — Roadmap",
+    "第7レイヤー：最終判定 · ECHO — 稼働中"
   ]
 };
 
@@ -644,9 +811,9 @@ const CONSOLE_LOGS_BY_LANG: Partial<Record<LanguageCode, Record<string, string[]
       "[INFO] Сканирование спектра голоса на признаки синтеза..."
     ],
     done: [
-      "[ALERT] Слои 3, 4 и 5 зафиксировали критические семантические аномалии.",
+      "[ALERT] Слои анализа зафиксировали критические аномалии угрозы.",
       "[SUCCESS] Локальная база SQLCipher заблокирована на запись во избежание сброса.",
-      "[BLOCKED] KIRA: Семантическая блокировка входящего воздействия.",
+      "[BLOCKED] TrustNode: Итоговый вердикт: блокировка входящего воздействия.",
       "[DOME HARDENED] Угроза нейтрализована. Лог стерт из ОЗУ. Устройство в безопасности."
     ]
   },
@@ -658,138 +825,138 @@ const CONSOLE_LOGS_BY_LANG: Partial<Record<LanguageCode, Record<string, string[]
       "[INFO] Scanning frequency spectrum for AI voice cloning signatures..."
     ],
     done: [
-      "[ALERT] Layers 3, 4, and 5 compiled critical semantic anomalies.",
+      "[ALERT] Analysis layers detected critical threat anomalies.",
       "[SUCCESS] Core SQLCipher user state secured to prevent tampering.",
-      "[BLOCKED] KIRA: Real-time semantic active countermeasure deployed.",
+      "[BLOCKED] TrustNode: Final verdict: block the incoming interaction.",
       "[DOME HARDENED] Threat neutralized. Call memory flushed. Core systems secure."
     ]
   },
   es: {
     scanning: [
       "[OK] Códec de audio OPUS activo. Enrutando la voz directamente a la RAM local segura.",
-      "[INFO] Inicializando el clasificador Rubert-tiny2 dentro del sandbox del dispositivo.",
-      "[OK] Calibrando la acústica ambiental. Cancelación de ruido: Activa.",
-      "[INFO] Escaneando el espectro de frecuencias en busca de clonación de voz por IA..."
+      "[INFO] Inicializando el clasificador Rubert-tiny2 en la sandbox del dispositivo.",
+      "[OK] Calibrando la acústica ambiente. Cancelación de ruido: Activa.",
+      "[INFO] Escaneando el espectro de frecuencias en busca de señales de clonación de voz con IA...",
     ],
     done: [
-      "[ALERT] Las capas 3, 4 y 5 detectaron anomalías semánticas críticas.",
-      "[SUCCESS] Estado del usuario en SQLCipher asegurado para evitar manipulaciones.",
-      "[BLOCKED] KIRA: Contramedida semántica activa desplegada en tiempo real.",
-      "[DOME HARDENED] Amenaza neutralizada. Memoria de la llamada eliminada. Sistemas seguros."
-    ]
+      "[ALERT] Las capas de análisis detectaron anomalías de amenaza críticas.",
+      "[SUCCESS] El estado protegido de SQLCipher fue asegurado para evitar manipulaciones.",
+      "[BLOCKED] TrustNode: Veredicto final: bloquear la interacción entrante.",
+      "[DOME HARDENED] Amenaza neutralizada. Memoria de la llamada purgada. Sistemas principales seguros.",
+    ],
   },
   zh: {
     scanning: [
-      "[OK] OPUS音频编解码器已激活。语音数据流直接路由至本地安全内存。",
+      "[OK] OPUS 语音编解码器已激活。语音数据正直接路由至本地安全内存。",
       "[INFO] 正在设备沙盒内初始化 Rubert-tiny2 分类器。",
-      "[OK] 正在校准环境声学噪音。噪声消除：已启用。",
-      "[INFO] 正在扫描频谱以检测AI语音克隆特征..."
+      "[OK] 正在校准环境声学参数。降噪：已启用。",
+      "[INFO] 正在扫描频谱，检测 AI 语音克隆特征...",
     ],
     done: [
-      "[ALERT] 第3、4、5层检测到关键语义异常。",
-      "[SUCCESS] 核心SQLCipher用户状态已锁定，防止篡改。",
-      "[BLOCKED] KIRA：已部署实时语义主动对抗措施。",
-      "[DOME HARDENED] 威胁已解除。通话记录已清除。核心系统安全。"
-    ]
-  },
-  ar: {
-    scanning: [
-      "[OK] مرمز صوت OPUS نشط. توجيه الصوت مباشرة إلى الذاكرة العشوائية المحلية الآمنة.",
-      "[INFO] تهيئة مصنف Rubert-tiny2 داخل الحماية الرقمية للجهاز.",
-      "[OK] معايرة صوتيات الغرفة المحيطة. إلغاء الضوضاء: نشط.",
-      "[INFO] مسح طيف التردد بحثا عن بصمات استنساخ الصوت بالذكاء الاصطناعي..."
+      "[ALERT] 分析层检测到严重威胁异常。",
+      "[SUCCESS] 核心 SQLCipher 用户状态已锁定，防止被篡改。",
+      "[BLOCKED] TrustNode：最终裁决：拦截本次交互。",
+      "[DOME HARDENED] 威胁已消除。通话内存已清除。核心系统安全。",
     ],
-    done: [
-      "[ALERT] رصدت الطبقات 3 و4 و5 حالات شاذة دلالية حرجة.",
-      "[SUCCESS] تم تأمين حالة المستخدم في SQLCipher لمنع العبث.",
-      "[BLOCKED] KIRA: تم نشر إجراء مضاد دلالي فوري.",
-      "[DOME HARDENED] تم تحييد التهديد. تم مسح ذاكرة المكالمة. الأنظمة الأساسية آمنة."
-    ]
-  },
-  fr: {
-    scanning: [
-      "[OK] Codec audio OPUS actif. Acheminement de la voix directement vers la RAM locale sécurisée.",
-      "[INFO] Initialisation du classificateur Rubert-tiny2 dans le bac à sable de l'appareil.",
-      "[OK] Étalonnage de l'acoustique ambiante. Annulation du bruit : Active.",
-      "[INFO] Analyse du spectre de fréquences à la recherche de signatures de clonage vocal par IA..."
-    ],
-    done: [
-      "[ALERT] Les couches 3, 4 et 5 ont détecté des anomalies sémantiques critiques.",
-      "[SUCCESS] État utilisateur SQLCipher sécurisé pour empêcher toute altération.",
-      "[BLOCKED] KIRA : Contre-mesure sémantique active déployée en temps réel.",
-      "[DOME HARDENED] Menace neutralisée. Mémoire de l'appel effacée. Systèmes sécurisés."
-    ]
-  },
-  de: {
-    scanning: [
-      "[OK] OPUS-Audio-Codec aktiv. Sprachdaten werden direkt in den lokalen, sicheren RAM geleitet.",
-      "[INFO] Rubert-tiny2-Klassifikator wird in der Geräte-Sandbox initialisiert.",
-      "[OK] Kalibrierung der Raumakustik. Rauschunterdrückung: Aktiv.",
-      "[INFO] Frequenzspektrum wird auf KI-Stimmenklonungssignaturen gescannt..."
-    ],
-    done: [
-      "[ALERT] Ebenen 3, 4 und 5 haben kritische semantische Anomalien festgestellt.",
-      "[SUCCESS] SQLCipher-Nutzerstatus gesichert, um Manipulationen zu verhindern.",
-      "[BLOCKED] KIRA: Aktive semantische Gegenmaßnahme in Echtzeit eingeleitet.",
-      "[DOME HARDENED] Bedrohung neutralisiert. Anrufspeicher gelöscht. Kernsysteme sicher."
-    ]
-  },
-  pt: {
-    scanning: [
-      "[OK] Codec de áudio OPUS ativo. Roteando o fluxo de voz diretamente para a RAM local segura.",
-      "[INFO] Inicializando o classificador Rubert-tiny2 dentro do sandbox do dispositivo.",
-      "[OK] Calibrando a acústica ambiente. Cancelamento de ruído: Ativo.",
-      "[INFO] Varrendo o espectro de frequência em busca de assinaturas de clonagem de voz por IA..."
-    ],
-    done: [
-      "[ALERT] As camadas 3, 4 e 5 detectaram anomalias semânticas críticas.",
-      "[SUCCESS] Estado do usuário no SQLCipher protegido para evitar adulteração.",
-      "[BLOCKED] KIRA: Contramedida semântica ativa implantada em tempo real.",
-      "[DOME HARDENED] Ameaça neutralizada. Memória da chamada apagada. Sistemas centrais seguros."
-    ]
-  },
-  hi: {
-    scanning: [
-      "[OK] OPUS ऑडियो स्ट्रीम कोडेक सक्रिय। वॉइस डेटा सीधे स्थानीय सुरक्षित RAM में भेजा जा रहा है।",
-      "[INFO] डिवाइस सैंडबॉक्स के भीतर Rubert-tiny2 क्लासिफायर को इनिशियलाइज़ किया जा रहा है।",
-      "[OK] परिवेशीय ध्वनिकी को कैलिब्रेट किया जा रहा है। शोर रद्दीकरण: सक्रिय।",
-      "[INFO] AI आवाज़ क्लोनिंग के संकेतों के लिए फ़्रीक्वेंसी स्पेक्ट्रम को स्कैन किया जा रहा है..."
-    ],
-    done: [
-      "[ALERT] परत 3, 4 और 5 ने गंभीर सिमेंटिक विसंगतियों का पता लगाया।",
-      "[SUCCESS] छेड़छाड़ रोकने के लिए कोर SQLCipher उपयोगकर्ता स्थिति सुरक्षित की गई।",
-      "[BLOCKED] KIRA: रीयल-टाइम सक्रिय सिमेंटिक प्रति-उपाय तैनात किया गया।",
-      "[DOME HARDENED] खतरा निष्प्रभावी हो गया। कॉल मेमोरी हटा दी गई। मुख्य सिस्टम सुरक्षित हैं।"
-    ]
-  },
-  ja: {
-    scanning: [
-      "[OK] OPUSオーディオコーデックが有効です。音声データをローカルの安全なRAMへ直接転送中。",
-      "[INFO] デバイスサンドボックス内でRubert-tiny2分類器を初期化中。",
-      "[OK] 周囲の音響を較正中。ノイズキャンセリング：有効。",
-      "[INFO] AI音声クローンの特徴を検出するため周波数スペクトルをスキャン中..."
-    ],
-    done: [
-      "[ALERT] レイヤー3、4、5が重大な意味的異常を検出しました。",
-      "[SUCCESS] 改ざん防止のためコアのSQLCipherユーザー状態を保護しました。",
-      "[BLOCKED] KIRA：リアルタイムの意味的対抗措置を展開しました。",
-      "[DOME HARDENED] 脅威を無力化しました。通話メモリを消去しました。コアシステムは安全です。"
-    ]
   },
   tr: {
     scanning: [
-      "[OK] OPUS ses codec'i aktif. Ses akışı doğrudan yerel güvenli RAM'e yönlendiriliyor.",
-      "[INFO] Cihaz korumalı alanı içinde Rubert-tiny2 sınıflandırıcısı başlatılıyor.",
+      "[OK] OPUS ses codec'i etkin. Ses verisi doğrudan yerel güvenli RAM'e yönlendiriliyor.",
+      "[INFO] Cihaz sandbox'ında Rubert-tiny2 sınıflandırıcısı başlatılıyor.",
       "[OK] Ortam akustiği kalibre ediliyor. Gürültü engelleme: Aktif.",
-      "[INFO] Yapay zeka ses klonlama imzaları için frekans spektrumu taranıyor..."
+      "[INFO] Yapay zeka ses klonlama imzaları için frekans spektrumu taranıyor...",
     ],
     done: [
-      "[ALERT] Katman 3, 4 ve 5 kritik anlamsal anormallikler tespit etti.",
-      "[SUCCESS] Müdahaleyi önlemek için çekirdek SQLCipher kullanıcı durumu güvence altına alındı.",
-      "[BLOCKED] KIRA: Gerçek zamanlı aktif anlamsal karşı önlem devreye alındı.",
-      "[DOME HARDENED] Tehdit etkisiz hale getirildi. Çağrı belleği temizlendi. Çekirdek sistemler güvende."
-    ]
-  }
+      "[ALERT] Analiz katmanları kritik tehdit anormallikleri tespit etti.",
+      "[SUCCESS] Kurcalamayı önlemek için temel SQLCipher kullanıcı durumu güvence altına alındı.",
+      "[BLOCKED] TrustNode: Nihai karar: gelen etkileşimi engelle.",
+      "[DOME HARDENED] Tehdit etkisiz hale getirildi. Arama belleği temizlendi. Çekirdek sistemler güvende.",
+    ],
+  },
+  hi: {
+    scanning: [
+      "[OK] OPUS ऑडियो स्ट्रीम कोडेक सक्रिय। आवाज़ का डेटा सीधे स्थानीय सुरक्षित RAM में भेजा जा रहा है।",
+      "[INFO] डिवाइस सैंडबॉक्स में Rubert-tiny2 क्लासिफायर आरंभ हो रहा है।",
+      "[OK] परिवेशीय ध्वनिकी कैलिब्रेट की जा रही है। शोर रद्दीकरण: सक्रिय।",
+      "[INFO] AI आवाज़ क्लोनिंग संकेतों के लिए आवृत्ति स्पेक्ट्रम स्कैन हो रहा है...",
+    ],
+    done: [
+      "[ALERT] विश्लेषण परतों ने गंभीर खतरे की असामान्यताएँ पाईं।",
+      "[SUCCESS] छेड़छाड़ रोकने के लिए मुख्य SQLCipher उपयोगकर्ता स्थिति सुरक्षित कर दी गई।",
+      "[BLOCKED] TrustNode: अंतिम निर्णय: आने वाले संवाद को ब्लॉक करें।",
+      "[DOME HARDENED] खतरा निष्प्रभावी। कॉल मेमोरी साफ़ की गई। मुख्य सिस्टम सुरक्षित।",
+    ],
+  },
+  ar: {
+    scanning: [
+      "[OK] مشفر صوت OPUS نشط. يتم توجيه بيانات الصوت مباشرة إلى ذاكرة الوصول العشوائي الآمنة المحلية.",
+      "[INFO] تهيئة مصنف Rubert-tiny2 داخل صندوق الرمل الخاص بالجهاز.",
+      "[OK] معايرة الخصائص الصوتية للمحيط. إلغاء الضوضاء: نشط.",
+      "[INFO] فحص طيف الترددات بحثاً عن بصمات استنساخ الصوت بالذكاء الاصطناعي...",
+    ],
+    done: [
+      "[ALERT] رصدت طبقات التحليل شذوذاً حرجاً في التهديد.",
+      "[SUCCESS] تم تأمين حالة مستخدم SQLCipher الأساسية لمنع العبث.",
+      "[BLOCKED] TrustNode: الحكم النهائي: حظر التفاعل الوارد.",
+      "[DOME HARDENED] تم تحييد التهديد. تم مسح ذاكرة المكالمة. الأنظمة الأساسية آمنة.",
+    ],
+  },
+  pt: {
+    scanning: [
+      "[OK] Codec de áudio OPUS ativo. Roteando o áudio diretamente para a RAM local segura.",
+      "[INFO] Inicializando o classificador Rubert-tiny2 dentro da sandbox do dispositivo.",
+      "[OK] Calibrando a acústica do ambiente. Cancelamento de ruído: Ativo.",
+      "[INFO] Escaneando o espectro de frequências em busca de assinaturas de clonagem de voz por IA...",
+    ],
+    done: [
+      "[ALERT] As camadas de análise detectaram anomalias críticas de ameaça.",
+      "[SUCCESS] O estado protegido do SQLCipher foi garantido para evitar adulterações.",
+      "[BLOCKED] TrustNode: Veredito final: bloquear a interação recebida.",
+      "[DOME HARDENED] Ameaça neutralizada. Memória da chamada limpa. Sistemas principais seguros.",
+    ],
+  },
+  fr: {
+    scanning: [
+      "[OK] Codec audio OPUS actif. Acheminement de la voix directement vers la RAM sécurisée locale.",
+      "[INFO] Initialisation du classifieur Rubert-tiny2 dans la sandbox de l'appareil.",
+      "[OK] Calibrage de l'acoustique ambiante. Suppression du bruit : active.",
+      "[INFO] Analyse du spectre de fréquences à la recherche de signatures de clonage vocal par IA...",
+    ],
+    done: [
+      "[ALERT] Les couches d'analyse ont détecté des anomalies de menace critiques.",
+      "[SUCCESS] L'état protégé SQLCipher a été sécurisé pour empêcher toute altération.",
+      "[BLOCKED] TrustNode : Verdict final : bloquer l'interaction entrante.",
+      "[DOME HARDENED] Menace neutralisée. Mémoire de l'appel purgée. Systèmes principaux sécurisés.",
+    ],
+  },
+  de: {
+    scanning: [
+      "[OK] OPUS-Audiocodec aktiv. Sprachdaten werden direkt in den lokalen sicheren RAM geleitet.",
+      "[INFO] Rubert-tiny2-Klassifikator wird in der Geräte-Sandbox initialisiert.",
+      "[OK] Raumakustik wird kalibriert. Geräuschunterdrückung: Aktiv.",
+      "[INFO] Frequenzspektrum wird auf KI-Stimmklon-Signaturen gescannt...",
+    ],
+    done: [
+      "[ALERT] Die Analyseeinstanzen haben kritische Bedrohungsanomalien festgestellt.",
+      "[SUCCESS] Der geschützte SQLCipher-Benutzerstatus wurde gegen Manipulation gesichert.",
+      "[BLOCKED] TrustNode: Endgültiges Urteil: eingehende Interaktion blockieren.",
+      "[DOME HARDENED] Bedrohung neutralisiert. Anrufspeicher geleert. Kernsysteme sicher.",
+    ],
+  },
+  ja: {
+    scanning: [
+      "[OK] OPUS 音声ストリームコーデック有効。音声データをローカルの安全な RAM へ直接ルーティングします。",
+      "[INFO] デバイスサンドボックス内で Rubert-tiny2 分類器を初期化しています。",
+      "[OK] 周囲の音響をキャリブレーション中。ノイズキャンセリング：有効。",
+      "[INFO] AI 音声クローン署名を検出するため周波数スペクトルをスキャンしています...",
+    ],
+    done: [
+      "[ALERT] 分析レイヤーが重大な脅威の異常を検出しました。",
+      "[SUCCESS] 改ざん防止のため、コア SQLCipher ユーザー状態を保護しました。",
+      "[BLOCKED] TrustNode: 最終判定：着信インタラクションをブロック。",
+      "[DOME HARDENED] 脅威を中和しました。通話メモリを消去。コアシステムは安全です。",
+    ],
+  },
 };
 
 export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
@@ -807,23 +974,24 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
   const [activeLayersCount, setActiveLayersCount] = useState<number>(0);
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
   const [visibleSentence, setVisibleSentence] = useState<string>("");
-  const sentenceIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const sentenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+const rafTypingRef = useRef<number | null>(null);
   const transcriptionEndRef = useRef<HTMLDivElement>(null);
   const transcriptionContainerRef = useRef<HTMLDivElement>(null);
 
   // UI labels based on language
   const SIM_UI: Record<string, Record<string, string>> = {
-    ru: { start: "Запустить симуляцию", reset: "Сбросить", caller: "Собеседник", incoming: "Входящий вызов...", secure: "СЕССИЯ ЗАЩИЩЕНА", threat: "Шкала угрозы социального инжиниринга", logs: "ЛОГ СИСТЕМЫ ОБОРОНЫ PHANTOM", finished: "СИМУЛЯЦИЯ ЗАВЕРШЕНА // УГРОЗА БЛОКИРОВАНА", warning: "KIRA: ОБНАРУЖЕНА УГРОЗА! ПОВЕСЬТЕ ТРУБКУ!", clickStart: "Нажмите кнопку ниже, чтобы запустить симуляцию голосового потока", statusHeader: "СТАТУС СЛОЕВ ФИЛЬТРАЦИИ PHANTOM 2.0" },
-    en: { start: "Start Simulation", reset: "Reset", caller: "Caller", incoming: "Incoming call...", secure: "SESSION SECURED", threat: "Social Engineering Threat Level", logs: "PHANTOM DEFENSE LOG", finished: "SIMULATION COMPLETE // ATTACK BLOCKED", warning: "KIRA: ATTEMPTED FRAUD DETECTED! HANG UP!", clickStart: "Click 'Start Simulation' below to stream voice data packets", statusHeader: "PHANTOM 2.0 DEFENSE LAYER STATUS" },
-    es: { start: "Iniciar Simulación", reset: "Reiniciar", caller: "Interlocutor", incoming: "Llamada entrante...", secure: "SESIÓN PROTEGIDA", threat: "Nivel de Amenaza de Ingeniería Social", logs: "REGISTRO DE DEFENSA PHANTOM", finished: "SIMULACIÓN COMPLETADA // ATAQUE BLOQUEADO", warning: "KIRA: ¡FRAUDE DETECTADO! ¡CUELGUE!", clickStart: "Haga clic en 'Iniciar simulación' abajo para transmitir datos de voz", statusHeader: "ESTADO DE CAPAS PHANTOM 2.0" },
-    zh: { start: "开始模拟", reset: "重置", caller: "对方", incoming: "来电中...", secure: "会话已加密保护", threat: "社交工程威胁级别", logs: "PHANTOM 防御日志", finished: "模拟完成 // 攻击已被拦截", warning: "KIRA：检测到诈骗危险！请立即挂机！", clickStart: "点击下方按钮启动语音流模拟", statusHeader: "PHANTOM 2.0 防御层状态" },
-    tr: { start: "Simülasyonu Başlat", reset: "Sıfırla", caller: "Arayan", incoming: "Gelen arama...", secure: "OTURUM GÜVENLİ", threat: "Sosyal Mühendislik Tehdit Seviyesi", logs: "PHANTOM SAVUNMA GÜNLÜĞÜ", finished: "SİMÜLASYON TAMAMLANDI // SALDIRI ENGELLENDİ", warning: "KIRA: DOLANDIRICILIK ALGILANDI! TELEFONU KAPATIN!", clickStart: "Ses veri paketlerini akıtmak için 'Simülasyonu Başlat'a tıklayın", statusHeader: "PHANTOM 2.0 SAVUNMA KATMANI DURUMU" },
-    hi: { start: "सिमुलेशन शुरू करें", reset: "रीसेट करें", caller: "कैलर", incoming: "आने वाली कॉल...", secure: "सत्र सुरक्षित", threat: "सामाजिक इंजीनियरिंग खतरा स्तर", logs: "PHANTOM रक्षा लॉग", finished: "सिमुलेशन पूरा // हमला अवरुद्ध", warning: "KIRA: धोखाधड़ी का पता चला! फोन काटें!", clickStart: "वॉइस स्ट्रीम सिमुलेशन शुरू करने के लिए नीचे क्लिक करें", statusHeader: "PHANTOM 2.0 रक्षा स्तर स्थिति" },
-    ar: { start: "بدء المحاكاة", reset: "إعادة ضبط", caller: "المتصل", incoming: "مكالمة واردة...", secure: "جلسة آمنة", threat: "مستوى تهديد الهندسة الاجتماعية", logs: "سجل دفاع PHANTOM", finished: "اكتملت المحاكاة // تم حظر الهجوم", warning: "KIRA: تم اكتشاف محاولة احتيال! أغلِق الخط!", clickStart: "انقر على زر البدء أدناه لبدء محاكاة تدفق الصوت", statusHeader: "حالة طبقات الحماية PHANTOM 2.0" },
-    pt: { start: "Iniciar Simulação", reset: "Reiniciar", caller: "Chamador", incoming: "Chamada recebida...", secure: "SESSÃO PROTEGIDA", threat: "Nível de Ameaça de Engenharia Social", logs: "REGISTRO DE DEFESA PHANTOM", finished: "SIMULAÇÃO CONCLUÍDA // ATAQUE BLOQUEADO", warning: "KIRA: FRAUDE DETECTADA! DESLIGUE O TELEFONE!", clickStart: "Clique no botão abaixo para iniciar a simulação de voz", statusHeader: "STATUS DA CAMADA DE DEFESA PHANTOM 2.0" },
-    fr: { start: "Lancer la simulation", reset: "Réinitialiser", caller: "Appelant", incoming: "Appel entrant...", secure: "SÉANCE SÉCURISÉE", threat: "Niveau de Menace d'Ingénierie Sociale", logs: "JOURNAL DE DÉFENSE PHANTOM", finished: "SIMULATION TERMINÉE // ATTAQUE BLOQUÉE", warning: "KIRA : FRAUDE DÉTECTÉE ! RACCROCHEZ !", clickStart: "Cliquez sur le bouton ci-dessous pour démarrer la simulation", statusHeader: "ÉTAT DES COUCHES PHANTOM 2.0" },
-    de: { start: "Simulation starten", reset: "Zurücksetzen", caller: "Anrufer", incoming: "Eingehender Anruf...", secure: "SITZUNG GESICHERT", threat: "Bedrohungsstufe für Social Engineering", logs: "PHANTOM-ABWEHRLOGBUCH", finished: "SIMULATION ABGESCHLOSSEN // ANGRIFF BLOCKIERT", warning: "KIRA: BETRUGSVERSUCH ERKANNT! AUFLEGEN!", clickStart: "Klicken Sie unten, um die Sprachdatensimulation zu starten", statusHeader: "PHANTOM 2.0 SCHUTZSCHICHT-STATUS" },
-    ja: { start: "シミュレーション開始", reset: "リセット", caller: "発信者", incoming: "着信中...", secure: "セッション保護中", threat: "ソーシャルエンジニアリング脅威レベル", logs: "PHANTOM防御ログ", finished: "シミュレーション完了 // 攻撃ブロック", warning: "KIRA: 詐欺攻撃を検知！すぐに切断してください！", clickStart: "下のボタンをクリックして音声ストリームを開始してください", statusHeader: "PHANTOM 2.0 防御レイヤーステータス" }
+    ru: { start: "Запустить симуляцию", reset: "Сбросить", caller: "Собеседник", incoming: "Входящий вызов...", secure: "СЕССИЯ ЗАЩИЩЕНА", threat: "Шкала угрозы социального инжиниринга", logs: "ЛОГ СИСТЕМЫ ОБОРОНЫ TrustNode", finished: "СИМУЛЯЦИЯ ЗАВЕРШЕНА // УГРОЗА БЛОКИРОВАНА", warning: "TrustNode: ОБНАРУЖЕНА УГРОЗА! ПОВЕСЬТЕ ТРУБКУ!", clickStart: "Нажмите кнопку ниже, чтобы запустить симуляцию голосового потока", statusHeader: "СТАТУС СЛОЕВ ФИЛЬТРАЦИИ TrustNode 2.0", consoleBadge: "ИНТЕРАКТИВНАЯ ТЕСТОВАЯ КОНСОЛЬ // TrustNode 2.0", secureLine: "GSM // ЗАЩИЩЕННАЯ ЛИНИЯ", activeStream: "АКТИВНЫЙ ЗВУКОВОЙ ПОТОК", secRamLabel: "ЗАЩИЩЕННАЯ РАМ ТРАНСКРИПЦИЯ", liveParsing: "ЖИВОЙ АНАЛИЗ...", threatFmt: "УРОВЕНЬ УГРОЗЫ", layersActiveFmt: "АКТИВНО", badgeVerified: "ПРОВЕРЕНО", badgeAlert: "ТРЕВОГА", badgeScanning: "СКАНИРОВАНИЕ", badgeStandby: "ОЖИДАНИЕ", interceptPrefix: "Обнаружено фраз угрозы: ", interceptSuffix: ". PostProc + LegitContextRule: блокировка входящего воздействия.", logScan3: "[SCAN] СЛОЙ_3: Лексическое совпадение: \"{t}\"", logWarn4: "[WARN] СЛОЙ_4: Обнаружена схема манипуляции. Вес семантической аномалии: 0.72.", logScan3b: "[SCAN] СЛОЙ_3: Найдено совпадение: \"{t}\"", logCritical5: "[CRITICAL] СЛОЙ_5: Обнаружено давление авторитетом. Враждебные паттерны совпали с вероятностью 94%.", logScan6: "[SCAN] СЛОЙ_6: Фраза \"{t}\" совпадает с сигнатурами из чёрного списка." },
+    en: { start: "Start Simulation", reset: "Reset", caller: "Caller", incoming: "Incoming call...", secure: "SESSION SECURED", threat: "Social Engineering Threat Level", logs: "TrustNode DEFENSE LOG", finished: "SIMULATION COMPLETE // ATTACK BLOCKED", warning: "TrustNode: ATTEMPTED FRAUD DETECTED! HANG UP!", clickStart: "Click 'Start Simulation' below to stream voice data packets", statusHeader: "TrustNode 2.0 DEFENSE LAYER STATUS", consoleBadge: "INTERACTIVE TEST CONSOLE // TrustNode 2.0", secureLine: "GSM // SECURE LINE", activeStream: "ACTIVE AUDIO WAVE STREAM", secRamLabel: "SECURE_RAM_TRANSCRIPTION", liveParsing: "LIVE PARSING...", threatFmt: "THREAT_LEVEL", layersActiveFmt: "ACTIVE", badgeVerified: "VERIFIED", badgeAlert: "ALERT", badgeScanning: "SCANNING", badgeStandby: "STANDBY", interceptPrefix: "Threat triggers matching: ", interceptSuffix: ". PostProc + LegitContextRule applied: blocking the incoming interaction.", logScan3: "[SCAN] LAYER_3: Lexical match detected phrase: \"{t}\"", logWarn4: "[WARN] LAYER_4: Manipulation scheme detected. Semantic anomaly weight: 0.72.", logScan3b: "[SCAN] LAYER_3: Match found: \"{t}\"", logCritical5: "[CRITICAL] LAYER_5: Authority coercion detected. Hostile dialog patterns matched with 94% probability.", logScan6: "[SCAN] LAYER_6: Phrase \"{t}\" matches blacklisted signatures." },
+    es: { start: "Iniciar Simulación", reset: "Reiniciar", caller: "Interlocutor", incoming: "Llamada entrante...", secure: "SESIÓN PROTEGIDA", threat: "Nivel de Amenaza de Ingeniería Social", logs: "REGISTRO DE DEFENSA TrustNode", finished: "SIMULACIÓN COMPLETADA // ATAQUE BLOQUEADO", warning: "TrustNode: ¡FRAUDE DETECTADO! ¡CUELGUE!", clickStart: "Haga clic en 'Iniciar simulación' abajo para transmitir datos de voz", statusHeader: "ESTADO DE CAPAS TrustNode 2.0", consoleBadge: "CONSOLA DE PRUEBA INTERACTIVA // TrustNode 2.0", secureLine: "GSM // LÍNEA SEGURA", activeStream: "FLUJO DE AUDIO ACTIVO", secRamLabel: "TRANSCRIPCIÓN EN RAM SEGURA", liveParsing: "ANÁLISIS EN VIVO...", threatFmt: "NIVEL DE AMENAZA", layersActiveFmt: "ACTIVAS", badgeVerified: "VERIFICADO", badgeAlert: "ALERTA", badgeScanning: "ESCANEANDO", badgeStandby: "EN ESPERA", interceptPrefix: "Frases coincidentes: ", interceptSuffix: ". PostProc + LegitContextRule aplicados: bloquear la interacción entrante.", logScan3: "[SCAN] CAPA_3: Coincidencia léxica detectada en la frase: \"{t}\"", logWarn4: "[WARN] CAPA_4: Esquema de manipulación detectado. Peso de anomalía semántica: 0.72.", logScan3b: "[SCAN] CAPA_3: Coincidencia encontrada: \"{t}\"", logCritical5: "[CRITICAL] CAPA_5: Coerción de autoridad detectada. Patrones hostiles coinciden con un 94 % de probabilidad.", logScan6: "[SCAN] CAPA_6: La frase \"{t}\" coincide con firmas en lista negra." },
+    zh: { start: "开始模拟", reset: "重置", caller: "对方", incoming: "来电中...", secure: "会话已加密保护", threat: "社交工程威胁级别", logs: "TrustNode 防御日志", finished: "模拟完成 // 攻击已被拦截", warning: "TrustNode：检测到诈骗危险！请立即挂机！", clickStart: "点击下方按钮启动语音流模拟", statusHeader: "TrustNode 2.0 防御层状态", consoleBadge: "交互式测试终端 // TrustNode 2.0", secureLine: "GSM // 安全线路", activeStream: "活动音频流", secRamLabel: "安全内存实时转写", liveParsing: "实时解析中...", threatFmt: "威胁等级", layersActiveFmt: "已激活", badgeVerified: "已验证", badgeAlert: "警报", badgeScanning: "扫描中", badgeStandby: "待命", interceptPrefix: "匹配到的威胁短语：", interceptSuffix: "。PostProc + LegitContextRule 已实施：拦截本次交互。", logScan3: "[SCAN] 第3层：检测到词汇匹配短语：\"{t}\"", logWarn4: "[WARN] 第4层：检测到操纵手法。语义异常权重：0.72。", logScan3b: "[SCAN] 第3层：发现匹配：\"{t}\"", logCritical5: "[CRITICAL] 第5层：检测到权威胁迫。敌对对话模式匹配概率为 94%。", logScan6: "[SCAN] 第6层：短语\"{t}\"与黑名单特征匹配。" },
+    tr: { start: "Simülasyonu Başlat", reset: "Sıfırla", caller: "Arayan", incoming: "Gelen arama...", secure: "OTURUM GÜVENLİ", threat: "Sosyal Mühendislik Tehdit Seviyesi", logs: "TrustNode SAVUNMA GÜNLÜĞÜ", finished: "SİMÜLASYON TAMAMLANDI // SALDIRI ENGELLENDİ", warning: "TrustNode: DOLANDIRICILIK ALGILANDI! TELEFONU KAPATIN!", clickStart: "Ses veri paketlerini akıtmak için 'Simülasyonu Başlat'a tıklayın", statusHeader: "TrustNode 2.0 SAVUNMA KATMANI DURUMU", consoleBadge: "ETKİLEŞİMLİ TEST KONSOLU // TrustNode 2.0", secureLine: "GSM // GÜVENLİ HAT", activeStream: "AKTİF SES AKIŞI", secRamLabel: "GÜVENLİ RAM TRANSKRİPSİ", liveParsing: "CANLI AYRIŞTIRMA...", threatFmt: "TEHDİT SEVİYESİ", layersActiveFmt: "AKTİF", badgeVerified: "DOĞRULANDI", badgeAlert: "ALARM", badgeScanning: "TARANIYOR", badgeStandby: "BEKLEMEDE", interceptPrefix: "Eşleşen tehdit ifadeleri: ", interceptSuffix: ". PostProc + LegitContextRule uygulandı: gelen etkileşim engellendi.", logScan3: "[SCAN] KATMAN_3: Sözcüksel eşleşme tespit edildi: \"{t}\"", logWarn4: "[WARN] KATMAN_4: Manipülasyon şeması tespit edildi. Anlamsal anormallik ağırlığı: 0.72.", logScan3b: "[SCAN] KATMAN_3: Eşleşme bulundu: \"{t}\"", logCritical5: "[CRITICAL] KATMAN_5: Otorite baskısı tespit edildi. Düşmanca diyalog kalıpları %94 olasılıkla eşleşti.", logScan6: "[SCAN] KATMAN_6: \"{t}\" ifadesi kara listedeki imzalarla eşleşiyor." },
+    hi: { start: "सिमुलेशन शुरू करें", reset: "रीसेट करें", caller: "कैलर", incoming: "आने वाली कॉल...", secure: "सत्र सुरक्षित", threat: "सामाजिक इंजीनियरिंग खतरा स्तर", logs: "TrustNode रक्षा लॉग", finished: "सिमुलेशन पूरा // हमला अवरुद्ध", warning: "TrustNode: धोखाधड़ी का पता चला! फोन काटें!", clickStart: "वॉइस स्ट्रीम सिमुलेशन शुरू करने के लिए नीचे क्लिक करें", statusHeader: "TrustNode 2.0 रक्षा स्तर स्थिति", consoleBadge: "इंटरैक्टिव टेस्ट कंसोल // TrustNode 2.0", secureLine: "GSM // सुरक्षित लाइन", activeStream: "सक्रिय ऑडियो स्ट्रीम", secRamLabel: "सुरक्षित RAM ट्रांसक्रिप्शन", liveParsing: "लाइव पार्सिंग...", threatFmt: "खतरा स्तर", layersActiveFmt: "सक्रिय", badgeVerified: "सत्यापित", badgeAlert: "चेतावनी", badgeScanning: "स्कैन हो रहा", badgeStandby: "स्टैंडबाय", interceptPrefix: "मिलान वाले खतरे: ", interceptSuffix: "। PostProc + LegitContextRule लागू: आने वाले संवाद को अवरुद्ध किया।", logScan3: "[SCAN] परत_3: शाब्दिक मिलान वाक्यांश मिला: \"{t}\"", logWarn4: "[WARN] परत_4: हेरफेर योजना मिली। शब्दार्थ असामान्यता भार: 0.72।", logScan3b: "[SCAN] परत_3: मिलान मिला: \"{t}\"", logCritical5: "[CRITICAL] परत_5: अधिकार बल प्रयोग मिला। शत्रुतापूर्ण डायलॉग पैटर्न 94% संभावना से मेल खाते हैं।", logScan6: "[SCAN] परत_6: वाक्यांश \"{t}\" ब्लैकलिस्टेड हस्ताक्षरों से मेल खाता है।" },
+    ar: { start: "بدء المحاكاة", reset: "إعادة ضبط", caller: "المتصل", incoming: "مكالمة واردة...", secure: "جلسة آمنة", threat: "مستوى تهديد الهندسة الاجتماعية", logs: "سجل دفاع TrustNode", finished: "اكتملت المحاكاة // تم حظر الهجوم", warning: "TrustNode: تم اكتشاف محاولة احتيال! أغلِق الخط!", clickStart: "انقر على زر البدء أدناه لبدء محاكاة تدفق الصوت", statusHeader: "حالة طبقات الحماية TrustNode 2.0", consoleBadge: "وحدة الاختبار التفاعلية // TrustNode 2.0", secureLine: "GSM // خط آمن", activeStream: "تدفق صوتي نشط", secRamLabel: "نسخ في الذاكرة الآمنة", liveParsing: "تحليل مباشر...", threatFmt: "مستوى التهديد", layersActiveFmt: "نشطة", badgeVerified: "موثق", badgeAlert: "إنذار", badgeScanning: "فحص", badgeStandby: "استعداد", interceptPrefix: "العبارات المطابقة للتهديد: ", interceptSuffix: ". طبّق PostProc + LegitContextRule: حظر التفاعل الوارد.", logScan3: "[SCAN] الطبقة_3: تطابق معجمي في العبارة: \"{t}\"", logWarn4: "[WARN] الطبقة_4: تم رصد مخطط تلاعب. وزن الشذوذ الدلالي: 0.72.", logScan3b: "[SCAN] الطبقة_3: تم العثور على تطابق: \"{t}\"", logCritical5: "[CRITICAL] الطبقة_5: تم رصد إكراه بالسلطة. أنماط الحوار العدائية تطابقت بنسبة 94%.", logScan6: "[SCAN] الطبقة_6: العبارة \"{t}\" تطابق بصمات القائمة السوداء." },
+    pt: { start: "Iniciar Simulação", reset: "Reiniciar", caller: "Chamador", incoming: "Chamada recebida...", secure: "SESSÃO PROTEGIDA", threat: "Nível de Ameaça de Engenharia Social", logs: "REGISTRO DE DEFESA TrustNode", finished: "SIMULAÇÃO CONCLUÍDA // ATAQUE BLOQUEADO", warning: "TrustNode: FRAUDE DETECTADA! DESLIGUE O TELEFONE!", clickStart: "Clique no botão abaixo para iniciar a simulação de voz", statusHeader: "STATUS DA CAMADA DE DEFESA TrustNode 2.0", consoleBadge: "CONSOLE DE TESTE INTERATIVO // TrustNode 2.0", secureLine: "GSM // LINHA SEGURA", activeStream: "FLUXO DE ÁUDIO ATIVO", secRamLabel: "TRANSCRIÇÃO NA RAM SEGURA", liveParsing: "ANÁLISE AO VIVO...", threatFmt: "NÍVEL DE AMEAÇA", layersActiveFmt: "ATIVAS", badgeVerified: "VERIFICADO", badgeAlert: "ALERTA", badgeScanning: "ESCANEANDO", badgeStandby: "EM ESPERA", interceptPrefix: "Frases de ameaça correspondentes: ", interceptSuffix: ". PostProc + LegitContextRule aplicados: bloquear a interação recebida.", logScan3: "[SCAN] CAMADA_3: Correspondência lexical detectada na frase: \"{t}\"", logWarn4: "[WARN] CAMADA_4: Esquema de manipulação detectado. Peso de anomalia semântica: 0.72.", logScan3b: "[SCAN] CAMADA_3: Correspondência encontrada: \"{t}\"", logCritical5: "[CRITICAL] CAMADA_5: Coerção de autoridade detectada. Padrões hostis correspondem com 94% de probabilidade.", logScan6: "[SCAN] CAMADA_6: A frase \"{t}\" corresponde a assinaturas na lista negra." },
+    fr: { start: "Lancer la simulation", reset: "Réinitialiser", caller: "Appelant", incoming: "Appel entrant...", secure: "SÉANCE SÉCURISÉE", threat: "Niveau de Menace d'Ingénierie Sociale", logs: "JOURNAL DE DÉFENSE TrustNode", finished: "SIMULATION TERMINÉE // ATTAQUE BLOQUÉE", warning: "TrustNode : FRAUDE DÉTECTÉE ! RACCROCHEZ !", clickStart: "Cliquez sur le bouton ci-dessous pour démarrer la simulation", statusHeader: "ÉTAT DES COUCHES TrustNode 2.0", consoleBadge: "CONSOLE DE TEST INTERACTIVE // TrustNode 2.0", secureLine: "GSM // LIGNE SÉCURISÉE", activeStream: "FLUX AUDIO ACTIF", secRamLabel: "TRANSCRIPTION RAM SÉCURISÉE", liveParsing: "ANALYSE EN DIRECT...", threatFmt: "NIVEAU DE MENACE", layersActiveFmt: "ACTIVES", badgeVerified: "VÉRIFIÉ", badgeAlert: "ALERTE", badgeScanning: "ANALYSE", badgeStandby: "EN VEILLE", interceptPrefix: "Phrases de menace correspondantes : ", interceptSuffix: ". PostProc + LegitContextRule appliqués : blocage de l'interaction entrante.", logScan3: "[SCAN] COUCHE_3 : Correspondance lexicale détectée dans la phrase : \"{t}\"", logWarn4: "[WARN] COUCHE_4 : Schéma de manipulation détecté. Poids d'anomalie sémantique : 0.72.", logScan3b: "[SCAN] COUCHE_3 : Correspondance trouvée : \"{t}\"", logCritical5: "[CRITICAL] COUCHE_5 : Coercition d'autorité détectée. Les schémas hostiles correspondent à 94 % de probabilité.", logScan6: "[SCAN] COUCHE_6 : La phrase \"{t}\" correspond à des signatures en liste noire." },
+    de: { start: "Simulation starten", reset: "Zurücksetzen", caller: "Anrufer", incoming: "Eingehender Anruf...", secure: "SITZUNG GESICHERT", threat: "Bedrohungsstufe für Social Engineering", logs: "TrustNode-ABWEHRLOGBUCH", finished: "SIMULATION ABGESCHLOSSEN // ANGRIFF BLOCKIERT", warning: "TrustNode: BETRUGSVERSUCH ERKANNT! AUFLEGEN!", clickStart: "Klicken Sie unten, um die Sprachdatensimulation zu starten", statusHeader: "TrustNode 2.0 SCHUTZSCHICHT-STATUS", consoleBadge: "INTERAKTIVE TESTKONSOLE // TrustNode 2.0", secureLine: "GSM // SICHERE LEITUNG", activeStream: "AKTIVER AUDIO-STREAM", secRamLabel: "TRANSCRIPTION IM SICHEREN RAM", liveParsing: "LIVE-ANALYSE...", threatFmt: "BEDROHUNGSSTUFE", layersActiveFmt: "AKTIV", badgeVerified: "GEPRÜFT", badgeAlert: "ALARM", badgeScanning: "SCANNT", badgeStandby: "BEREITSCHAFT", interceptPrefix: "Übereinstimmende Bedrohungsphrasen: ", interceptSuffix: ". PostProc + LegitContextRule angewandt: eingehende Interaktion blockiert.", logScan3: "[SCAN] EBENE_3: Lexikalische Übereinstimmung erkannt in: \"{t}\"", logWarn4: "[WARN] EBENE_4: Manipulationsschema erkannt. Semantisches Anomaliegewicht: 0.72.", logScan3b: "[SCAN] EBENE_3: Übereinstimmung gefunden: \"{t}\"", logCritical5: "[CRITICAL] EBENE_5: Autoritätsdruck erkannt. Feindliche Dialogmuster mit 94 % Wahrscheinlichkeit.", logScan6: "[SCAN] EBENE_6: Phrase \"{t}\" stimmt mit gelisteten Signaturen überein." },
+    ja: { start: "シミュレーション開始", reset: "リセット", caller: "発信者", incoming: "着信中...", secure: "セッション保護中", threat: "ソーシャルエンジニアリング脅威レベル", logs: "TrustNode防御ログ", finished: "シミュレーション完了 // 攻撃ブロック", warning: "TrustNode: 詐欺攻撃を検知！すぐに切断してください！", clickStart: "下のボタンをクリックして音声ストリームを開始してください", statusHeader: "TrustNode 2.0 防御レイヤーステータス", consoleBadge: "インタラクティブテストコンソール // TrustNode 2.0", secureLine: "GSM // セキュア回線", activeStream: "アクティブ音声ストリーム", secRamLabel: "セキュアRAM転写", liveParsing: "ライブ解析中...", threatFmt: "脅威レベル", layersActiveFmt: "アクティブ", badgeVerified: "検証済み", badgeAlert: "警告", badgeScanning: "スキャン中", badgeStandby: "待機中", interceptPrefix: "一致する脅威フレーズ: ", interceptSuffix: "。PostProc + LegitContextRule を適用：着信インタラクションをブロック。", logScan3: "[SCAN] レイヤー_3: 語彙一致フレーズを検出: \"{t}\"", logWarn4: "[WARN] レイヤー_4: 操作スキームを検出。意味的異常ウェイト: 0.72。", logScan3b: "[SCAN] レイヤー_3: 一致を発見: \"{t}\"", logCritical5: "[CRITICAL] レイヤー_5: 権威による強制を検出。敵対的ダイアログパターンが 94% の確率で一致。", logScan6: "[SCAN] レイヤー_6: フレーズ \"{t}\" がブラックリスト署名と一致。" }
   };
   const sui = SIM_UI[language] || SIM_UI.en;
   const btnStart = sui.start;
@@ -850,8 +1018,16 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
     }
   }, [currentSentenceIdx, visibleSentence]);
 
+  useEffect(() => {
+    return () => {
+      if (sentenceTimeoutRef.current) clearTimeout(sentenceTimeoutRef.current);
+      if (rafTypingRef.current) cancelAnimationFrame(rafTypingRef.current);
+    };
+  }, []);
+
   const resetSimulation = () => {
-    if (sentenceIntervalRef.current) clearInterval(sentenceIntervalRef.current);
+    if (sentenceTimeoutRef.current) clearTimeout(sentenceTimeoutRef.current);
+    if (rafTypingRef.current) cancelAnimationFrame(rafTypingRef.current);
     setIsPlaying(false);
     setCurrentSentenceIdx(-1);
     setThreatLevel(5);
@@ -865,20 +1041,21 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
 
   const startSimulation = () => {
     if (isPlaying) return;
+    if (sentenceTimeoutRef.current) clearTimeout(sentenceTimeoutRef.current);
+    if (rafTypingRef.current) cancelAnimationFrame(rafTypingRef.current);
     setIsPlaying(true);
     setCurrentSentenceIdx(0);
     setThreatLevel(currentScenario.threatMilestones[0]);
     setActiveLayersCount(2); // Layer 1 and 2 light up early
     setVisibleSentence("");
 
-    // Simulate typing text for the first sentence
-    animateSentenceTyping(currentScenario.speech[0]);
+    const defaultLogs = CONSOLE_LOGS_BY_LANG[language]?.scanning || CONSOLE_LOGS_BY_LANG.en.scanning;
+    setConsoleLogs([...defaultLogs]);
 
     let step = 0;
-    sentenceIntervalRef.current = setInterval(() => {
-      step++;
+
+    const playStep = () => {
       if (step >= currentScenario.speech.length) {
-        clearInterval(sentenceIntervalRef.current!);
         setIsPlaying(false);
         // Complete remaining logs and layers
         setActiveLayersCount(7);
@@ -889,58 +1066,110 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
 
       setCurrentSentenceIdx(step);
       setThreatLevel(currentScenario.threatMilestones[step]);
-      
+
       // Gradually activate defense layers
       if (step === 1) setActiveLayersCount(3);
       if (step === 2) setActiveLayersCount(4);
       if (step === 3) setActiveLayersCount(5);
       if (step === 4) setActiveLayersCount(7);
 
-      // Add relevant high-tech logs dynamically based on milestones
-      const currentSentence = currentScenario.speech[step];
-      animateSentenceTyping(currentSentence);
-
       // Injected log entries
       if (step === 1) {
         setConsoleLogs(prev => [
           ...prev,
-          `[SCAN] LAYER_3: Lexical match detected phrase: "${currentScenario.triggers[0] || 'fraud pattern'}"`,
+          `${sui.logScan3.replace("{t}", currentScenario.triggers[0] || "fraud pattern")}`,
         ]);
       }
       if (step === 2) {
         setConsoleLogs(prev => [
           ...prev,
-          `[WARN] LAYER_4: Manipulation scheme detected. Semantic anomaly weight: 0.72.`,
-          `[SCAN] LAYER_3: Match found: "${currentScenario.triggers[1] || 'unauthorized'}"`
+          `${sui.logWarn4}`,
+          `${sui.logScan3b.replace("{t}", currentScenario.triggers[1] || "unauthorized")}`
         ]);
       }
       if (step === 3) {
         setConsoleLogs(prev => [
           ...prev,
-          `[CRITICAL] LAYER_5: Authority coercion detected. Hostile dialog patterns matched with 94% probability.`,
-          `[SCAN] LAYER_6: Phrase "${currentScenario.triggers[2] || 'verification code'}" matches blacklisted signatures.`
+          `${sui.logCritical5}`,
+          `${sui.logScan6.replace("{t}", currentScenario.triggers[2] || "verification code")}`
         ]);
       }
-    }, 4500);
+
+      // Type the sentence out completely, then advance to the next one
+      const currentSentence = currentScenario.speech[step];
+      animateSentenceTyping(currentSentence, () => {
+        step++;
+        sentenceTimeoutRef.current = setTimeout(playStep, 900);
+      });
+    };
+
+    playStep();
   };
 
-  const animateSentenceTyping = (text: string) => {
-    setVisibleSentence("");
-    let charIdx = 0;
-    const timer = setInterval(() => {
-      setVisibleSentence(prev => prev + text.charAt(charIdx));
-      charIdx++;
-      if (charIdx >= text.length) {
-        clearInterval(timer);
+  const splitGraphemes = (text: string): string[] => {
+    if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
+      try {
+        const segmenter = new Intl.Segmenter(language, { granularity: "grapheme" });
+        return Array.from(segmenter.segment(text), ({ segment }) => segment);
+      } catch {
+        // fall through to combining-mark-aware splitting
       }
-    }, 20);
+    }
+    // Fallback: split by code point, but keep combining marks, nukta, virama,
+    // and variation selectors glued to their base character so scripts like
+    // Hindi (devanagari matras) and Arabic render complete glyphs at every tick.
+    const chars = Array.from(text);
+    const out: string[] = [];
+    for (const ch of chars) {
+      const isCombining =
+        COMBINING_MARKS_RE.test(ch) ||
+        ch === "\u200D"; // zero width joiner
+      if (isCombining && out.length > 0) {
+        out[out.length - 1] += ch;
+      } else {
+        out.push(ch);
+      }
+    }
+    return out;
   };
 
-  // Helper to color triggers in transcription
+  const animateSentenceTyping = (text: string, onDone?: () => void) => {
+    // Ensure only one typing animation is active at any moment
+    if (rafTypingRef.current) cancelAnimationFrame(rafTypingRef.current);
+    setVisibleSentence("");
+    if (!text) {
+      onDone?.();
+      return;
+    }
+    const graphemes = splitGraphemes(text);
+    const total = graphemes.length;
+    const msPerGrapheme = 20;
+    const start = performance.now();
+
+    const tick = (now: number) => {
+      const n = Math.min(total, Math.floor((now - start) / msPerGrapheme));
+      setVisibleSentence(graphemes.slice(0, n).join(""));
+      if (n < total) {
+        rafTypingRef.current = requestAnimationFrame(tick);
+      } else {
+        rafTypingRef.current = null;
+        onDone?.();
+      }
+    };
+
+    rafTypingRef.current = requestAnimationFrame(tick);
+  };
+
+  // Helper to color triggers in transcription (XSS-safe: text is HTML-escaped, triggers are regex-escaped)
+  const escapeHtml = (value: string) =>
+    value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
   const highlightTriggers = (text: string) => {
-    let highlighted = text;
+    const safeText = escapeHtml(text);
+    let highlighted = safeText;
     currentScenario.triggers.forEach(trigger => {
-      const regex = new RegExp(`(${trigger})`, "gi");
+      const regex = new RegExp(`(${escapeRegex(trigger)})`, "gi");
       highlighted = highlighted.replace(regex, `<span class="text-[#EF4444] font-bold border-b border-[#EF4444]/40">$1</span>`);
     });
     return <span dangerouslySetInnerHTML={{ __html: highlighted }} />;
@@ -948,25 +1177,20 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
 
   return (
     <section 
-      className="relative w-full py-16 sm:py-20 px-4 border-t border-[#1F2937]/30 bg-[#0A0A0B] overflow-hidden" 
+      className="relative w-full py-16 sm:py-20 px-4 bg-[#0A0A0B] overflow-hidden" 
       id="live-simulator"
     >
       {/* Visual tech matrix background decoration */}
-      <div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-[#2E7DFF]/[0.015] to-transparent pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,rgba(46,125,255,0.03)_0%,rgba(0,0,0,0)_70%)] pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-[#3B82F6]/[0.015] to-transparent pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.03)_0%,rgba(0,0,0,0)_70%)] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto relative z-10">
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#111827] border border-[#2E7DFF]/20 mb-6">
-            <Radio className="w-3.5 h-3.5 text-[#2E7DFF] animate-pulse" />
-            <span className="font-mono text-[10px] sm:text-xs font-semibold tracking-wider text-[#2E7DFF] uppercase">
-              INTERACTIVE TEST CONSOLE // PHANTOM 2.0
-            </span>
-          </div>
+          <SectionBadge variant="brackets" label={sui.consoleBadge} className="mb-6" />
           
-          <h2 className="font-display font-bold text-3xl sm:text-5xl text-[#F5F5F0] tracking-tight mb-6">
+          <h2 className="font-display font-medium text-3xl sm:text-5xl text-[#F5F5F0] tracking-tighter mb-6">
             {title}
           </h2>
           
@@ -986,12 +1210,12 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
                 }
               }}
               disabled={isPlaying}
-              className={`px-4 py-2.5 rounded-xl font-sans text-xs sm:text-sm font-semibold border transition-all duration-300 flex items-center gap-2 ${
+              className={`px-4 py-2.5 rounded-xl font-sans text-xs sm:text-sm font-semibold border transition duration-300 flex items-center gap-2 ${
                 isPlaying ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
               } ${
                 activeScenarioIdx === idx
-                  ? "bg-[#2E7DFF]/15 border-[#2E7DFF] text-[#2E7DFF] shadow-[0_0_15px_rgba(46,125,255,0.15)]"
-                  : "bg-[#0B0C0E]/60 border-white/[0.04] text-gray-400 hover:text-[#F5F5F0] hover:bg-white/[0.02]"
+                  ? "bg-[#3B82F6]/15 border-[#3B82F6] text-[#3B82F6] shadow-glow-sm"
+                  : "bg-[#0A0A0B]/60 border-white/[0.04] text-gray-400 hover:text-[#F5F5F0] hover:bg-white/[0.02]"
               }`}
             >
               <Cpu className="w-3.5 h-3.5" />
@@ -1004,7 +1228,7 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-5xl mx-auto items-stretch">
           
           {/* PHONE CALL SIMULATOR COLUMN (Col 5) */}
-          <div className="lg:col-span-5 flex flex-col justify-between p-6 sm:p-8 rounded-3xl bg-[#090A0E] border border-white/[0.04] relative overflow-hidden shadow-2xl min-h-[500px]">
+          <ScanCard accent="59,130,246" cardClassName="lg:col-span-5 shadow-2xl min-h-[500px]" className="flex-col justify-between" padding="p-6 sm:p-8">
             
             {/* Flashing Intrusion Danger Ambient Cover */}
             <AnimatePresence>
@@ -1014,16 +1238,16 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
                   animate={{ opacity: [0, 0.4, 0.1, 0.4, 0] }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="absolute inset-0 bg-[#EF4444]/15 pointer-events-none z-15"
+                  className="absolute inset-0 bg-[#EF4444]/15 pointer-events-none z-[15]"
                 />
               )}
             </AnimatePresence>
 
             {/* Simulated Phone UI Header */}
             <div className="flex items-center justify-between z-10">
-              <div className="flex items-center gap-1.5 bg-white/[0.02] border border-white/[0.05] px-2.5 py-1 rounded-md font-mono text-[9px] text-[#2E7DFF]">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#2E7DFF] animate-pulse" />
-                <span>GSM // SECURE LINE</span>
+              <div className="flex items-center gap-1.5 bg-white/[0.02] border border-white/[0.05] px-2.5 py-1 rounded-xl font-mono text-[11px] text-[#3B82F6]">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-pulse" />
+                <span>{sui.secureLine}</span>
               </div>
               <span className="font-mono text-[10px] text-gray-500">
                 {isPlaying ? "00:24" : "00:00"}
@@ -1032,7 +1256,7 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
 
             {/* Caller Active Badge / Interactive Headpiece */}
             <div className="flex flex-col items-center justify-center my-8 text-center z-10 relative">
-              <div className="relative w-20 h-20 rounded-full bg-[#111319] border border-white/[0.05] flex items-center justify-center mb-4">
+              <div className="relative w-20 h-20 rounded-full bg-[#12141A] border border-white/[0.05] flex items-center justify-center mb-4">
                 {/* Active Caller waves */}
                 {isPlaying && (
                   <>
@@ -1040,19 +1264,19 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
                     <div className="absolute -inset-2 rounded-full border border-[#EF4444]/20 animate-ping" style={{ animationDuration: "3.5s" }} />
                   </>
                 )}
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${threatLevel >= 75 ? "bg-[#EF4444]/10 border border-[#EF4444]/30" : "bg-[#2E7DFF]/10 border border-[#2E7DFF]/20"}`}>
-                  <Phone className={`w-6 h-6 ${threatLevel >= 75 ? "text-[#EF4444]" : "text-[#2E7DFF]"} ${isPlaying ? "animate-pulse" : ""}`} />
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${threatLevel >= 75 ? "bg-[#EF4444]/10 border border-[#EF4444]/30" : "bg-[#3B82F6]/10 border border-[#3B82F6]/20"}`}>
+                  <Phone className={`w-6 h-6 ${threatLevel >= 75 ? "text-[#EF4444]" : "text-[#3B82F6]"} ${isPlaying ? "animate-pulse" : ""}`} />
                 </div>
               </div>
-              <span className="font-mono text-[9px] uppercase text-[#2E7DFF] tracking-wider mb-0.5">{callerLabel}</span>
-              <h4 className="font-display font-bold text-base text-[#F5F5F0]">{currentScenario.caller}</h4>
-              <p className="font-mono text-[10px] text-gray-500 mt-1">{isPlaying ? "ACTIVE AUDIO WAVE STREAM" : incomingLabel}</p>
+              <span className="font-mono text-[11px] uppercase text-[#3B82F6] tracking-wider mb-0.5">{callerLabel}</span>
+              <h4 className="font-display font-medium text-base text-[#F5F5F0]">{currentScenario.caller}</h4>
+              <p className="font-mono text-[10px] text-gray-500 mt-1">{isPlaying ? sui.activeStream : incomingLabel}</p>
             </div>
 
             {/* LIVE DIALOG TRANSCRIPTION CANVAS */}
             <div 
               ref={transcriptionContainerRef}
-              className="flex-1 min-h-[160px] max-h-[220px] overflow-y-auto p-4 rounded-2xl bg-[#030406] border border-white/[0.02] flex flex-col gap-3 relative scrollbar-thin z-10"
+              className="flex-1 min-h-[160px] max-h-[220px] overflow-y-auto p-4 rounded-xl bg-[#0A0A0B] border border-white/[0.02] flex flex-col gap-3 relative scrollbar-thin z-10"
             >
               {currentSentenceIdx === -1 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
@@ -1065,8 +1289,8 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
                 <div className="space-y-4">
                   {currentScenario.speech.slice(0, currentSentenceIdx).map((sent, i) => (
                     <div key={i} className="text-left bg-white/[0.01] p-3 rounded-xl border border-white/[0.02]">
-                      <p className="font-mono text-[9px] text-gray-500 mb-1">
-                        SENC-{String(i+1).padStart(2, "0")} // SECURE_RAM_TRANSCRIPTION
+                      <p className="font-mono text-[11px] text-gray-500 mb-1">
+                        SENC-{String(i+1).padStart(2, "0")} // {sui.secRamLabel}
                       </p>
                       <p className="font-sans text-xs text-gray-300 leading-relaxed">
                         {highlightTriggers(sent)}
@@ -1082,9 +1306,9 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
                       className="text-left bg-[#110D12] p-3 rounded-xl border border-[#EF4444]/15"
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-mono text-[9px] text-[#EF4444] uppercase tracking-wider flex items-center gap-1">
+                        <span className="font-mono text-[11px] text-[#EF4444] uppercase tracking-wider flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] animate-ping" />
-                          LIVE PARSING...
+                          {sui.liveParsing}
                         </span>
                       </div>
                       <p className="font-sans text-xs text-[#F5F5F0] leading-relaxed">
@@ -1097,7 +1321,7 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
               )}
             </div>
 
-            {/* KIRA Real-time Threat Overlay Box */}
+            {/* Assistant Real-time Threat Overlay Box */}
             <AnimatePresence>
               {threatLevel >= 75 && (
                 <motion.div 
@@ -1112,7 +1336,7 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
                       {warningBubbleLabel}
                     </p>
                     <p className="font-sans text-[11px] text-gray-300 leading-normal mt-0.5">
-                      {(language === "ru" ? "Фраз обнаружено: " : "Threat triggers matching: ") + currentScenario.triggers.slice(0, currentSentenceIdx + 1).length + (language === "ru" ? ". Запущен процесс экстренного глушения семантики." : ". Active intercept loop deployed.")}
+                      {sui.interceptPrefix + currentScenario.triggers.slice(0, currentSentenceIdx + 1).length + sui.interceptSuffix}
                     </p>
                   </div>
                 </motion.div>
@@ -1120,14 +1344,14 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
             </AnimatePresence>
 
             {/* Simulation Controls Footer */}
-            <div className="grid grid-cols-2 gap-3 mt-6 z-10">
+            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3 mt-6 z-10">
               <button
                 onClick={startSimulation}
                 disabled={isPlaying || currentSentenceIdx !== -1}
-                className={`py-3 px-4 rounded-xl font-sans text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
+                className={`py-3 px-4 rounded-full font-sans text-xs font-bold transition duration-300 flex items-center justify-center gap-2 ${
                   isPlaying || currentSentenceIdx !== -1
                     ? "bg-gray-800 text-gray-500 border border-transparent cursor-not-allowed"
-                    : "bg-[#2E7DFF] text-[#F5F5F0] hover:bg-[#2E7DFF]/90 cursor-pointer shadow-[0_0_15px_rgba(46,125,255,0.2)] hover:shadow-[0_0_20px_rgba(46,125,255,0.4)]"
+                    : "bg-[#3B82F6] text-[#F5F5F0] hover:bg-[#3B82F6]/90 cursor-pointer shadow-glow-md hover:shadow-glow-lg"
                 }`}
               >
                 <Play className="w-3.5 h-3.5" />
@@ -1135,36 +1359,36 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
               </button>
               <button
                 onClick={resetSimulation}
-                className="py-3 px-4 rounded-xl font-sans text-xs font-bold bg-[#111216] border border-white/[0.05] text-gray-400 hover:text-white hover:bg-white/[0.02] cursor-pointer transition-colors flex items-center justify-center gap-2"
+                className="py-3 px-4 rounded-full font-sans text-xs font-bold bg-[#12141A] border border-white/[0.05] text-gray-400 hover:text-white hover:bg-white/[0.02] cursor-pointer transition-colors flex items-center justify-center gap-2"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 {btnReset}
               </button>
             </div>
 
-          </div>
+          </ScanCard>
 
           {/* NEURAL HUD AND LOGS COLUMN (Col 7) */}
           <div className="lg:col-span-7 flex flex-col justify-between gap-6">
             
             {/* THREAT CLIMBER HUD */}
-            <div className="p-6 rounded-3xl bg-[#090A0E] border border-white/[0.04]">
+            <ScanCard accent="59,130,246" padding="p-6" scanDisabled>
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-mono text-xs font-bold text-gray-400 uppercase tracking-wider">
                   {threatMeterLabel}
                 </h4>
-                <span className={`font-mono text-xs font-black ${threatLevel >= 75 ? "text-[#EF4444]" : threatLevel >= 40 ? "text-amber-500" : "text-[#2E7DFF]"}`}>
-                  {threatLevel}% THREAT_LEVEL
+                <span className={`font-mono text-xs font-black ${threatLevel >= 75 ? "text-[#EF4444]" : threatLevel >= 40 ? "text-amber-500" : "text-[#3B82F6]"}`}>
+                  {threatLevel}% {sui.threatFmt}
                 </span>
               </div>
               
               {/* Dynamic Progress Bar */}
-              <div className="w-full h-3.5 bg-[#030406] rounded-full overflow-hidden border border-white/[0.02] p-[2px]">
+              <div className="w-full h-3.5 bg-[#0A0A0B] rounded-full overflow-hidden border border-white/[0.02] p-[2px]">
                 <motion.div 
-                  className={`w-full h-full rounded-full origin-left ${threatLevel >= 75 ? "bg-[#EF4444]" : threatLevel >= 40 ? "bg-amber-500" : "bg-[#2E7DFF]"} shadow-[0_0_12px_currentColor]`}
+                  className={`w-full h-full rounded-full origin-left ${threatLevel >= 75 ? "bg-[#EF4444]" : threatLevel >= 40 ? "bg-amber-500" : "bg-[#3B82F6]"} shadow-[0_0_12px_currentColor]`}
                   initial={{ scaleX: 0.05 }}
                   animate={{ scaleX: threatLevel / 100 }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
                 />
               </div>
 
@@ -1173,25 +1397,25 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
                 <motion.div 
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="mt-4 p-3 rounded-xl bg-[#101B2B] border border-[#2E7DFF]/30 flex items-center justify-center gap-2.5"
+                  className="mt-4 p-3 rounded-xl bg-[#101B2B] border border-[#3B82F6]/30 flex items-center justify-center gap-2.5"
                 >
-                  <ShieldCheck className="w-4 h-4 text-[#2E7DFF] animate-pulse" />
-                  <span className="font-mono text-[10px] font-black tracking-wider text-[#2E7DFF] uppercase">
+                  <ShieldCheck className="w-4 h-4 text-[#3B82F6] animate-pulse" />
+                  <span className="font-mono text-[10px] font-black tracking-wider text-[#3B82F6] uppercase">
                     {simulationFinishedLabel}
                   </span>
                 </motion.div>
               )}
-            </div>
+            </ScanCard>
 
             {/* 7 LAYER PIPELINE STATUS TRACKER */}
-            <div className="p-6 rounded-3xl bg-[#090A0E] border border-white/[0.04] flex-1 flex flex-col justify-between">
+            <ScanCard accent="59,130,246" cardClassName="flex-1" padding="p-6" scanDisabled>
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-mono text-xs font-bold text-gray-400 uppercase tracking-wider">
                     {sui.statusHeader}
                   </h4>
                   <span className="font-mono text-[10px] text-gray-500">
-                    {activeLayersCount}/7 ACTIVE
+                    {activeLayersCount}/7 {sui.layersActiveFmt}
                   </span>
                 </div>
 
@@ -1204,13 +1428,13 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
                     return (
                       <div 
                         key={index}
-                        className={`p-2.5 sm:p-3 rounded-xl border transition-all duration-300 flex items-center justify-between ${
+                        className={`p-2.5 sm:p-3 rounded-xl border transition duration-300 flex items-center justify-between ${
                           isActive 
                             ? isThreatLayer && threatLevel >= 75
-                              ? "bg-[#2E1010]/50 border-[#EF4444]/40 shadow-[0_0_8px_rgba(239,68,68,0.15)]"
-                              : "bg-[#0B1527]/60 border-[#2E7DFF]/35" 
+                              ? "bg-[#2E1010]/50 border-[#EF4444]/40 shadow-glow-danger"
+                              : "bg-[#0B1527]/60 border-[#3B82F6]/35" 
                             : isScanning
-                              ? "bg-white/[0.01] border-[#2E7DFF]/30 animate-pulse"
+                              ? "bg-white/[0.01] border-[#3B82F6]/30 animate-pulse"
                               : "bg-transparent border-white/[0.02]"
                         }`}
                       >
@@ -1219,7 +1443,7 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
                             isActive
                               ? isThreatLayer && threatLevel >= 75
                                 ? "bg-[#EF4444]"
-                                : "bg-[#2E7DFF]"
+                                : "bg-[#3B82F6]"
                               : isScanning
                                 ? "bg-amber-400 animate-ping"
                                 : "bg-gray-800"
@@ -1235,40 +1459,40 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
                           </span>
                         </div>
 
-                        <span className={`font-mono text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded ${
+                        <span className={`font-mono text-[11px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded ${
                           isActive
                             ? isThreatLayer && threatLevel >= 75
                               ? "bg-[#EF4444]/15 text-[#EF4444]"
-                              : "bg-[#2E7DFF]/15 text-[#2E7DFF]"
+                              : "bg-[#3B82F6]/15 text-[#3B82F6]"
                             : isScanning
                               ? "bg-amber-400/10 text-amber-400"
                               : "bg-transparent text-gray-700"
                         }`}>
                           {isActive 
-                            ? isThreatLayer && threatLevel >= 75 ? "ALERT" : "VERIFIED" 
-                            : isScanning ? "SCANNING" : "STANDBY"}
+                            ? isThreatLayer && threatLevel >= 75 ? sui.badgeAlert : sui.badgeVerified 
+                            : isScanning ? sui.badgeScanning : sui.badgeStandby}
                         </span>
                       </div>
                     );
                   })}
                 </div>
               </div>
-            </div>
+            </ScanCard>
 
             {/* REAL-TIME ENCRYPTED TERMINAL CONSOLE */}
-            <div className="p-5 rounded-3xl bg-[#030406] border border-white/[0.04] h-48 flex flex-col justify-between">
+            <ScanCard accent="59,130,246" cardClassName="h-48" className="flex-col justify-between" padding="p-5" scanDisabled>
               <div className="flex items-center gap-2 border-b border-white/[0.04] pb-2 mb-2">
                 <Terminal className="w-4 h-4 text-gray-500" />
-                <span className="font-mono text-[9px] text-gray-400 uppercase tracking-widest font-semibold">
+                <span className="font-mono text-[15px] text-gray-200 uppercase tracking-widest font-bold">
                   {logsLabel}
                 </span>
-                <span className="ml-auto w-2 h-2 rounded-full bg-[#2E7DFF] animate-ping" />
+                <span className="ml-auto w-2 h-2 rounded-full bg-[#3B82F6] animate-ping" />
               </div>
 
-              <div className="flex-1 overflow-y-auto font-mono text-[10px] text-gray-400 text-left space-y-1.5 scrollbar-thin">
+              <div className="flex-1 overflow-y-auto font-mono text-[12px] text-gray-400 text-left space-y-1.5 scrollbar-thin">
                 {consoleLogs.map((log, index) => {
                   let colorClass = "text-gray-400";
-                  if (log.startsWith("[OK]")) colorClass = "text-[#2E7DFF]";
+                  if (log.startsWith("[OK]")) colorClass = "text-[#3B82F6]";
                   else if (log.startsWith("[SUCCESS]") || log.startsWith("[DOME")) colorClass = "text-[#10B981] font-bold";
                   else if (log.startsWith("[WARN]")) colorClass = "text-amber-500";
                   else if (log.startsWith("[CRITICAL]") || log.startsWith("[ALERT]") || log.startsWith("[BLOCKED]")) colorClass = "text-[#EF4444] font-black";
@@ -1285,7 +1509,7 @@ export const LiveSimulatorSection = React.memo(function LiveSimulatorSection() {
                   );
                 })}
               </div>
-            </div>
+            </ScanCard>
 
           </div>
 

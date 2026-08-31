@@ -140,13 +140,100 @@ export const SMALL_BODIES: SmallBodyDef[] = [
   }
 ];
 
+const SMALL_BODY_TARGETS = [
+  { query: "1", fallbackId: "ceres", nameEn: "1 Ceres", type: "ASTEROID" as const },
+  { query: "4", fallbackId: "vesta", nameEn: "4 Vesta", type: "ASTEROID" as const },
+  { query: "2", fallbackId: "pallas", nameEn: "2 Pallas", type: "ASTEROID" as const },
+  { query: "1P", fallbackId: "halley", nameEn: "1P/Halley", type: "COMET" as const },
+  { query: "C/2020 F3", fallbackId: "neowise", nameEn: "C/2020 F3 (NEOWISE)", type: "COMET" as const },
+  { query: "433", fallbackId: "eros", nameEn: "433 Eros", type: "ASTEROID" as const },
+  { query: "99942", fallbackId: "apophis", nameEn: "99942 Apophis", type: "ASTEROID" as const },
+  { query: "2P", fallbackId: "encke", nameEn: "2P/Encke", type: "COMET" as const },
+  { query: "3", fallbackId: "juno", nameEn: "3 Juno", type: "ASTEROID" as const },
+  { query: "16", fallbackId: "psyche", nameEn: "16 Psyche", type: "ASTEROID" as const },
+];
+
 /**
- * Returns the small body definitions for comets/asteroids.
- * Uses static SMALL_BODIES data to avoid CORS issues with NASA JPL API
- * when running on GitHub Pages or other restricted origins.
+ * Fetches orbital elements from NASA JPL Small-Body Database API.
+ * Uses rate-controlled fetching (max 4 concurrent) and falls back to static SMALL_BODIES on failure.
  */
 export async function fetchSmallBodyElements(): Promise<SmallBodyDef[]> {
-  return SMALL_BODIES;
+  const results: SmallBodyDef[] = [];
+  const concurrency = 4;
+
+  for (let i = 0; i < SMALL_BODY_TARGETS.length; i += concurrency) {
+    const batch = SMALL_BODY_TARGETS.slice(i, i + concurrency);
+    const batchPromises = batch.map(async (target) => {
+      const fallback = SMALL_BODIES.find((b) => b.id === target.fallbackId) || SMALL_BODIES[0];
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4500);
+        const res = await fetch(
+          `https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=${encodeURIComponent(target.query)}&discovery=false`,
+          { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+
+        if (!res.ok) return fallback;
+        const data = await res.json();
+        const elements = data?.orbit?.elements;
+        if (!Array.isArray(elements)) return fallback;
+
+        const getVal = (name: string): number => {
+          const el = elements.find((x: any) => x.name && x.name.toLowerCase() === name.toLowerCase());
+          return el && el.value !== undefined ? parseFloat(el.value) : NaN;
+        };
+
+        const a = getVal("a");
+        const e = getVal("e");
+        const iDeg = getVal("i");
+        const OmegaDeg = getVal("om");
+        const omegaDeg = getVal("w");
+        let M0Deg = getVal("ma");
+        if (isNaN(M0Deg)) M0Deg = fallback.M0Deg;
+
+        let periodYears = getVal("per_y");
+        if (isNaN(periodYears)) {
+          const per = getVal("per");
+          if (!isNaN(per)) {
+            // Check if period is in days
+            periodYears = per > 100 ? per / 365.25 : per;
+          } else {
+            const n = getVal("n");
+            if (!isNaN(n) && n > 0) {
+              periodYears = 360 / (n * 365.25);
+            } else if (!isNaN(a)) {
+              periodYears = Math.pow(a, 1.5);
+            }
+          }
+        }
+
+        if (isNaN(a) || isNaN(e) || isNaN(iDeg) || isNaN(OmegaDeg) || isNaN(omegaDeg) || isNaN(periodYears)) {
+          return fallback;
+        }
+
+        return {
+          id: target.fallbackId,
+          nameEn: data.object?.fullname?.trim() || target.nameEn,
+          type: target.type,
+          a,
+          e,
+          iDeg,
+          OmegaDeg,
+          omegaDeg,
+          M0Deg,
+          periodYears
+        };
+      } catch {
+        return fallback;
+      }
+    });
+
+    const batchResults = await Promise.all(batchPromises);
+    results.push(...batchResults);
+  }
+
+  return results;
 }
 
 const DEG2RAD = Math.PI / 180;
@@ -226,36 +313,58 @@ export interface LiveSatellite {
   id: string;
   name: string;
   satrec: satellite.SatRec;
+  line1: string;
+  line2: string;
   trail: { x: number; y: number }[];
 }
 
 /**
- * Parses TLE text from CelesTrak into usable SatRec objects
+ * Parses TLE text from CelesTrak into usable SatRec objects (the full catalog:
+ * every valid TLE line-pair, so the whole active constellation is available).
+ * Parsing the full ~12k-satellite catalog is expensive, so the work is chunked
+ * by TIME BUDGET, not by fixed item counts: each synchronous block runs until
+ * ~8ms have elapsed, then yields — so a single batch
+ * ever blocks the main thread for a fraction of a frame regardless of machine
+ * speed (deep-space SGP4 setups are 2-5ms each, so a fixed 300-item batch was
+ * up to ~1.5s of frozen frames masked as "chunked").
  */
-export function parseTLEs(text: string): LiveSatellite[] {
+export async function parseTLEs(text: string): Promise<LiveSatellite[]> {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const sats: LiveSatellite[] = [];
+  // ~8ms synchronous per block, then yield to the event loop. The parse runs on
+  // the main thread (the worker re-parses the same TLEs itself), so it must
+  // never hold the frame for more than a few ms — this is what keeps the
+  // first-seconds flight smooth while 12k satrecs build in the background.
+  const BUDGET_MS = 8;
+  const wait = () => new Promise<void>((r) => setTimeout(r, 0));
 
-  for (let i = 0; i < lines.length - 2; i++) {
-    const line1 = lines[i + 1];
-    const line2 = lines[i + 2];
-    if (line1.startsWith("1 ") && line2.startsWith("2 ")) {
-      const rawName = lines[i];
-      try {
-        const satrec = satellite.twoline2satrec(line1, line2);
-        // Keep up to 200 brightest/visual satellites
-        sats.push({
-          id: `sat_${sats.length}`,
-          name: rawName.replace(/\[.*\]/, "").trim(),
-          satrec,
-          trail: []
-        });
-        if (sats.length >= 200) break;
-      } catch (_e) {
-        // Skip invalid TLE
+  let i = 0;
+  while (i < lines.length - 2) {
+    const blockStart = performance.now();
+    const blockEnd = blockStart + BUDGET_MS;
+    while (i < lines.length - 2 && performance.now() < blockEnd) {
+      const line1 = lines[i + 1];
+      const line2 = lines[i + 2];
+      if (line1.startsWith("1 ") && line2.startsWith("2 ")) {
+        const rawName = lines[i];
+        try {
+          const satrec = satellite.twoline2satrec(line1, line2);
+          sats.push({
+            id: `sat_${sats.length}`,
+            name: rawName.replace(/\[.*\]/, "").trim(),
+            satrec,
+            line1,
+            line2,
+            trail: []
+          });
+        } catch {
+          // Skip invalid TLE
+        }
+        i += 2;
       }
-      i += 2;
+      i += 1;
     }
+    await wait();
   }
   return sats;
 }
@@ -287,7 +396,7 @@ export function calculateSatLookAngles(
       azimuth: look.azimuth * RAD2DEG,
       altitude: look.elevation * RAD2DEG
     };
-  } catch (_e) {
+  } catch {
     return null;
   }
 }
@@ -308,13 +417,14 @@ export function getLiveZenithConstellationStatus(now: Date = new Date(), lang: s
         maxAlt = horiz.altitude;
         bestConstellationCode = star.constellationCode;
       }
-    } catch (_e) {
+    } catch {
       // ignore
     }
   }
 
-  const constellationName = lang === "ru" ? getRussianName(bestConstellationCode) : bestConstellationCode;
-  const timeStr = new Intl.DateTimeFormat(lang === "ru" ? "ru-RU" : "en-GB", {
+  const isRu = lang === "ru";
+  const constellationName = isRu ? getRussianName(bestConstellationCode) : bestConstellationCode;
+  const timeStr = new Intl.DateTimeFormat(isRu ? "ru-RU" : "en-GB", {
     timeZone: "Europe/Moscow",
     hour: "2-digit",
     minute: "2-digit",
@@ -336,5 +446,5 @@ export function getLiveZenithConstellationStatus(now: Date = new Date(), lang: s
   };
   const prefix = prefixMap[lang] || prefixMap.en;
 
-  return `${prefix}: ${constellationName} // ${timeStr} MSK`;
+  return `${prefix}: ${constellationName} // ${timeStr} ${isRu ? "MSK" : "GMT+3"}`;
 }

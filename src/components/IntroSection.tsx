@@ -1,23 +1,26 @@
 import React from "react";
-import { Shield, Eye, HelpCircle, ArrowRight } from "lucide-react";
+import { HelpCircle, Shield, Eye } from "lucide-react";
 import { useTranslation } from "../i18n/LanguageContext";
+import { useEcoMode } from "../context/EcoModeContext";
 import { motion } from "motion/react";
+import SectionBadge from "./SectionBadge";
+import ScanCard from "./ScanCard";
 
 const DICT: Record<string, { badge: string; title: string; subtitle: string; steps: Array<{ tag: string; title: string; desc: string }> }> = {
   ru: {
     badge: "ПРОСТОЕ ОБЪЯСНЕНИЕ",
     title: "Всё просто: о TrustNode за 1 минуту",
-    subtitle: "Простыми словами о том, как работает инновационная защита нового поколения",
+    subtitle: "Простыми словами о том, как TrustNode распознаёт мошеннические звонки прямо на устройстве",
     steps: [
       {
         tag: "ЧТО ЭТО?",
-        title: "Умный щит телефона",
+        title: "Купол защиты на устройстве",
         desc: "TrustNode — это персональный защитный купол для вашего смартфона. Приложение, которое оберегает вас и вашу семью от опасных звонков, текстового обмана, фишинга и финансовых угроз."
       },
       {
         tag: "КАК РАБОТАЕТ?",
         title: "Локальный разум",
-        desc: "Встроенная микро-нейросеть анализирует входящие звонки и сообщения в реальном времени. Она распознает манипуляции на лету прямо на устройстве — без отправки ваших данных в интернет."
+        desc: "Приложение анализирует звонки прямо на устройстве: акустические характеристики речи и текстовые данные оценивает нейросеть ruBERT. Ни байта данных не покидает смартфон — интернет не нужен."
       },
       {
         tag: "ЧТО ВЫ ПОЛУЧИТЕ?",
@@ -29,17 +32,17 @@ const DICT: Record<string, { badge: string; title: string; subtitle: string; ste
   en: {
     badge: "SIMPLE EXPLANATION",
     title: "TrustNode in 1 Minute",
-    subtitle: "A straightforward guide to how next-generation protection works",
+    subtitle: "A plain-language guide to how TrustNode detects fraudulent calls right on your device",
     steps: [
       {
         tag: "WHAT IS IT?",
-        title: "Smart Phone Shield",
+        title: "Defense Dome on Your Device",
         desc: "TrustNode is a personal defense dome for your smartphone. An on-device app that instantly shields you and your family from fraudulent calls, phishing, and financial threats."
       },
       {
         tag: "HOW IT WORKS?",
         title: "On-Device Intelligence",
-        desc: "An embedded micro-AI analyzes incoming interactions in real time. It detects psychological pressure and manipulation on the fly — keeping all your personal data offline."
+        desc: "The app analyzes calls directly on your device: acoustic speech characteristics and text data are assessed by the ruBERT neural network. Not a single byte leaves your phone — no internet required."
       },
       {
         tag: "WHAT YOU GET?",
@@ -51,17 +54,17 @@ const DICT: Record<string, { badge: string; title: string; subtitle: string; ste
   es: {
     badge: "EXPLICACIÓN SENCILLA",
     title: "Muy Sencillo: TrustNode en 1 Minuto",
-    subtitle: "Una guía directa sobre cómo funciona la protección de última generación",
+    subtitle: "Una guía sencilla de cómo TrustNode detecta llamadas fraudulentas directamente en su dispositivo",
     steps: [
       {
         tag: "¿QUÉ ES?",
-        title: "Escudo de Teléfono Inteligente",
+        title: "Cúpula de defensa en el dispositivo",
         desc: "TrustNode es una cúpula de defensa personal para su smartphone. Una aplicación en el dispositivo que lo protege instantáneamente a usted y a su familia de llamadas fraudulentas, phishing y amenazas financieras."
       },
       {
         tag: "¿CÓMO FUNCIONA?",
         title: "Inteligencia en el Dispositivo",
-        desc: "Una micro IA integrada analiza las interacciones entrantes en tiempo real. Detecta la presión psicológica y la manipulación al instante, manteniendo todos sus datos personales fuera de línea."
+        desc: "La aplicación analiza las llamadas directamente en el dispositivo: las características acústicas del habla y los datos de texto son evaluados por la red neuronal ruBERT. Ni un solo byte sale de su teléfono: no se necesita internet."
       },
       {
         tag: "¿QUÉ OBTIENE?",
@@ -73,17 +76,17 @@ const DICT: Record<string, { badge: string; title: string; subtitle: string; ste
   zh: {
     badge: "极简说明",
     title: "只需一分钟，轻松了解 TrustNode",
-    subtitle: "以最通俗易懂的语言，为您剖析新一代创新安全防护的工作原理",
+    subtitle: "用最通俗的语言，讲清 TrustNode 如何在设备端直接识别诈骗电话",
     steps: [
       {
         tag: "它是什么？",
-        title: "智能手机防护罩",
+        title: "设备端防护穹顶",
         desc: "TrustNode 是您智能手机的专属个人防护穹顶。这是一款直接运行在设备端的应用程序，能够瞬间为您和您的家人阻挡诈骗电话、短信钓鱼及财产安全威胁。"
       },
       {
         tag: "如何工作？",
         title: "本地离线智能",
-        desc: "内置的微型神经网络可实时分析所有来电和短信。它在设备端即时识别操纵行为与心理施压，无需向互联网上传您的任何隐私数据。"
+        desc: "应用直接在设备端分析通话：语音的声学特征与文本数据由 ruBERT 神经网络评估。不发送任何数据到云端，完全无需联网。"
       },
       {
         tag: "您将获得什么？",
@@ -95,17 +98,17 @@ const DICT: Record<string, { badge: string; title: string; subtitle: string; ste
   tr: {
     badge: "BASİT AÇIKLAMA",
     title: "Çok Basit: 1 Dakikada TrustNode",
-    subtitle: "Yeni nesil inovatif korumanın nasıl çalıştığına dair basit bir kılavuz",
+    subtitle: "TrustNode'un dolandırıcı aramaları doğrudan cihazınızda nasıl tespit ettiğine dair sade bir rehber",
     steps: [
       {
         tag: "NEDİR?",
-        title: "Akıllı Telefon Kalkanı",
+        title: "Cihazda Savunma Kubbesi",
         desc: "TrustNode, akıllı telefonunuz için kişisel bir savunma kubbesidir. Sizi ve ailenizi dolandırıcı aramalardan, oltalama mesajlarından ve finansal tehditlerden anında koruyan cihaz içi bir uygulamadır."
       },
       {
         tag: "NASIL ÇALIŞIR?",
         title: "Cihaz İçi Yapay Zeka",
-        desc: "Gömülü bir mikro yapay zeka, gelen etkileşimleri gerçek zamanlı olarak analiz eder. Psikolojik baskı ve manipülasyonu anında algılar ve tüm kişisel verilerinizi çevrimdışı tutar."
+        desc: "Uygulama aramaları doğrudan cihazınızda analiz eder: konuşmanın akustik özellikleri ve metin verileri ruBERT sinir ağı tarafından değerlendirilir. Telefonunuzdan tek bir bayt bile çıkmaz — internet gerekmez."
       },
       {
         tag: "NE ELDE EDERSİNİZ?",
@@ -117,17 +120,17 @@ const DICT: Record<string, { badge: string; title: string; subtitle: string; ste
   hi: {
     badge: "सरल व्याख्या",
     title: "बहुत सरल: 1 मिनट में TrustNode",
-    subtitle: "अगली पीढ़ी की नवीन सुरक्षा कैसे काम करती है, इसका एक सीधा मार्गदर्शक",
+    subtitle: "सीधी भाषा में जानें: TrustNode आपके डिवाइस पर ही धोखाधड़ी वाले कॉल कैसे पहचानता है",
     steps: [
       {
         tag: "यह क्या है?",
-        title: "स्मार्ट फोन शील्ड",
+        title: "डिवाइस पर सुरक्षा डोम",
         desc: "TrustNode आपके स्मार्टफोन के लिए एक व्यक्तिगत सुरक्षा डोम है। एक ऑन-डिवाइस ऐप जो आपको और आपके परिवार को कपटपूर्ण कॉल, फ़िशिंग और वित्तीय खतरों से तुरंत बचाता है।"
       },
       {
         tag: "यह कैसे काम करता है?",
         title: "ऑन-डिवाइस इंटेलिजेंस",
-        desc: "एक एम्बेडेड माइक्रो-एआई वास्तविक समय में आने वाले संवादों का विश्लेषण करता है। यह मनोवैज्ञानिक दबाव और हेरफेर का तुरंत पता लगाता है - आपके सभी व्यक्तिगत डेटा को ऑफ़लाइन रखता है।"
+        desc: "ऐप कॉल का सीधे आपके डिवाइस पर विश्लेषण करता है: भाषण की ध्वनिक विशेषताओं और टेक्स्ट डेटा का मूल्यांकन ruBERT न्यूरल नेटवर्क करता है। आपके फोन से एक भी बाइट बाहर नहीं जाती — इंटरनेट की आवश्यकता नहीं है।"
       },
       {
         tag: "आपको क्या मिलता है?",
@@ -139,17 +142,17 @@ const DICT: Record<string, { badge: string; title: string; subtitle: string; ste
   ar: {
     badge: "شرح مبسط",
     title: "بكل بساطة: TrustNode في دقيقة واحدة",
-    subtitle: "دليل مبسط يوضح كيفية عمل الجيل القادم من الحماية المبتكرة",
+    subtitle: "دليل مبسط يشرح كيف يرصد TrustNode المكالمات الاحتيالية مباشرة على جهازك",
     steps: [
       {
         tag: "ما هو؟",
-        title: "درع الهاتف الذكي",
+        title: "قبة دفاع على الجهاز",
         desc: "TrustNode عبارة عن قبة دفاع شخصية لهاتفك الذكي. تطبيق يعمل على الجهاز ليحميك ويحمي عائلتك فورًا من المكالمات الاحتيالية والتصيد والتهديدات المالية."
       },
       {
         tag: "كيف يعمل؟",
         title: "الذكاء المحلي على الجهاز",
-        desc: "يقوم ذكاء اصطناعي ميكرو مدمج بتحليل التفاعلات الواردة في الوقت الفعلي. يكتشف الضغط النفسي والتلاعب فورًا مع الحفاظ على خصوصية جميع بياناتك بالكامل أوفلاين."
+        desc: "يحلل التطبيق المكالمات مباشرة على جهازك: تُقيَّم الخصائص الصوتية للكلام والبيانات النصية بواسطة الشبكة العصبية ruBERT. لا تغادر أي بيانات جهازك — فلا حاجة إلى الإنترنت."
       },
       {
         tag: "ماذا ستحصل؟",
@@ -161,17 +164,17 @@ const DICT: Record<string, { badge: string; title: string; subtitle: string; ste
   pt: {
     badge: "EXPLICAÇÃO SIMPLES",
     title: "Tudo Simples: TrustNode em 1 Minuto",
-    subtitle: "Um guia direto sobre como funciona a proteção de última geração",
+    subtitle: "Um guia direto de como o TrustNode detecta chamadas fraudulentas direto no seu dispositivo",
     steps: [
       {
         tag: "O QUE É?",
-        title: "Escudo Inteligente",
+        title: "Domo de defesa no dispositivo",
         desc: "O TrustNode é um domo de defesa pessoal para o seu smartphone. Um app no dispositivo que protege instantaneamente você e sua família de chamadas fraudulentas, phishing e ameaças financeiras."
       },
       {
         tag: "COMO FUNCIONA?",
         title: "Inteligência Local",
-        desc: "Uma micro IA integrada analisa as interações em tempo real. Ela detecta pressão psicológica e manipulações no ato — mantendo todos os seus dados pessoais offline."
+        desc: "O app analisa as chamadas diretamente no dispositivo: as características acústicas da fala e os dados de texto são avaliados pela rede neural ruBERT. Nenhum byte sai do seu celular — não é preciso internet."
       },
       {
         tag: "O QUE VOCÊ GANHA?",
@@ -183,17 +186,17 @@ const DICT: Record<string, { badge: string; title: string; subtitle: string; ste
   fr: {
     badge: "EXPLICATION SIMPLE",
     title: "Tout Simple : TrustNode en 1 Minute",
-    subtitle: "Un guide direct pour comprendre le fonctionnement de cette protection de nouvelle génération",
+    subtitle: "Un guide simple pour comprendre comment TrustNode détecte les appels frauduleux directement sur l'appareil",
     steps: [
       {
         tag: "QU'EST-CE QUE C'EST ?",
-        title: "Bouclier Intelligent",
+        title: "Dôme de défense sur l'appareil",
         desc: "TrustNode est un dôme de défense personnelle pour votre smartphone. Une application locale qui vous protège instantanément, vous et votre famille, des appels frauduleux, du phishing et des menaces financières."
       },
       {
         tag: "COMMENT ÇA MARCHE ?",
         title: "Intelligence Locale",
-        desc: "Une micro-IA intégrée analyse les interactions entrantes en temps réel. Elle détecte immédiatement les pressions psychologiques et les manipulations sur l'appareil, sans envoyer vos données sur internet."
+        desc: "L'application analyse les appels directement sur l'appareil : les caractéristiques acoustiques de la parole et les données textuelles sont évaluées par le réseau neuronal ruBERT. Aucune donnée ne quitte votre téléphone — internet n'est pas nécessaire."
       },
       {
         tag: "QU'Y GAGNEZ-VOUS ?",
@@ -205,17 +208,17 @@ const DICT: Record<string, { badge: string; title: string; subtitle: string; ste
   de: {
     badge: "EINFACHE ERKLÄRUNG",
     title: "Ganz einfach: TrustNode in 1 Minute",
-    subtitle: "Eine unkomplizierte Anleitung zur Funktionsweise der neuen Sicherheitsgeneration",
+    subtitle: "Eine einfache Erklärung, wie TrustNode betrügerische Anrufe direkt auf Ihrem Gerät erkennt",
     steps: [
       {
         tag: "WAS IST ES?",
-        title: "Smarter Telefonschild",
+        title: "Schutzkuppel auf dem Gerät",
         desc: "TrustNode is eine persönliche Schutzkuppel für Ihr Smartphone. Eine On-Device-App, die Sie und Ihre Familie sofort vor betrügerischen Anrufen, Phishing und finanziellen Bedrohungen schützt."
       },
       {
         tag: "WIE FUNKTIONIERT ES?",
         title: "Lokale Intelligenz",
-        desc: "Eine integrierte Mikro-KI analysiert eingehende Interaktionen in Echtzeit. Sie erkennt psychologischen Druck und Kombinationen sofort und hält alle Ihre persönlichen Daten offline."
+        desc: "Die App analysiert Anrufe direkt auf Ihrem Gerät: akustische Merkmale der Sprache und Textdaten werden vom neuronalen Netz ruBERT ausgewertet. Kein einziges Byte verlässt Ihr Telefon — Internet ist nicht erforderlich."
       },
       {
         tag: "WAS ERHALTEN SIE?",
@@ -227,17 +230,17 @@ const DICT: Record<string, { badge: string; title: string; subtitle: string; ste
   ja: {
     badge: "わかりやすい解説",
     title: "1分でわかる TrustNode",
-    subtitle: "次世代の革新的な保護システムの仕組みを、シンプルに分かりやすく解説します",
+    subtitle: "TrustNodeが端末上で直接、詐欺電話をどう見抜くかを分かりやすく解説します",
     steps: [
       {
         tag: "これは何？",
-        title: "スマホのスマートシールド",
+        title: "端末上の防衛ドーム",
         desc: "TrustNodeはスマートフォンのための個人防衛ドームです。悪質な電話やフィッシング、金融脅威からあなたと家族を瞬時に守る、端末内完結型アプリです。"
       },
       {
         tag: "どう動く？",
         title: "端末内のローカル頭脳",
-        desc: "組み込まれたマイクロAIが着信やメッセージをリアルタイムで解析。心理的な誘導や詐欺の兆候をその場で検知し、すべてのデータをオフラインで安全に保ちます。"
+        desc: "アプリは通話を端末上で直接分析します：音声の音響的特徴とテキストデータは ruBERT ニューラルネットワークが評価します。データは端末から一切出ません——インターネットは不要です。"
       },
       {
         tag: "何が得られる？",
@@ -250,34 +253,29 @@ const DICT: Record<string, { badge: string; title: string; subtitle: string; ste
 
 const ICONS = [HelpCircle, Shield, Eye];
 const COLORS = [
-  "border-[#2E7DFF]/20 text-[#2E7DFF] bg-[#2E7DFF]/5",
-  "border-emerald-500/20 text-emerald-400 bg-emerald-500/5",
-  "border-amber-500/20 text-amber-400 bg-amber-500/5"
+  "border-[#3B82F6]/40 text-[#3B82F6] bg-[#3B82F6]/5",
+  "border-[#2DD4BF]/40 text-[#2DD4BF] bg-[#2DD4BF]/5",
+  "border-[#FB923C]/40 text-[#FB923C] bg-[#FB923C]/5"
 ];
 
-const IntroSection = React.memo(function IntroSection() {
+export const INTRO_DICT = DICT;
+
+const IntroSection = React.memo(function IntroSection({ transparent = false }: { transparent?: boolean }) {
   const { language } = useTranslation();
+  const { ecoMode } = useEcoMode();
   const content = DICT[language] || DICT.en;
 
   return (
     <section 
-      className="relative w-full py-16 sm:py-24 px-4 border-t border-[#1F2937]/20 bg-[#070709]" 
+      className={`relative w-full py-16 sm:py-20 px-4 ${transparent ? "bg-transparent" : "bg-[#0A0A0B]"}`} 
       id="intro-simplified"
     >
-      {/* Background gradients */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-full bg-[radial-gradient(circle_at_center,rgba(46,125,255,0.02)_0%,transparent_60%)] pointer-events-none" />
-
       <div className="max-w-6xl mx-auto relative z-10">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#111827] border border-[#2E7DFF]/20 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#2E7DFF]" />
-            <span className="font-mono text-[10px] sm:text-xs font-semibold tracking-wider text-[#2E7DFF] uppercase">
-              {content.badge}
-            </span>
-          </div>
-          
-          <h2 className="font-display font-bold text-2xl sm:text-4xl text-[#F5F5F0] tracking-tight mb-4">
+          <SectionBadge variant="brackets" label={content.badge} className="mb-6" />
+
+          <h2 className="font-display font-medium text-2xl sm:text-4xl text-[#F5F5F0] tracking-tighter mb-4">
             {content.title}
           </h2>
           
@@ -286,51 +284,48 @@ const IntroSection = React.memo(function IntroSection() {
           </p>
         </div>
 
-        {/* 3-Column steps */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-          {content.steps.map((step, idx) => {
-            const IconComponent = ICONS[idx];
-            const colorClass = COLORS[idx];
-            return (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.15 }}
-                className="relative p-6 sm:p-8 rounded-2xl bg-[#09090B] border border-[#1F2937]/30 hover:border-[#2E7DFF]/30 transition-all duration-300 flex flex-col justify-between"
-              >
-                <div>
-                  {/* Step Tag */}
-                  <div className="flex items-center justify-between mb-6">
-                    <span className="font-mono text-[10px] font-bold tracking-wider text-gray-500 uppercase">
-                      {step.tag}
-                    </span>
-                    <div className={`p-2 rounded-lg border ${colorClass}`}>
-                      <IconComponent className="w-4 h-4" />
+        {/* 3-Column steps as cards */}
+        <div className="relative">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {content.steps.map((step, idx) => {
+              const IconComponent = ICONS[idx];
+              const colorClass = COLORS[idx];
+              return (
+                <motion.div
+                  key={idx}
+                  initial={transparent ? { opacity: 0, y: -60 } : false}
+                  whileInView={transparent ? { opacity: 1, y: 0 } : undefined}
+                  viewport={transparent ? { once: true, margin: "-60px" } : undefined}
+                  transition={{ duration: 0.7, delay: idx * 0.12, ease: "easeOut" }}
+                  className="h-full"
+                >
+                  <ScanCard className="h-full justify-between">
+                    <div>
+                      {/* Step Tag */}
+                      <div className="flex items-center justify-between mb-6">
+                        <span className="font-mono text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+                          {step.tag}
+                        </span>
+                        <div className={`p-2 border ${colorClass}`}>
+                          <IconComponent className="w-4 h-4" />
+                        </div>
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="font-display font-medium text-lg text-[#F5F5F0] mb-3 group-hover:text-[#3B82F6] transition duration-300">
+                        {step.title}
+                      </h3>
+
+                      {/* Desc */}
+                      <p className="font-sans text-xs sm:text-sm text-gray-400 leading-relaxed">
+                        {step.desc}
+                      </p>
                     </div>
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="font-display font-bold text-lg text-[#F5F5F0] mb-3">
-                    {step.title}
-                  </h3>
-
-                  {/* Desc */}
-                  <p className="font-sans text-xs sm:text-sm text-gray-400 leading-relaxed">
-                    {step.desc}
-                  </p>
-                </div>
-
-                {/* Connecting arrow indicator for visual flow (except last card) */}
-                {idx < 2 && (
-                  <div className="hidden md:flex absolute top-1/2 -right-4 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-[#101014] border border-[#1F2937]/40 items-center justify-center text-gray-600">
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
+                  </ScanCard>
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>

@@ -1,374 +1,430 @@
 import React, { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Menu, X, Leaf, ALargeSmall , Download} from "lucide-react";
 import { SiTelegram, SiVk, SiTiktok, SiGithub } from "react-icons/si";
-import MiniLogo from "./MiniLogo";
+import NetworkBackground from "./NetworkBackground";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useTranslation } from "../i18n/LanguageContext";
 import { useNavigation, PageId } from "../navigation/NavigationContext";
+import { useSeniorMode } from "../context/SeniorModeContext";
+import { useEcoMode } from "../context/EcoModeContext";
+import { NAV_GROUPS, GROUP_CAPTIONS, DownloadCTA, NAV_ITEMS } from "./Navigation";
+import { usePersonalItems } from "../lib/personalRoute";
+import { acquireScrollLock, releaseScrollLock } from "../lib/scrollLock";
+import { announce } from "../i18n/Announcer";
+
+export const PRODUCT_RADAR_URL = "https://productradar.ru/product/trustnode/";
+export const RUSTORE_URL = "https://www.rustore.ru/catalog/app/com.frauddetector.app";
+export const GITHUB_APK_URL = "https://github.com/TrustNodeLab/trustnodelab.github.io/releases/download/1.2.0/app-arm64-v8a-release.apk";
+
+// The four "main" sections (big items in the overlay) + four secondary pages
+// (small items, including Download as the 8th), per the reference layout.
+/* Группы разделов — в components/Navigation.tsx */
 
 const SiTelegramIcon = SiTelegram as React.ComponentType<any>;
 const SiVkIcon = SiVk as React.ComponentType<any>;
 const SiTiktokIcon = SiTiktok as React.ComponentType<any>;
 const SiGithubIcon = SiGithub as React.ComponentType<any>;
 
-// Verified signature for use in App.tsx
-interface HeaderProps {
-  isEcoMode: boolean;
-  onToggleEcoMode: () => void;
-}
+const SOCIAL_LINKS = [
+  { href: "https://t.me/TrustNode_team", label: "Telegram", Icon: SiTelegramIcon },
+  { href: "https://vk.com/trustnode", label: "VK", Icon: SiVkIcon },
+  { href: "https://github.com/TrustNodeLab", label: "GitHub", Icon: SiGithubIcon },
+  { href: "https://www.tiktok.com/@trusrnode?_r=1&_t=ZS-97fr5YVyPCs", label: "TikTok", Icon: SiTiktokIcon },
+] as const;
 
-const Header = React.memo(function Header({ isEcoMode, onToggleEcoMode }: HeaderProps) {
-  const { t } = useTranslation();
+export default function Header() {
+  const { t, language } = useTranslation();
   const { activePage, navigateTo } = useNavigation();
+  const { seniorMode, toggleSeniorMode } = useSeniorMode();
+  const { ecoMode, toggleEcoMode } = useEcoMode();
   const [isOpen, setIsOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [toast, setToast] = useState<string>("");
+  const [isDarkening, setIsDarkening] = useState(false);
 
+  // Live clock shown between the logo and the nav heading: МСК (Europe/Moscow)
+  // for Russian, GMT (UTC) for every other language. Ticks once per second.
+  const [clock, setClock] = useState<Date>(() => new Date());
   useEffect(() => {
-    let rafId: number | null = null;
-
-    const handleScroll = () => {
-      if (rafId !== null) return;
-      rafId = requestAnimationFrame(() => {
-        rafId = null;
-        setScrolled(window.scrollY > 20);
-      });
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (rafId !== null) cancelAnimationFrame(rafId);
-    };
+    const id = window.setInterval(() => setClock(new Date()), 1000);
+    return () => window.clearInterval(id);
   }, []);
 
-  const getPageLabel = (page: PageId) => {
+  const clockLabel = language === "ru" ? "МСК" : "GMT";
+  const clockFormatter = new Intl.DateTimeFormat(
+    language === "ru" ? "ru-RU" : "en-GB",
+    {
+      timeZone: language === "ru" ? "Europe/Moscow" : "UTC",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    }
+  );
+  const clockTime = clockFormatter.format(clock);
+
+  // Close the fullscreen nav with the slide-out animation (or instantly in
+  // eco mode / reduced-motion, mirroring the entrance behavior).
+  const closeMenu = () => {
+    if (!isOpen) return;
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || ecoMode) {
+      setIsOpen(false);
+      setIsClosing(false);
+      return;
+    }
+    setIsClosing(true);
+    window.setTimeout(() => {
+      setIsOpen(false);
+      setIsClosing(false);
+    }, 450);
+  };
+
+  const openMenu = () => {
+    setIsOpen(true);
+    setIsClosing(false);
+  };
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    window.clearTimeout((showToast as any)._t);
+    (showToast as any)._t = window.setTimeout(() => setToast(""), 2600);
+  };
+
+  // Close the fullscreen menu on Escape and lock page scroll while it is open.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeMenu();
+    };
+
+    acquireScrollLock();
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      releaseScrollLock();
+    };
+  }, [isOpen]);  const getPageLabel = (page: PageId) => {
     const labels = t.pageNames;
-    return labels[page] || page;
+    return labels[page as keyof typeof labels] || page;
   };
 
   const handlePageNavigation = (page: PageId, anchorId?: string) => {
-    setIsOpen(false);
+    closeMenu();
     navigateTo(page, anchorId);
   };
 
-  return (
-    <header
-      className="fixed top-0 left-0 right-0 z-50"
-      style={{
-        paddingTop: scrolled || activePage !== "home"
-          ? "max(0.75rem, env(safe-area-inset-top))" 
-          : "max(1.25rem, env(safe-area-inset-top))",
-        paddingBottom: scrolled || activePage !== "home" ? "0.75rem" : "1.25rem",
-        paddingLeft: "max(1rem, env(safe-area-inset-left))",
-        paddingRight: "max(1rem, env(safe-area-inset-right))",
-        transition: "padding 300ms ease",
-      }}
-      id="main-nav-header"
+  // Clicking the brand logo fades the screen to black, then navigates to the
+  // full sections page — the "normal site" view, not the cinematic landing.
+  const handleLogoHome = () => {
+    if (isDarkening) return;
+    setIsDarkening(true);
+    window.setTimeout(() => {
+      closeMenu();
+      navigateTo("sections");
+    }, 450);
+    window.setTimeout(() => setIsDarkening(false), 1050);
+  };
+
+  const iconButtonClass =
+    "inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl border transition-all duration-300 cursor-pointer";
+
+  const renderEcoButton = () => (
+    <button
+      onClick={() => { toggleEcoMode(); showToast(ecoMode ? t.header.ecoOff : t.header.ecoOn); announce(ecoMode ? t.header.ecoOff : t.header.ecoOn); }}
+      aria-label={ecoMode ? t.header.ecoOn : t.header.ecoOff}
+      aria-pressed={ecoMode}
+      title={ecoMode ? t.header.ecoOn : t.header.ecoOff}
+      className={`${iconButtonClass} ${
+        ecoMode
+          ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-glow-success"
+          : "bg-[#0A0A0B]/60 border-[#3B82F6]/30 text-[#3B82F6] hover:text-white hover:bg-[#3B82F6]/20"
+      }`}
     >
-      {/*
-        Two stacked, ALWAYS-mounted background layers that crossfade via opacity.
-        Root cause of the white flash: the previous version swapped the whole
-        className (bg-transparent <-> bg-[#0A0A0B]/85 + border + shadow) on
-        every scroll/page change. Toggling backdrop-blur + border-color by
-        adding/removing classes forces the browser to paint the new layer at
-        full strength on the very first frame (before any transition can
-        interpolate it), which shows up as a one-frame white/bright flash,
-        especially on Chrome. Keeping both layers permanently in the DOM and
-        only animating opacity avoids that repaint pop entirely.
-      */}
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10 bg-[#0A0A0B]/85 backdrop-blur-md border-b border-[#1F2937]/30 shadow-[0_4px_30px_rgba(0,0,0,0.4)] transition-opacity duration-300 ease-out"
-        style={{ opacity: scrolled || activePage !== "home" ? 1 : 0 }}
-      />
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
-        
-        {/* Left: Brand Logo */}
-        <div 
-          className="flex items-center gap-3 cursor-pointer select-none"
-          onClick={() => handlePageNavigation("home")}
-          id="header-logo-container"
+      <Leaf className="w-4 h-4" />
+    </button>
+  );
+
+  const renderSeniorButton = () => (
+    <button
+      onClick={() => { toggleSeniorMode(); showToast(seniorMode ? t.header.seniorOff : t.header.seniorOn); announce(seniorMode ? t.header.seniorOff : t.header.seniorOn); }}
+      aria-label={seniorMode ? t.header.seniorOn : t.header.seniorOff}
+      aria-pressed={seniorMode}
+      title={seniorMode ? t.header.seniorOn : t.header.seniorOff}
+      className={`${iconButtonClass} ${
+        seniorMode
+          ? "bg-amber-500/15 border-amber-500/40 text-amber-400 shadow-glow-warn"
+          : "bg-[#0A0A0B]/60 border-[#3B82F6]/30 text-[#3B82F6] hover:text-white hover:bg-[#3B82F6]/20"
+      }`}
+    >
+      <ALargeSmall className="w-4 h-4" />
+    </button>
+  );
+
+  const personal = usePersonalItems();
+  const startItems = NAV_GROUPS[0].items.filter((id) => personal.includes(id));
+  const deepItems = NAV_GROUPS[1].items.filter((id) => personal.includes(id));
+
+  return (
+    <>
+      {/* Vertical sidebar rail — fixed on the left, full height (per reference).
+          Scrolls (scrollbar hidden) on short screens like landscape phones so
+          the brand + toggles + socials never get cut off. */}
+      <header
+        className="fixed top-0 left-0 bottom-0 z-[80] w-16 sm:w-20 flex flex-col items-center border-r border-[#3C404A]/40 bg-[#0A0A0B]/90 backdrop-blur-md shadow-[4px_0_30px_rgba(0,0,0,0.4)] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{
+          paddingTop: "max(0.75rem, env(safe-area-inset-top))",
+          paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+        }}
+        id="main-nav-header"
+      >
+        {/* Brand name — inside the rail (top, vertical) */}
+        <button
+          onClick={handleLogoHome}
+          className="mt-3 flex flex-col items-center gap-1 cursor-pointer select-none group"
+          aria-label="TrustNode — Home"
+          id="header-brand-name"
         >
-          <div className="w-8 h-10 flex items-center justify-center bg-[#111827]/30 rounded-lg border border-[#2E7DFF]/15">
-            <MiniLogo />
-          </div>
-          
-          <div className="flex flex-col">
-            <span className="font-display font-bold text-base text-[#F5F5F0] tracking-tight">
-              Trust<span className="text-[#2E7DFF]">Node</span>
-            </span>
-            <span className="font-mono text-[8px] text-gray-500 uppercase tracking-widest leading-none">
-              {t.brand.tagline}
-            </span>
-          </div>
-        </div>
+          <span className="[writing-mode:vertical-rl] [transform:rotate(180deg)] font-display font-medium text-sm sm:text-base tracking-tighter text-[#F5F5F0] group-hover:text-[#3B82F6] transition-colors">
+            Trust<span className="text-[#3B82F6]">Node</span>
+          </span>
+        </button>
 
-        {/* Center: Navigation Links (Desktop) */}
-        <nav className="hidden md:flex items-center gap-2" id="desktop-nav">
-          <button 
-            onClick={() => handlePageNavigation("home")}
-            className={`font-sans text-xs font-medium transition-all cursor-pointer py-1.5 px-3 rounded-lg border ${
-              activePage === "home" 
-                ? "text-white bg-[#2E7DFF]/15 border-[#2E7DFF]/30 shadow-[0_0_12px_rgba(46,125,255,0.18)]" 
-                : "text-gray-400 hover:text-[#2E7DFF] hover:bg-[#111827]/30 border-transparent"
-            }`}
-          >
-            {getPageLabel("home")}
-          </button>
-
-          <button 
-            onClick={() => handlePageNavigation("how-it-works")}
-            className={`font-sans text-xs font-medium transition-all cursor-pointer py-1.5 px-3 rounded-lg border ${
-              activePage === "how-it-works" 
-                ? "text-white bg-[#2E7DFF]/15 border-[#2E7DFF]/30 shadow-[0_0_12px_rgba(46,125,255,0.18)]" 
-                : "text-gray-400 hover:text-[#2E7DFF] hover:bg-[#111827]/30 border-transparent"
-            }`}
-          >
-            {getPageLabel("how-it-works")}
-          </button>
-          
-          <button 
-            onClick={() => handlePageNavigation("tech")}
-            className={`font-sans text-xs font-medium transition-all cursor-pointer py-1.5 px-3 rounded-lg border ${
-              activePage === "tech" 
-                ? "text-white bg-[#2E7DFF]/15 border-[#2E7DFF]/30 shadow-[0_0_12px_rgba(46,125,255,0.18)]" 
-                : "text-gray-400 hover:text-[#2E7DFF] hover:bg-[#111827]/30 border-transparent"
-            }`}
-          >
-            {getPageLabel("tech")}
-          </button>
-
-          <button 
-            onClick={() => handlePageNavigation("roadmap")}
-            className={`font-sans text-xs font-medium transition-all cursor-pointer py-1.5 px-3 rounded-lg border ${
-              activePage === "roadmap" 
-                ? "text-white bg-[#2E7DFF]/15 border-[#2E7DFF]/30 shadow-[0_0_12px_rgba(46,125,255,0.18)]" 
-                : "text-gray-400 hover:text-[#2E7DFF] hover:bg-[#111827]/30 border-transparent"
-            }`}
-          >
-            {getPageLabel("roadmap")}
-          </button>
-
-          <button 
-            onClick={() => handlePageNavigation("about")}
-            className={`font-sans text-xs font-medium transition-all cursor-pointer py-1.5 px-3 rounded-lg border ${
-              activePage === "about" 
-                ? "text-white bg-[#2E7DFF]/15 border-[#2E7DFF]/30 shadow-[0_0_12px_rgba(46,125,255,0.18)]" 
-                : "text-gray-400 hover:text-[#2E7DFF] hover:bg-[#111827]/30 border-transparent"
-            }`}
-          >
-            {getPageLabel("about")}
-          </button>
-
-          <button 
-            onClick={() => handlePageNavigation("comparison")}
-            className={`font-sans text-xs font-medium transition-all cursor-pointer py-1.5 px-3 rounded-lg border ${
-              activePage === "comparison" 
-                ? "text-white bg-[#2E7DFF]/15 border-[#2E7DFF]/30 shadow-[0_0_12px_rgba(46,125,255,0.18)]" 
-                : "text-gray-400 hover:text-[#2E7DFF] hover:bg-[#111827]/30 border-transparent"
-            }`}
-          >
-            {getPageLabel("comparison")}
-          </button>
-
-          <button 
-            onClick={() => handlePageNavigation("early-access")}
-            className={`font-sans text-xs font-semibold hover:text-[#2E7DFF]/80 transition-all cursor-pointer py-1.5 px-3 ${
-              activePage === "early-access"
-                ? "text-white bg-[#2E7DFF]/15 border border-[#2E7DFF]/30 rounded-lg shadow-[0_0_12px_rgba(46,125,255,0.18)]"
-                : "text-[#2E7DFF]"
-            }`}
-          >
-            {t.nav.earlyAccess}
-          </button>
-        </nav>
-
-        {/* Right: Premium Social Media Actions + Language (Desktop) */}
-        <div className="hidden md:flex items-center gap-3" id="desktop-social-actions">
-          <a
-            href="https://t.me/TrustNode_team?direct"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Telegram"
-            title="Telegram"
-            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#0A162C]/60 hover:bg-[#2E7DFF]/20 border border-[#2E7DFF]/30 text-[#2E7DFF] hover:text-white transition-all duration-300 hover:shadow-[0_0_12px_rgba(46,125,255,0.25)]"
-          >
-            <SiTelegramIcon className="w-4 h-4" />
-          </a>
-          <a
-            href="https://vk.com/trustnode"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="VK"
-            title="VK"
-            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#0A162C]/60 hover:bg-[#2E7DFF]/20 border border-[#2E7DFF]/30 text-[#2E7DFF] hover:text-white transition-all duration-300 hover:shadow-[0_0_12px_rgba(46,125,255,0.25)]"
-          >
-            <SiVkIcon className="w-4 h-4" />
-          </a>
-          <a
-            href="https://www.tiktok.com/@trusrnode?_r=1&_t=ZS-97fr5YVyPCs"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="TikTok"
-            title="TikTok"
-            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#0A162C]/60 hover:bg-[#2E7DFF]/20 border border-[#2E7DFF]/30 text-[#2E7DFF] hover:text-white transition-all duration-300 hover:shadow-[0_0_12px_rgba(46,125,255,0.25)]"
-          >
-            <SiTiktokIcon className="w-4 h-4" />
-          </a>
-          <a
-            href="https://github.com/TrustNodeLab"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="GitHub"
-            title="GitHub"
-            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#0A162C]/60 hover:bg-[#2E7DFF]/20 border border-[#2E7DFF]/30 text-[#2E7DFF] hover:text-white transition-all duration-300 hover:shadow-[0_0_12px_rgba(46,125,255,0.25)]"
-          >
-            <SiGithubIcon className="w-4 h-4" />
-          </a>
-          <LanguageSwitcher variant="desktop" />
-        </div>
-
-        {/* Mobile Toggle */}
-        <div className="md:hidden flex items-center gap-2">
+        {/* Burger — centered in the free space between the brand block and the
+            bottom controls; turns into a close (X) while the nav is open. */}
+        <div className="flex-1 flex items-center justify-center">
           <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="p-2.5 rounded-lg bg-[#111827]/40 border border-[#1F2937]/50 text-gray-400 hover:text-[#2E7DFF] transition-colors cursor-pointer"
-            id="mobile-menu-toggle"
+            onClick={() => (isOpen ? closeMenu() : openMenu())}
+            className="w-9 h-9 inline-flex items-center justify-center rounded-xl bg-[#3C404A]/40 border border-[#3C404A]/50 text-gray-400 hover:text-[#3B82F6] hover:border-[#3B82F6]/40 transition-colors cursor-pointer"
             aria-label={isOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isOpen}
+            aria-controls="fullscreen-nav"
+            id="mobile-menu-toggle"
           >
             {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
 
-      </div>
-
-      {/* Mobile Drawer */}
-      {isOpen && (
-        <div 
-          className="md:hidden absolute top-[100%] left-0 right-0 bg-[#0A0A0B]/98 border-b border-[#1F2937]/50 py-6 px-4 flex flex-col gap-3 shadow-2xl animate-fade-in max-h-[calc(100dvh-64px)] overflow-y-auto"
-          id="mobile-drawer"
-        >
-          <button 
-            onClick={() => handlePageNavigation("home")}
-            className={`font-sans text-sm font-medium text-left transition-colors py-2.5 px-3 rounded-xl border ${
-              activePage === "home" 
-                ? "text-[#2E7DFF] bg-[#2E7DFF]/10 border-[#2E7DFF]/20" 
-                : "text-gray-300 hover:text-[#2E7DFF] border-transparent"
-            }`}
+        {/* Utility toggles (eco / senior / language) */}
+        <div className="flex flex-col items-center gap-2 mb-3">
+          {renderEcoButton()}
+          {renderSeniorButton()}
+          <LanguageSwitcher variant="mobile" />
+          <button
+            onClick={() => handlePageNavigation("download")}
+            aria-label={t.header.rustore}
+            title={t.header.rustore}
+            className="w-9 h-9 inline-flex items-center justify-center rounded-xl bg-[#3B82F6]/15 border border-[#3B82F6]/40 text-[#3B82F6] hover:text-white hover:bg-[#3B82F6]/35 transition-colors cursor-pointer"
           >
-            {getPageLabel("home")}
+            <Download className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => handlePageNavigation("how-it-works")}
-            className={`font-sans text-sm font-medium text-left transition-colors py-2.5 px-3 rounded-xl border ${
-              activePage === "how-it-works" 
-                ? "text-[#2E7DFF] bg-[#2E7DFF]/10 border-[#2E7DFF]/20" 
-                : "text-gray-300 hover:text-[#2E7DFF] border-transparent"
-            }`}
-          >
-            {getPageLabel("how-it-works")}
-          </button>
-          <button 
-            onClick={() => handlePageNavigation("tech")}
-            className={`font-sans text-sm font-medium text-left transition-colors py-2.5 px-3 rounded-xl border ${
-              activePage === "tech" 
-                ? "text-[#2E7DFF] bg-[#2E7DFF]/10 border-[#2E7DFF]/20" 
-                : "text-gray-300 hover:text-[#2E7DFF] border-transparent"
-            }`}
-          >
-            {getPageLabel("tech")}
-          </button>
-          <button 
-            onClick={() => handlePageNavigation("roadmap")}
-            className={`font-sans text-sm font-medium text-left transition-colors py-2.5 px-3 rounded-xl border ${
-              activePage === "roadmap" 
-                ? "text-[#2E7DFF] bg-[#2E7DFF]/10 border-[#2E7DFF]/20" 
-                : "text-gray-300 hover:text-[#2E7DFF] border-transparent"
-            }`}
-          >
-            {getPageLabel("roadmap")}
-          </button>
-          <button 
-            onClick={() => handlePageNavigation("about")}
-            className={`font-sans text-sm font-medium text-left transition-colors py-2.5 px-3 rounded-xl border ${
-              activePage === "about" 
-                ? "text-[#2E7DFF] bg-[#2E7DFF]/10 border-[#2E7DFF]/20" 
-                : "text-gray-300 hover:text-[#2E7DFF] border-transparent"
-            }`}
-          >
-            {getPageLabel("about")}
-          </button>
-          <button 
-            onClick={() => handlePageNavigation("comparison")}
-            className={`font-sans text-sm font-medium text-left transition-colors py-2.5 px-3 rounded-xl border ${
-              activePage === "comparison" 
-                ? "text-[#2E7DFF] bg-[#2E7DFF]/10 border-[#2E7DFF]/20" 
-                : "text-gray-300 hover:text-[#2E7DFF] border-transparent"
-            }`}
-          >
-            {getPageLabel("comparison")}
-          </button>
-          <button 
-            onClick={() => handlePageNavigation("early-access")}
-            className="font-sans text-sm font-semibold text-left text-[#2E7DFF] hover:text-[#2E7DFF]/80 transition-colors py-2.5 px-3"
-          >
-            {t.nav.earlyAccess}
-          </button>
-
-          <div className="h-px bg-[#1F2937]/30 my-1" />
-
-          {/* Language Switcher inside Mobile Menu */}
-          <div className="px-1" id="mobile-lang-switcher-container">
-            <LanguageSwitcher variant="mobile" />
-          </div>
-
-          <div className="h-px bg-[#1F2937]/30 my-1" />
-
-          {/* Socials inside Mobile Menu */}
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-2">
-              <a
-                href="https://t.me/TrustNode_team?direct"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Telegram"
-                className="flex-1 flex items-center justify-center py-3 rounded-xl bg-[#0F0F12] border border-[#1F2937]"
-              >
-                <SiTelegramIcon className="w-5 h-5 text-[#2E7DFF]" />
-              </a>
-              <a
-                href="https://vk.com/trustnode"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="VK"
-                className="flex-1 flex items-center justify-center py-3 rounded-xl bg-[#0F0F12] border border-[#1F2937]"
-              >
-                <SiVkIcon className="w-5 h-5 text-[#2E7DFF]" />
-              </a>
-              <a
-                href="https://www.tiktok.com/@trusrnode?_r=1&_t=ZS-97fr5YVyPCs"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="TikTok"
-                className="flex-1 flex items-center justify-center py-3 rounded-xl bg-[#0F0F12] border border-[#1F2937]"
-              >
-                <SiTiktokIcon className="w-5 h-5 text-[#2E7DFF]" />
-              </a>
-              <a
-                href="https://github.com/TrustNodeLab"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="GitHub"
-                className="flex-1 flex items-center justify-center py-3 rounded-xl bg-[#0F0F12] border border-[#1F2937]"
-              >
-                <SiGithubIcon className="w-5 h-5 text-[#2E7DFF]" />
-              </a>
-            </div>
-          </div>
         </div>
-      )}
-    </header>
-  );
-});
 
-export default Header;
+        {/* Social icons — vertical stack at the bottom of the rail */}
+        <div className="flex flex-col items-center gap-2">
+          {SOCIAL_LINKS.map(({ href, label, Icon }) => (
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={label}
+              title={label}
+              className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-[#3C404A]/50 bg-[#0A0A0B]/60 text-gray-400 hover:text-[#3B82F6] hover:border-[#3B82F6]/40 transition-all duration-300"
+            >
+              <Icon className="w-4 h-4" />
+            </a>
+          ))}
+        </div>
+      </header>
+
+      {/* Fullscreen navigation overlay — portaled to <body> so it escapes the
+          transformed sidebar wrapper (a CSS transform on an ancestor would turn
+          this fixed overlay into a 64px-tall column inside the rail). */}
+      {isOpen &&
+        createPortal(
+          <div
+            className={`fixed top-0 bottom-0 left-16 sm:left-20 right-0 z-[70] flex flex-col overflow-hidden ${
+              isClosing ? "menu-slide-out" : "menu-slide-in"
+            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation"
+            id="fullscreen-nav"
+          >
+            {/* Star-sky map as the navigation background — fully interactive
+                (hover tooltips), constellation lines appear only on hover,
+                and the field is denser than usual. */}
+            <NetworkBackground
+              interactive
+              constellationsOnHoverOnly
+              starDensity={1.35}
+            />
+
+            {/* Content above the star field — the panel starts where the left
+                rail ends, so the sidebar and its buttons stay visible. Tight
+                padding on phones so the big nav labels never clip horizontally. */}
+            <div
+              className="relative z-10 flex flex-col flex-1 overflow-y-auto pl-6 sm:pl-14 pr-3 sm:pr-10"
+              style={{ paddingTop: "max(0px, env(safe-area-inset-top))", paddingBottom: "max(0px, env(safe-area-inset-bottom))" }}
+            >
+          {/* Overlay top row: brand (darkens to home). No dark backdrop — the
+              star-sky field flows up right behind the company name. */}
+          <div className="flex items-center justify-between px-6 sm:px-12 py-4 border-b border-[#3C404A]/30">
+            <button
+              onClick={handleLogoHome}
+              className="flex items-center gap-3 cursor-pointer select-none"
+              aria-label="TrustNode — Home"
+            >
+              <span className="font-display font-medium text-xl text-[#F5F5F0] tracking-tighter">
+                Trust<span className="text-[#3B82F6]">Node</span>
+              </span>
+            </button>
+          </div>
+
+          {/* Navigation: vertical list of 4 (main sections), to the right a
+              list of 4 secondary pages (Download is the 8th item) — side by
+              side (per reference layout). Staggered reveal: items 01..08 fade
+              in one by one. */}
+          <nav
+            aria-label={t.header.nav}
+            className="flex-1 flex flex-col justify-center items-center px-6 sm:px-12 py-8 max-w-6xl mx-auto w-full"
+          >
+            {/* Logo above the nav heading */}
+            <div className="menu-item-in w-20 h-24 sm:w-24 sm:h-28 mb-5 sm:mb-7">
+              <img src={`${import.meta.env.BASE_URL}frame1.svg`} alt="TrustNode" className="w-full h-full object-contain" />
+            </div>
+
+            {/* Live clock: МСК for Russian, GMT for the rest */}
+            <div className="menu-item-in font-mono text-[11px] text-[#F5F5F0]/80 tracking-[0.2em] mb-3" style={{ animationDelay: "0.08s" }}>
+              <span className="text-[#3B82F6] font-bold">{clockLabel}</span>{" "}
+              <span className="tabular-nums">{clockTime}</span>
+            </div>
+
+            <span className="menu-item-in font-mono text-[11px] tracking-[0.3em] text-[#3B82F6] uppercase font-bold mb-6 sm:mb-10">
+              {t.header.nav}
+            </span>
+
+            <div className="flex flex-col lg:flex-row items-center justify-center lg:items-center gap-8 sm:gap-10 lg:gap-12">
+              {/* Left column: group «start» */}
+              <div className="flex flex-col gap-3 sm:gap-4 items-start max-w-full">
+                <span className="menu-item-in font-mono text-[10px] sm:text-[11px] tracking-[0.25em] text-[#3B82F6] uppercase font-bold mb-1">
+                  {GROUP_CAPTIONS.start[language] || GROUP_CAPTIONS.start.en}
+                </span>
+                {startItems.map((page, idx) => {
+                  const isActive = activePage === page;
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => handlePageNavigation(page)}
+                      aria-current={isActive ? "page" : undefined}
+                      style={{ animationDelay: `${0.1 + idx * 0.09}s` }}
+                      className="menu-item-in flex items-baseline gap-3 sm:gap-6 text-left group cursor-pointer max-w-full"
+                    >
+                      <span className="font-mono text-xl sm:text-3xl lg:text-5xl text-[#3B82F6] shrink-0">
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
+                      <span
+                        className={`font-display font-medium text-xl sm:text-3xl lg:text-5xl tracking-tighter transition-colors duration-300 pb-1 min-w-0 ${
+                          isActive
+                            ? "text-white underline decoration-white decoration-2 underline-offset-8"
+                            : "text-[#F5F5F0] group-hover:text-[#3B82F6]"
+                        }`}
+                      >
+                        {getPageLabel(page)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Right column: group «deep» */}
+              <div className="flex flex-col gap-3 sm:gap-4 items-start pl-0 lg:pl-10 lg:border-l lg:border-[#3C404A]/30 max-w-full">
+                <span className="menu-item-in font-mono text-[10px] sm:text-[11px] tracking-[0.25em] text-[#3B82F6] uppercase font-bold mb-1">
+                  {GROUP_CAPTIONS.deeper[language] || GROUP_CAPTIONS.deeper.en}
+                </span>
+                <button
+                  onClick={() => handlePageNavigation("sections")}
+                  className="menu-item-in mt-1 text-xs font-mono text-gray-500 underline decoration-gray-800 underline-offset-4 hover:text-[#3B82F6] transition-colors cursor-pointer"
+                >
+                  {language.startsWith("ru") ? "Показать все разделы" : "Show all sections"}
+                </button>
+                {deepItems.map((page, idx) => {
+                  const isActive = activePage === page;
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => handlePageNavigation(page)}
+                      aria-current={isActive ? "page" : undefined}
+                      style={{ animationDelay: `${0.1 + (idx + 4) * 0.09}s` }}
+                      className="menu-item-in flex items-baseline gap-3 text-left group cursor-pointer max-w-full"
+                    >
+                      <span className="font-mono text-lg sm:text-[28px] lg:text-[44px] text-[#3B82F6] shrink-0">
+                        {String(idx + 4).padStart(2, "0")}
+                      </span>
+                      <span
+                        className={`font-sans text-lg sm:text-[28px] lg:text-[44px] tracking-tighter transition-colors duration-300 pb-1 min-w-0 ${
+                          isActive
+                            ? "text-white underline decoration-white decoration-2 underline-offset-8"
+                            : "text-gray-300 group-hover:text-[#3B82F6]"
+                        }`}
+                      >
+                        {getPageLabel(page)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </nav>
+
+            {/* Accent Download CTA — the menu's separate action (per item 2);
+                distinct from the numbered page list (Download is also the 8th
+                small item). Animated with the rest of the staggered items. */}
+            <div className="menu-item-in flex justify-center px-6 sm:px-12 pb-6" style={{ animationDelay: "0.8s" }}>
+              <DownloadCTA size="lg" />
+            </div>
+
+            {/* Overlay footer: tagline only (socials live in the sidebar). No
+                dark backdrop — the star-sky field stays visible around it. */}
+            <div className="px-6 sm:px-12 py-4 border-t border-[#3C404A]/30">
+              <span className="menu-item-in font-mono text-[11px] text-gray-500 uppercase tracking-widest truncate" style={{ animationDelay: "0.95s" }}>
+                {t.brand.tagline}
+              </span>
+            </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Non-blocking mode toast confirmation — portaled to <body> for the same
+          reason as the fullscreen nav (escapes the transformed sidebar wrapper). */}
+      {createPortal(
+        <div
+          aria-live="polite"
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-xl border border-[#3B82F6]/30 bg-[#0A0A0B]/95 text-[#F5F5F0] font-sans text-xs shadow-[0_8px_30px_rgba(0,0,0,0.5)] backdrop-blur-md transition-[opacity,transform] duration-200 ${toast ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3 pointer-events-none"}`}
+        >
+          {toast}
+        </div>,
+        document.body
+      )}
+      {/* Full-screen black fade on brand click — covers everything (rail, nav,
+          toast) so the transition to Home reads as a cinematic "load". */}
+      {createPortal(
+        <div
+          aria-hidden="true"
+          className={`fixed inset-0 z-[90] bg-black pointer-events-none transition-opacity duration-500 ${
+            isDarkening ? "opacity-100" : "opacity-0"
+          }`}
+          id="logo-darken-overlay"
+        />,
+        document.body
+      )}
+    </>
+  );
+}

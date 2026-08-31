@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as Astronomy from "astronomy-engine";
-import { REAL_STARS, CONSTELLATION_LINES, type RealStar } from "../data/realStarCatalog";
+import { REAL_STARS, CONSTELLATION_LINES, getStarDistanceLy, type RealStar } from "../data/realStarCatalog";
 import { STAR_NAMES_RU, getRussianName } from "../data/starNamesRu";
 import { getSkyLabel } from "../data/skyLabelsI18n";
 import {
@@ -11,13 +11,48 @@ import {
 } from "../utils/skyCalculations";
 import { useSkyActivation, cachedSatellites, cachedSmallBodies } from "../hooks/useSkyActivation";
 
+// Box-style scene: every object also carries a real depth in light-years, so the whole
+// layout is a 3D box (parallelepiped). Depth is data only — the render stays static.
+const PLANET_SHELL_LY = 150;   // planets / sun / moon depth
+const SMALLBODY_SHELL_LY = 40; // comets / asteroids depth
+const SAT_SHELL_LY = 5;        // satellites depth (near foreground layer)
+
+// Distance from point (px,py) to segment (x1,y1)-(x2,y2).
+function distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return Math.hypot(px - x1, py - y1);
+  let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+}
+
+// Deterministic "deep space" starfield: as the flight deepens, more stars appear.
+// Seeds are fixed so scroll-frozen frames are perfectly stable (no flicker).
+const WARP_FIELD_TOTAL = 320;
+const WARP_FIELD_SEEDS: { s1: number; s2: number; s3: number }[] = [];
+for (let i = 0; i < WARP_FIELD_TOTAL; i++) {
+  WARP_FIELD_SEEDS.push({
+    s1: Math.abs(Math.sin(i * 12.9898 + 78.233) * 43758.5453) % 1,
+    s2: Math.abs(Math.sin(i * 78.233 + 12.9898) * 12543.123) % 1,
+    s3: Math.abs(Math.sin(i * 37.719 + 3.14159) * 51529.42) % 1
+  });
+}
+
 interface NetworkBackgroundProps {
   zoomFactor?: number;
   warpProgress?: number;
+  warpProgressRef?: { current: number }; // shared mutable progress, read per-frame without React re-render
   isEcoMode?: boolean;
   ecoMode?: boolean; // alias compatibility
   onSkyStatusChange?: (status: string) => void;
   language?: string;
+  suspended?: boolean; // pause rendering while an opaque 3D cinematic is on top
+  interactive?: boolean; // when false, no hover tooltips (used inside the nav overlay)
+  highlightConstellations?: boolean; // draw asterism lines prominently (nav background)
+  constellationsOnHoverOnly?: boolean; // draw asterism lines only when hovered
+  starDensity?: number; // override field density (0..1+; default follows mode)
 }
 
 interface ProjectedObject {
@@ -32,25 +67,64 @@ interface ProjectedObject {
   constellationCode?: string;
 }
 
-const NetworkBackground = React.memo(function NetworkBackground({
+export default function NetworkBackground({
   zoomFactor = 1.0,
   warpProgress = 0,
+  warpProgressRef: warpProgressRefProp,
   isEcoMode,
   ecoMode,
   onSkyStatusChange,
-  language = "ru"
+  language = "ru",
+  suspended = false,
+  interactive = true,
+  highlightConstellations = false,
+  constellationsOnHoverOnly = false,
+  starDensity
 }: NetworkBackgroundProps) {
   const activeEcoMode = isEcoMode ?? ecoMode ?? false;
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const viewportOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const reducedMotionMode = activeEcoMode || prefersReducedMotion;
+  const suspendedRef = useRef(suspended);
 
-  useSkyActivation(activeEcoMode);
+  useEffect(() => {
+    suspendedRef.current = suspended;
+  }, [suspended]);
+
+  // Scroll-driven warp progress (0..1). When a shared mutable ref is supplied
+  // (the 2D assembly path), it is read directly each frame; otherwise the number
+  // prop is mirrored into a local ref so per-frame updates don't restart the
+  // render-loop effect.
+  const warpProgressRef = useRef(warpProgress);
+  useEffect(() => {
+    warpProgressRef.current = warpProgress;
+  }, [warpProgress]);
+  const progressSource = warpProgressRefProp ?? warpProgressRef;
+
+  useSkyActivation(reducedMotionMode);
   const [hoveredItem, setHoveredItem] = useState<ProjectedObject | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const projectedObjectsRef = useRef<ProjectedObject[]>([]);
   const hoveredConstellationRef = useRef<string | null>(null);
+  const constellationSegmentsRef = useRef<{ code: string; x1: number; y1: number; x2: number; y2: number }[]>([]);
+  const containerSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
   const moonGlowMultiplierRef = useRef<number>(1.0);
   const sunAltitudeRef = useRef<number>(-20);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncPreference = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    syncPreference();
+    mediaQuery.addEventListener("change", syncPreference);
+
+    return () => {
+      mediaQuery.removeEventListener("change", syncPreference);
+    };
+  }, []);
 
   // 1. Calculate Moon Phase Multiplier every 5 minutes (0.85 at new moon, 1.15 at full moon)
   useEffect(() => {
@@ -58,7 +132,7 @@ const NetworkBackground = React.memo(function NetworkBackground({
       try {
         const phaseAngle = Astronomy.MoonPhase(new Date());
         moonGlowMultiplierRef.current = 0.85 + 0.3 * ((1 - Math.cos(phaseAngle * (Math.PI / 180))) / 2);
-      } catch (_e) {
+      } catch {
         moonGlowMultiplierRef.current = 1.0;
       }
     };
@@ -69,39 +143,27 @@ const NetworkBackground = React.memo(function NetworkBackground({
 
   // 3. Update live zenith constellation status every 1 minute
   useEffect(() => {
-    if (!onSkyStatusChange || activeEcoMode) return;
+    if (!onSkyStatusChange || reducedMotionMode) return;
 
     const updateSkyStatus = () => {
       try {
         const status = getLiveZenithConstellationStatus(new Date(), language);
         onSkyStatusChange(status);
-      } catch (_e) {
+      } catch {
         // ignore
       }
     };
     updateSkyStatus();
     const interval = setInterval(updateSkyStatus, 60000);
     return () => clearInterval(interval);
-  }, [onSkyStatusChange, activeEcoMode, language]);
+  }, [onSkyStatusChange, reducedMotionMode, language]);
 
-  // Handle global mousemove for interactive Stellarium tooltips.
-  // Throttled to once per animation frame: calling document.elementFromPoint()
-  // on every raw mousemove event (which can fire 100+ times/second) is one of
-  // the most expensive things you can do on the main thread, since it forces
-  // a synchronous hit-test against the full render tree every time. Also
-  // skipped entirely in eco mode, since the star canvas isn't animating there
-  // and hover tooltips are a nice-to-have, not core functionality.
+  // Handle global mousemove for interactive Stellarium tooltips
   useEffect(() => {
-    if (activeEcoMode) return;
+    if (!interactive) return;
 
-    let rafId: number | null = null;
-    let pendingEvent: MouseEvent | null = null;
-
-    const processMove = () => {
-      rafId = null;
-      const e = pendingEvent;
-      if (!e) return;
-
+    const handleMouseMove = (e: MouseEvent) => {
+      // Avoid triggering tooltips if user is hovering over solid landing page or interactive buttons
       const targetElem = document.elementFromPoint(e.clientX, e.clientY);
       if (targetElem) {
         const closestLanding = targetElem.closest("#core-landing-page, #legal-modal-content");
@@ -119,10 +181,16 @@ const NetworkBackground = React.memo(function NetworkBackground({
       let found: ProjectedObject | null = null;
       let minDist = 16; // hover threshold in px
 
+      // Object coordinates are container-relative; mouse events are
+      // viewport-relative, so translate by the container's offset.
+      const off = viewportOffsetRef.current;
+      const px = e.clientX - off.x;
+      const py = e.clientY - off.y;
+
       for (let i = 0; i < objects.length; i++) {
         const obj = objects[i];
-        const dx = e.clientX - obj.x;
-        const dy = e.clientY - obj.y;
+        const dx = px - obj.x;
+        const dy = py - obj.y;
         const dist = Math.hypot(dx, dy);
         if (dist < minDist) {
           minDist = dist;
@@ -130,10 +198,30 @@ const NetworkBackground = React.memo(function NetworkBackground({
         }
       }
 
+      // If the pointer isn't over a star dot, fall back to the constellation
+      // line segments so hovering any part of an asterism highlights it.
+      let constelFromLine: string | null = null;
+      if (!found) {
+        let lineMinDist = 10;
+        const segs = constellationSegmentsRef.current;
+        for (let i = 0; i < segs.length; i++) {
+          const s = segs[i];
+          const dist = distToSegment(px, py, s.x1, s.y1, s.x2, s.y2);
+          if (dist < lineMinDist) {
+            lineMinDist = dist;
+            constelFromLine = s.code;
+          }
+        }
+      }
+
       if (found) {
         hoveredConstellationRef.current = found.constellationCode || null;
         setHoveredItem(found);
-        setTooltipPos({ x: e.clientX, y: e.clientY });
+        setTooltipPos({ x: px, y: py });
+        document.body.style.cursor = "pointer";
+      } else if (constelFromLine) {
+        hoveredConstellationRef.current = constelFromLine;
+        if (hoveredItem !== null) setHoveredItem(null);
         document.body.style.cursor = "pointer";
       } else {
         if (hoveredConstellationRef.current !== null) {
@@ -146,20 +234,12 @@ const NetworkBackground = React.memo(function NetworkBackground({
       }
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
-      pendingEvent = e;
-      if (rafId === null) {
-        rafId = requestAnimationFrame(processMove);
-      }
-    };
-
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    window.addEventListener("mousemove", handleMouseMove);
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      if (rafId !== null) cancelAnimationFrame(rafId);
       document.body.style.cursor = "";
     };
-  }, [hoveredItem, activeEcoMode]);
+  }, [hoveredItem, interactive]);
 
   // Main canvas animation and astronomical projection loop
   useEffect(() => {
@@ -170,27 +250,47 @@ const NetworkBackground = React.memo(function NetworkBackground({
     if (!ctx) return;
 
     let animationFrameId: number;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let pixelRatio = 1;
+    let isMobile = width < 768;
+
+    const syncCanvasSize = () => {
+      if (!canvas) return;
+      // Size against the actual container box (not the window) so projection,
+      // star pixels and mouse-collision all share the same coordinate space,
+      // even when the canvas is nested inside an offset overlay (nav panel).
+      const container = containerRef.current;
+      const rect = container
+        ? container.getBoundingClientRect()
+        : canvas.getBoundingClientRect();
+      width = Math.max(1, Math.floor(rect.width));
+      height = Math.max(1, Math.floor(rect.height));
+      viewportOffsetRef.current = { x: rect.left, y: rect.top };
+      containerSizeRef.current = { width, height };
+      isMobile = width < 768;
+      pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      canvas.width = Math.floor(width * pixelRatio);
+      canvas.height = Math.floor(height * pixelRatio);
+      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    };
 
     const handleResize = () => {
-      if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
+      syncCanvasSize();
     };
+    syncCanvasSize();
     window.addEventListener("resize", handleResize);
-
-    const isMobile = width < 768;
 
     // Throttle heavy astronomical computations to once every 250ms while rendering smoothly at 60fps
     let lastAstroCalcTime = 0;
-    const astroCalcInterval = activeEcoMode ? 2000 : (isMobile ? 500 : 250);
+    const astroCalcInterval = reducedMotionMode ? 2000 : 250;
 
     // Throttle slower moving objects (satellites & comets/asteroids) to every 750ms for performance with 200 satellites
     let lastSlowCalcTime = 0;
-    const slowCalcInterval = activeEcoMode ? 3000 : (isMobile ? 1500 : 750);
+    const slowCalcInterval = reducedMotionMode ? 3000 : 750;
     let prevFrameTime = performance.now();
-    let frameCount = 0;
 
     // Projected coordinates cache for smooth interpolation
     interface StarCoord {
@@ -201,6 +301,7 @@ const NetworkBackground = React.memo(function NetworkBackground({
       size: number;
       alpha: number;
       centerDampen: number;
+      z: number;
     }
     let currentStarCoords: StarCoord[] = [];
 
@@ -213,6 +314,7 @@ const NetworkBackground = React.memo(function NetworkBackground({
       alt: number;
       size: number;
       centerDampen: number;
+      z: number;
     }
     let currentPlanetCoords: PlanetCoord[] = [];
 
@@ -224,6 +326,7 @@ const NetworkBackground = React.memo(function NetworkBackground({
       y: number;
       alt: number;
       centerDampen: number;
+      z: number;
     }
     let currentSmallBodyCoords: BodyCoord[] = [];
 
@@ -237,62 +340,32 @@ const NetworkBackground = React.memo(function NetworkBackground({
       alt: number;
       az: number;
       centerDampen: number;
+      z: number;
       trail: { x: number; y: number }[];
     }
     let currentSatCoords: SatCoord[] = [];
 
-    const isUltraLowEnd = typeof navigator !== "undefined" && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency < 4;
-    const maxTrail = isMobile ? 4 : 8;
-    const starList = isMobile ? REAL_STARS.slice(0, Math.floor(REAL_STARS.length * 0.75)) : REAL_STARS;
-
-    // Ultra-low-end devices: draw one static star frame and stop
-    if (isUltraLowEnd) {
-      const cx = width / 2;
-      const cy = height / 2;
-      const pr = Math.max(width, height) * 0.58 * zoomFactor;
-      const sNow = new Date();
-      const sObs = new Astronomy.Observer(55.7558, 37.6173, 0.05);
-      ctx.fillStyle = "#0A0A0B";
-      ctx.fillRect(0, 0, width, height);
-      for (let i = 0; i < Math.min(starList.length, 300); i++) {
-        const star = starList[i];
-        try {
-          const horiz = Astronomy.Horizon(sNow, sObs, star.ra, star.dec, "normal");
-          if (horiz.altitude > -15) {
-            const r = ((90 - horiz.altitude) / 90) * pr;
-            const theta = (horiz.azimuth - 90) * (Math.PI / 180);
-            const x = cx + r * Math.cos(theta);
-            const y = cy + r * Math.sin(theta);
-            const size = Math.max(0.7, Math.min(3.0, 2.7 - star.mag * 0.42)) * zoomFactor;
-            ctx.globalAlpha = Math.min(1, Math.max(0.2, 1.15 - star.mag * 0.22));
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-            ctx.fillStyle = star.mag < 0.5 ? "#F8FAFC" : "#E2E8F0";
-            ctx.fill();
-          }
-        } catch (_e) {}
-      }
-      ctx.globalAlpha = 1;
-      return;
-    }
-
     const render = (time: number) => {
-      frameCount++;
-      if (isMobile && (frameCount % 2 === 0)) {
+      // Keep the loop alive so it can resume later; skip ALL work while an opaque
+      // 3D cinematic is on top (suspended), otherwise the hidden 2D starfield
+      // keeps burning CPU on mobile.
+      if (!reducedMotionMode) {
         animationFrameId = requestAnimationFrame(render);
-        return;
       }
-      frameCount++;
-      if (isMobile && (frameCount % 2 === 0)) {
-        animationFrameId = requestAnimationFrame(render);
-        return;
-      }
+      if (suspendedRef.current) return;
       const dt = Math.min(0.1, Math.max(0, (time - prevFrameTime) / 1000));
       prevFrameTime = time;
 
       ctx.clearRect(0, 0, width, height);
+      const starDensityVal =
+        starDensity ??
+        (reducedMotionMode ? 0.35 : isMobile ? 0.55 : 1);
+      const starList = REAL_STARS.slice(0, Math.max(24, Math.floor(REAL_STARS.length * starDensityVal)));
 
       const moonGlow = moonGlowMultiplierRef.current;
+
+      // Hyperspace warp strength (0..1), scroll-driven. Frozen the moment scrolling stops.
+      const warp = reducedMotionMode ? 0 : progressSource.current;
 
       // 0. Horizon twilight glow if Sun altitude is between -6° and +6°
       const sunAlt = sunAltitudeRef.current;
@@ -324,6 +397,38 @@ const NetworkBackground = React.memo(function NetworkBackground({
       const now = new Date();
 
       const projectionRadius = Math.max(width, height) * 0.58 * zoomFactor;
+
+      // Scroll-linked outward flight position: during warp every object rushes away
+      // from the screen center. Near objects (small z) fly further/faster, so the
+      // real depth data drives the Star Wars tunnel feel. Frozen when scrolling stops.
+      const warpPos = (x: number, y: number, z: number) => {
+        if (warp <= 0.02) return { x, y, depthK: 1 };
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const r = Math.hypot(dx, dy);
+        if (r <= 0.5) return { x, y, depthK: 1 };
+        const ux = dx / r;
+        const uy = dy / r;
+        const depthK = Math.max(0.12, Math.min(1, 120 / Math.max(z, 1)));
+        const shift = warp * (isMobile ? 90 : 130) * depthK;
+        return { x: x + ux * shift, y: y + uy * shift, depthK };
+      };
+
+      // Deep-space stars revealed as the flight deepens: the further you fly, the
+      // denser the field gets. Positions are deterministic; only the count grows.
+      const warpField: { x: number; y: number; z: number; size: number }[] = [];
+      if (warp > 0.03) {
+        const revealCount = Math.floor(warp * WARP_FIELD_TOTAL);
+        const fieldRMax = Math.max(width, height) * 0.52;
+        for (let i = 0; i < revealCount; i++) {
+          const seed = WARP_FIELD_SEEDS[i];
+          const ang = seed.s1 * Math.PI * 2;
+          const rr = Math.min(width, height) * 0.08 + seed.s2 * fieldRMax;
+          const z = 6 + seed.s3 * 320;
+          const wp = warpPos(centerX + rr * Math.cos(ang), centerY + rr * Math.sin(ang), z);
+          warpField.push({ x: wp.x, y: wp.y, z, size: 0.7 + seed.s3 * 1.5 });
+        }
+      }
 
       // Recalculate astronomical positions if interval passed or empty
       if (time - lastAstroCalcTime > astroCalcInterval || currentStarCoords.length === 0) {
@@ -359,10 +464,11 @@ const NetworkBackground = React.memo(function NetworkBackground({
                 alt: horiz.altitude,
                 size,
                 alpha,
-                centerDampen
+                centerDampen,
+                z: getStarDistanceLy(star.id)
               });
             }
-          } catch (_e) {
+          } catch {
             // Ignore error for single star
           }
         }
@@ -402,10 +508,11 @@ const NetworkBackground = React.memo(function NetworkBackground({
                 y,
                 alt: horiz.altitude,
                 size: p.baseSize * zoomFactor,
-                centerDampen
+                centerDampen,
+                z: PLANET_SHELL_LY
               });
             }
-          } catch (_e) {
+          } catch {
             // Ignore
           }
         }
@@ -416,11 +523,12 @@ const NetworkBackground = React.memo(function NetworkBackground({
       if (time - lastSlowCalcTime > slowCalcInterval || currentSmallBodyCoords.length === 0 || (cachedSatellites && currentSatCoords.length === 0)) {
         lastSlowCalcTime = time;
 
-        if (!activeEcoMode && !isMobile) {
+        if (!reducedMotionMode) {
           // 3. Comets and Asteroids projection
           const nextSmallBodies: BodyCoord[] = [];
           const bodiesToUse = cachedSmallBodies && cachedSmallBodies.length > 0 ? cachedSmallBodies : SMALL_BODIES;
-          for (const sb of bodiesToUse) {
+          const smallBodies = bodiesToUse.slice(0, isMobile ? Math.max(4, Math.floor(bodiesToUse.length * 0.45)) : bodiesToUse.length);
+          for (const sb of smallBodies) {
             try {
               const eq = calculateSmallBodyRaDec(sb, now);
               const horiz = Astronomy.Horizon(now, observer, eq.ra, eq.dec, "normal");
@@ -439,21 +547,29 @@ const NetworkBackground = React.memo(function NetworkBackground({
                   x,
                   y,
                   alt: horiz.altitude,
-                  centerDampen
+                  centerDampen,
+                  z: SMALLBODY_SHELL_LY
                 });
               }
-          } catch (_e) {
-            // Ignore
+            } catch {
+              // Ignore
+            }
           }
-        }
+          currentSmallBodyCoords = nextSmallBodies;
 
-        // 4. Satellites look angles calculation
+          // 4. Satellites look angles calculation
           if (cachedSatellites && cachedSatellites.length > 0) {
             const nextSatCoords: SatCoord[] = [];
             const futureDate = new Date(now.getTime() + 750);
 
-            for (let i = 0; i < cachedSatellites.length; i++) {
-              const sat = cachedSatellites[i];
+            // The catalog is now the FULL active payload set (~12k+), far too
+            // many to draw on the 2D sky map. Evenly sample ~120 of them so the
+            // map stays readable while still showing the whole catalog's variety.
+            const maxDraw = isMobile ? 60 : 120;
+            const step = Math.max(1, Math.ceil(cachedSatellites.length / maxDraw));
+            const satellites = cachedSatellites.filter((_, i) => i % step === 0);
+            for (let i = 0; i < satellites.length; i++) {
+              const sat = satellites[i];
               const look = calculateSatLookAngles(sat.satrec, now, observerLat, observerLon);
               if (look && look.altitude > -2) {
                 const r = ((90 - look.altitude) / 90) * projectionRadius;
@@ -477,7 +593,7 @@ const NetworkBackground = React.memo(function NetworkBackground({
                 }
 
                 sat.trail.push({ x, y });
-                if (sat.trail.length > maxTrail) sat.trail.shift();
+                if (sat.trail.length > 8) sat.trail.shift();
 
                 nextSatCoords.push({
                   id: sat.id,
@@ -489,6 +605,7 @@ const NetworkBackground = React.memo(function NetworkBackground({
                   alt: look.altitude,
                   az: look.azimuth,
                   centerDampen,
+                  z: SAT_SHELL_LY,
                   trail: [...sat.trail]
                 });
               }
@@ -498,32 +615,37 @@ const NetworkBackground = React.memo(function NetworkBackground({
         }
       }
 
-      // Build quick lookup map for star positions by ID for constellation line drawing
-      const starMap = new Map<string, StarCoord>();
+      // Build quick lookup map for star positions by ID for constellation line drawing.
+      // Warp shift is applied here so lines, tooltips and dots share the same pixels.
+      const starMap = new Map<string, { x: number; y: number; centerDampen: number }>();
+      const drawnStars: { sc: StarCoord; x: number; y: number }[] = [];
       const visibleInteractiveObjects: ProjectedObject[] = [];
 
       for (let i = 0; i < currentStarCoords.length; i++) {
         const sc = currentStarCoords[i];
-        starMap.set(sc.star.id, sc);
+        const wp = warpPos(sc.x, sc.y, sc.z);
+        starMap.set(sc.star.id, { x: wp.x, y: wp.y, centerDampen: sc.centerDampen });
+        drawnStars.push({ sc, x: wp.x, y: wp.y });
         visibleInteractiveObjects.push({
           id: sc.star.id,
           type: "STAR",
-          x: sc.x,
-          y: sc.y,
+          x: wp.x,
+          y: wp.y,
           size: sc.size,
           titleRu: getRussianName(sc.star.nameEn || sc.star.id, language),
           subtitleRu: sc.star.constellationCode ? `${getSkyLabel("constellation", language)}: ${getRussianName(sc.star.constellationCode, language) || sc.star.constellationCode}` : undefined,
-          techInfo: `${getSkyLabel("magnitude", language)}: ${sc.star.mag.toFixed(2)}m`,
+          techInfo: `${getSkyLabel("magnitude", language)}: ${sc.star.mag.toFixed(2)}m // ${sc.z.toFixed(0)} ly`,
           constellationCode: sc.star.constellationCode
         });
       }
 
       for (const p of currentPlanetCoords) {
+        const wp = warpPos(p.x, p.y, p.z);
         visibleInteractiveObjects.push({
           id: p.id,
           type: "PLANET",
-          x: p.x,
-          y: p.y,
+          x: wp.x,
+          y: wp.y,
           size: p.size,
           titleRu: p.nameRu,
           techInfo: `${getSkyLabel("altitude", language)}: ${p.alt.toFixed(1)}°`
@@ -531,134 +653,187 @@ const NetworkBackground = React.memo(function NetworkBackground({
       }
 
       for (const sb of currentSmallBodyCoords) {
+        const wp = warpPos(sb.x, sb.y, sb.z);
         visibleInteractiveObjects.push({
           id: sb.id,
           type: sb.type,
-          x: sb.x,
-          y: sb.y,
+          x: wp.x,
+          y: wp.y,
           size: 2.2,
           titleRu: sb.nameRu,
           techInfo: `${getSkyLabel("keplerianOrbitAlt", language)}: ${sb.alt.toFixed(1)}°`
         });
       }
 
-      // DRAW CONSTELLATION ASTERISM LINES (BATCHED DRAWING)
+      // DRAW CONSTELLATION ASTERISM LINES
       const activeConstel = hoveredConstellationRef.current;
+      const segments: { code: string; x1: number; y1: number; x2: number; y2: number }[] = [];
 
-      // 1. Draw non-highlighted lines in one single batched path (extremely fast, 0 shadowBlur)
-      ctx.save();
-      ctx.strokeStyle = `rgba(180, 210, 255, ${(0.16 * moonGlow).toFixed(3)})`;
-      ctx.lineWidth = 0.65;
-      ctx.beginPath();
       for (let i = 0; i < CONSTELLATION_LINES.length; i++) {
         const constel = CONSTELLATION_LINES[i];
-        if (activeConstel === constel.code) continue;
+        const isHighlighted = activeConstel === constel.code || highlightConstellations;
+
+        // Hover-only mode: connections are invisible until the pointer is over
+        // one of their stars (used inside the nav overlay).
+        if (constellationsOnHoverOnly && !isHighlighted) {
+          for (let j = 0; j < constel.lines.length; j++) {
+            const [id1, id2] = constel.lines[j];
+            const s1 = starMap.get(id1);
+            const s2 = starMap.get(id2);
+            if (s1 && s2) {
+              segments.push({ code: constel.code, x1: s1.x, y1: s1.y, x2: s2.x, y2: s2.y });
+            }
+          }
+          continue;
+        }
+
+        ctx.save();
+        if (isHighlighted) {
+          ctx.strokeStyle = `rgba(45, 212, 191, ${(0.75 * moonGlow).toFixed(3)})`;
+          ctx.lineWidth = 1.4;
+          ctx.shadowColor = "#2DD4BF";
+          ctx.shadowBlur = 8 * moonGlow;
+        } else {
+          ctx.strokeStyle = `rgba(139, 143, 156, ${(0.16 * moonGlow).toFixed(3)})`;
+          ctx.lineWidth = 0.65;
+        }
 
         for (let j = 0; j < constel.lines.length; j++) {
           const [id1, id2] = constel.lines[j];
           const s1 = starMap.get(id1);
           const s2 = starMap.get(id2);
           if (s1 && s2) {
+            const avgDampen = isHighlighted ? 1 : (s1.centerDampen + s2.centerDampen) / 2;
+            ctx.globalAlpha = avgDampen;
+            ctx.beginPath();
             ctx.moveTo(s1.x, s1.y);
             ctx.lineTo(s2.x, s2.y);
+            ctx.stroke();
+            segments.push({ code: constel.code, x1: s1.x, y1: s1.y, x2: s2.x, y2: s2.y });
           }
         }
-      }
-      ctx.stroke();
-      ctx.restore();
-
-      // 2. Draw highlighted constellation lines separately with glow
-      if (activeConstel) {
-        ctx.save();
-        ctx.strokeStyle = `rgba(46, 125, 255, ${(0.75 * moonGlow).toFixed(3)})`;
-        ctx.lineWidth = 1.4;
-        ctx.shadowColor = "#2E7DFF";
-        ctx.shadowBlur = isMobile ? 0 : 6 * moonGlow;
-        ctx.beginPath();
-        for (let i = 0; i < CONSTELLATION_LINES.length; i++) {
-          const constel = CONSTELLATION_LINES[i];
-          if (constel.code !== activeConstel) continue;
-
-          for (let j = 0; j < constel.lines.length; j++) {
-            const [id1, id2] = constel.lines[j];
-            const s1 = starMap.get(id1);
-            const s2 = starMap.get(id2);
-            if (s1 && s2) {
-              ctx.moveTo(s1.x, s1.y);
-              ctx.lineTo(s2.x, s2.y);
-            }
-          }
-        }
-        ctx.stroke();
         ctx.restore();
       }
+      constellationSegmentsRef.current = segments;
 
       // DRAW STARS
-      // 1. Draw all non-hovered stars without save/restore inside loop or shadowBlur
-      ctx.save();
-      for (let i = 0; i < currentStarCoords.length; i++) {
-        const sc = currentStarCoords[i];
-        const isHovered = activeConstel === sc.star.constellationCode;
-        if (isHovered) continue;
+      for (let i = 0; i < drawnStars.length; i++) {
+        const st = drawnStars[i];
+        const sc = st.sc;
+        const isHovered = hoveredConstellationRef.current === sc.star.constellationCode;
 
-        ctx.globalAlpha = sc.alpha * sc.centerDampen;
-        ctx.beginPath();
-        ctx.arc(sc.x, sc.y, sc.size, 0, Math.PI * 2);
-        ctx.fillStyle = sc.star.mag < 0.5 ? "#F8FAFC" : "#E2E8F0";
-        ctx.fill();
-      }
-      ctx.restore();
-
-      // 2. Draw hovered stars with glow
-      if (activeConstel) {
         ctx.save();
-        ctx.shadowColor = "#2E7DFF";
-        ctx.shadowBlur = isMobile ? 0 : 8 * moonGlow;
-        for (let i = 0; i < currentStarCoords.length; i++) {
-          const sc = currentStarCoords[i];
-          const isHovered = activeConstel === sc.star.constellationCode;
-          if (!isHovered) continue;
+        ctx.globalAlpha = sc.alpha * (isHovered ? 1 : sc.centerDampen);
 
-          ctx.globalAlpha = sc.alpha;
-          ctx.beginPath();
-          ctx.arc(sc.x, sc.y, sc.size * 1.3, 0, Math.PI * 2);
-          ctx.fillStyle = "#FFFFFF";
-          ctx.fill();
+        // Star Wars hyperspace streaks: each star stretches into a line radiating from
+        // the screen center. Length scales with warp and with how close the star is.
+        if (warp > 0.02) {
+          const dx = st.x - centerX;
+          const dy = st.y - centerY;
+          const r = Math.hypot(dx, dy);
+          if (r > 0.5) {
+            const ux = dx / r;
+            const uy = dy / r;
+            const depthK = Math.max(0.12, Math.min(1, 120 / Math.max(sc.z, 1)));
+            const len = warp * (isMobile ? 26 : 40) * depthK;
+            const tailX = st.x - ux * len;
+            const tailY = st.y - uy * len;
+            const grad = ctx.createLinearGradient(tailX, tailY, st.x, st.y);
+            grad.addColorStop(0, "rgba(226, 232, 240, 0)");
+            grad.addColorStop(1, `rgba(226, 232, 240, ${(0.55 * warp).toFixed(3)})`);
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 1.1;
+            ctx.beginPath();
+            ctx.moveTo(tailX, tailY);
+            ctx.lineTo(st.x, st.y);
+            ctx.stroke();
+          }
         }
+
+        // Чёткие точки, без blur-свечения вокруг звёзд (как в bot/card_generator.py):
+        // звёзды — чистые круги, свечение только на активной (hovered) звезде.
+        if (isHovered) {
+          ctx.shadowColor = "#2DD4BF";
+          ctx.shadowBlur = 10 * moonGlow;
+        }
+
+        ctx.beginPath();
+        ctx.arc(st.x, st.y, isHovered ? sc.size * 1.3 : sc.size, 0, Math.PI * 2);
+        ctx.fillStyle = isHovered ? "#FFFFFF" : sc.star.mag < 0.5 ? "#F8FAFC" : "#E2E8F0";
+        ctx.fill();
         ctx.restore();
       }
 
-      // DRAW PLANETS & SUN/MOON (Reduced shadowBlur)
+      // DRAW DEEP-SPACE STARS (extra field revealed while flying further out)
+      if (warpField.length > 0) {
+        for (let i = 0; i < warpField.length; i++) {
+          const fs = warpField[i];
+          ctx.save();
+          ctx.globalAlpha = 0.75 * warp;
+          const dx = fs.x - centerX;
+          const dy = fs.y - centerY;
+          const r = Math.hypot(dx, dy);
+          if (r > 0.5) {
+            const ux = dx / r;
+            const uy = dy / r;
+            const depthK = Math.max(0.12, Math.min(1, 120 / fs.z));
+            const len = warp * (isMobile ? 22 : 36) * depthK;
+            const tailX = fs.x - ux * len;
+            const tailY = fs.y - uy * len;
+            const grad = ctx.createLinearGradient(tailX, tailY, fs.x, fs.y);
+            grad.addColorStop(0, "rgba(190, 210, 235, 0)");
+            grad.addColorStop(1, `rgba(190, 210, 235, ${(0.5 * warp).toFixed(3)})`);
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 0.9;
+            ctx.beginPath();
+            ctx.moveTo(tailX, tailY);
+            ctx.lineTo(fs.x, fs.y);
+            ctx.stroke();
+          }
+          ctx.beginPath();
+          ctx.arc(fs.x, fs.y, fs.size, 0, Math.PI * 2);
+          ctx.fillStyle = "#C7D2FE";
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // DRAW PLANETS & SUN/MOON
       for (const p of currentPlanetCoords) {
+        const wp = warpPos(p.x, p.y, p.z);
         ctx.save();
         ctx.globalAlpha = p.centerDampen;
         ctx.shadowColor = p.color;
-        ctx.shadowBlur = isMobile ? 0 : 4 * moonGlow;
+        ctx.shadowBlur = 10 * moonGlow;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.arc(wp.x, wp.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = p.color;
         ctx.fill();
         ctx.restore();
       }
 
       // DRAW COMETS & ASTEROIDS
-      if (!activeEcoMode) {
+      if (!reducedMotionMode) {
         for (const sb of currentSmallBodyCoords) {
+          const wp = warpPos(sb.x, sb.y, sb.z);
+          const sx = wp.x;
+          const sy = wp.y;
           ctx.save();
           ctx.globalAlpha = sb.centerDampen;
           if (sb.type === "COMET") {
-            const dx = sb.x - centerX;
-            const dy = sb.y - centerY;
+            // Draw glowing bluish tail pointing away from center/Sun
+            const dx = sx - centerX;
+            const dy = sy - centerY;
             const len = Math.hypot(dx, dy) || 1;
-            const tailX = sb.x + (dx / len) * 16;
-            const tailY = sb.y + (dy / len) * 16;
+            const tailX = sx + (dx / len) * 16;
+            const tailY = sy + (dy / len) * 16;
 
-            const grad = ctx.createLinearGradient(sb.x, sb.y, tailX, tailY);
+            const grad = ctx.createLinearGradient(sx, sy, tailX, tailY);
             grad.addColorStop(0, "rgba(125, 211, 252, 0.85)");
             grad.addColorStop(1, "rgba(56, 189, 248, 0)");
 
             ctx.beginPath();
-            ctx.moveTo(sb.x, sb.y);
+            ctx.moveTo(sx, sy);
             ctx.lineTo(tailX, tailY);
             ctx.strokeStyle = grad;
             ctx.lineWidth = 2.5;
@@ -666,15 +841,15 @@ const NetworkBackground = React.memo(function NetworkBackground({
 
             // Comet head
             ctx.shadowColor = "#38BDF8";
-            ctx.shadowBlur = isMobile ? 0 : 4 * moonGlow;
+            ctx.shadowBlur = 8 * moonGlow;
             ctx.beginPath();
-            ctx.arc(sb.x, sb.y, 2.0, 0, Math.PI * 2);
+            ctx.arc(sx, sy, 2.0, 0, Math.PI * 2);
             ctx.fillStyle = "#E0F2FE";
             ctx.fill();
           } else {
             // Asteroid dot
             ctx.beginPath();
-            ctx.arc(sb.x, sb.y, 1.3, 0, Math.PI * 2);
+            ctx.arc(sx, sy, 1.3, 0, Math.PI * 2);
             ctx.fillStyle = "#94A3B8";
             ctx.fill();
           }
@@ -683,23 +858,36 @@ const NetworkBackground = React.memo(function NetworkBackground({
       }
 
       // DRAW SATELLITES (if loaded and not eco mode)
-      if (!activeEcoMode && currentSatCoords.length > 0) {
+      if (!reducedMotionMode && currentSatCoords.length > 0) {
         for (let i = 0; i < currentSatCoords.length; i++) {
           const sat = currentSatCoords[i];
+          // Smooth 60fps interpolation using orbital velocity
           sat.x += sat.vx * dt;
           sat.y += sat.vy * dt;
+          const wp = warpPos(sat.x, sat.y, sat.z);
+          const sx = wp.x;
+          const sy = wp.y;
+          const wdx = sx - sat.x;
+          const wdy = sy - sat.y;
 
-          // Draw fading trail in a single batched stroke
+          // Draw fading trail
           if (sat.trail.length > 1) {
             ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(sat.trail[0].x, sat.trail[0].y);
-            for (let tIdx = 1; tIdx < sat.trail.length; tIdx++) {
-              ctx.lineTo(sat.trail[tIdx].x, sat.trail[tIdx].y);
+            for (let tIdx = 0; tIdx < sat.trail.length - 1; tIdx++) {
+              const p = (tIdx + 1) / sat.trail.length;
+              const pNext = (tIdx + 2) / sat.trail.length;
+              ctx.beginPath();
+              ctx.moveTo(sat.trail[tIdx].x + wdx, sat.trail[tIdx].y + wdy);
+              ctx.lineTo(sat.trail[tIdx + 1].x + wdx, sat.trail[tIdx + 1].y + wdy);
+              ctx.strokeStyle = `rgba(255, 230, 180, ${pNext * 0.55 * sat.centerDampen})`;
+              ctx.lineWidth = 1.2 * pNext;
+              ctx.stroke();
+
+              ctx.beginPath();
+              ctx.arc(sat.trail[tIdx].x + wdx, sat.trail[tIdx].y + wdy, 1.2 * pNext, 0, Math.PI * 2);
+              ctx.fillStyle = `rgba(255, 240, 210, ${p * 0.7 * sat.centerDampen})`;
+              ctx.fill();
             }
-            ctx.strokeStyle = `rgba(255, 230, 180, ${(0.3 * sat.centerDampen).toFixed(3)})`;
-            ctx.lineWidth = 1.0;
-            ctx.stroke();
             ctx.restore();
           }
 
@@ -707,18 +895,18 @@ const NetworkBackground = React.memo(function NetworkBackground({
           ctx.save();
           ctx.globalAlpha = sat.centerDampen;
           ctx.beginPath();
-          ctx.arc(sat.x, sat.y, 2.2, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(255, 250, 240, 1)";
-          ctx.shadowColor = "#FDE68A";
-          ctx.shadowBlur = isMobile ? 0 : 4 * moonGlow;
+          ctx.arc(sx, sy, 2.2, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255, 250, 240, 1)"; // warm white
+          ctx.shadowColor = "#FDE68A"; // warm gold/amber
+          ctx.shadowBlur = 8 * moonGlow;
           ctx.fill();
           ctx.restore();
 
           visibleInteractiveObjects.push({
             id: sat.id,
             type: "SATELLITE",
-            x: sat.x,
-            y: sat.y,
+            x: sx,
+            y: sy,
             size: 2.5,
             titleRu: sat.nameRu,
             techInfo: `${getSkyLabel("orbit", language)}: ${sat.alt.toFixed(1)}° // ${getSkyLabel("az", language)}: ${sat.az.toFixed(0)}°`
@@ -727,10 +915,6 @@ const NetworkBackground = React.memo(function NetworkBackground({
       }
 
       projectedObjectsRef.current = visibleInteractiveObjects;
-
-      if (!activeEcoMode) {
-        animationFrameId = requestAnimationFrame(render);
-      }
     };
 
     animationFrameId = requestAnimationFrame(render);
@@ -741,31 +925,33 @@ const NetworkBackground = React.memo(function NetworkBackground({
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [zoomFactor, warpProgress, activeEcoMode, language]);
+  }, [zoomFactor, reducedMotionMode, language]);
 
   return (
     <div
+      ref={containerRef}
       className="absolute inset-0 w-full h-full bg-[#0A0A0B] pointer-events-none overflow-hidden"
       id="network-background-container"
     >
       <canvas
         ref={canvasRef}
-        className="w-full h-full absolute inset-0 transition-opacity duration-700 pointer-events-none"
+        className="w-full h-full absolute inset-0 transition-opacity duration-300 pointer-events-none"
       />
 
-      {/* Interactive Floating Tooltip */}
+      {/* Interactive Floating Tooltip — positioned relative to the container so
+          it stays aligned with stars even inside the offset nav overlay. */}
       {hoveredItem && (
         <div
-          className="fixed z-50 px-3.5 py-2 rounded-xl bg-[#070709]/92 backdrop-blur-md border border-[#2E7DFF]/50 shadow-[0_0_25px_rgba(46,125,255,0.3)] text-[#F5F5F0] pointer-events-none transition-all duration-75 flex flex-col gap-0.5 animate-fade-in"
+          className="absolute z-50 px-3.5 py-2 rounded-xl bg-[#12141A]/95 backdrop-blur-md border border-[#3B82F6]/50 text-[#F5F5F0] pointer-events-none transition duration-75 flex flex-col gap-0.5 animate-fade-in"
           style={{
-            left: Math.min(window.innerWidth - 250, tooltipPos.x + 16),
-            top: Math.max(16, Math.min(window.innerHeight - 90, tooltipPos.y - 14)),
+            left: Math.max(8, Math.min((containerSizeRef.current.width || window.innerWidth) - 250, tooltipPos.x + 16)),
+            top: Math.max(8, Math.min((containerSizeRef.current.height || window.innerHeight) - 90, tooltipPos.y - 14)),
           }}
           id="celestial-tooltip"
         >
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#2E7DFF] animate-pulse" />
-            <span className="font-mono text-xs font-bold text-[#2E7DFF] tracking-wider uppercase">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#2DD4BF] animate-pulse" />
+            <span className="font-mono text-xs font-bold text-[#2DD4BF] tracking-wider uppercase">
               {hoveredItem.titleRu}
             </span>
           </div>
@@ -783,6 +969,4 @@ const NetworkBackground = React.memo(function NetworkBackground({
       )}
     </div>
   );
-});
-
-export default NetworkBackground;
+}

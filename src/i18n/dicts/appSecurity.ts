@@ -60,17 +60,17 @@ export const complianceLabel: Partial<Record<LanguageCode, string>> = {
 };
 
 export const complianceText: Partial<Record<LanguageCode, string>> = {
-  ru: "Юридический статус программного обеспечения TrustNode в отношении применимых нормативных требований в настоящее время уточняется.",
-  en: "The legal status of TrustNode software under applicable regulatory requirements is currently under review.",
-  es: "El estado legal del software TrustNode respecto a los requisitos regulatorios aplicables esta siendo revisado actualmente.",
-  zh: "TrustNode 软件在相关监管要求下的法律地位目前正在审查中。",
-  hi: "लागू नियामक आवश्यकताओं के तहत TrustNode सॉफ़्टवेयर की कानूनी स्थिति की वर्तमान में समीक्षा की जा रही है।",
-  ar: "الوضع القانوني لبرنامج TrustNode بموجب المتطلبات التنظيمية المعمول بها قيد المراجعة حاليا.",
-  pt: "O status legal do software TrustNode em relacao aos requisitos regulatorios aplicaveis esta atualmente em analise.",
-  fr: "Le statut juridique du logiciel TrustNode au regard des exigences reglementaires applicables est actuellement en cours d'examen.",
-  de: "Der rechtliche Status der TrustNode-Software im Hinblick auf geltende regulatorische Anforderungen wird derzeit geprueft.",
-  ja: "TrustNodeソフトウェアの関連法規制上の法的地位については現在確認中です。",
-  tr: "TrustNode yazilimi'nin ilgili mevzuat gereklilikleri karsisindaki yasal durumu su anda incelenmektedir."
+  ru: "TrustNode классифицируется как семантический эвристический анализатор локальных данных и текстовых паттернов. Система НЕ содержит встроенных средств шифрования стороннего трафика, благодаря чему не требует обязательного лицензирования в ФСБ России по Постановлению Правительства №313.",
+  en: "TrustNode operates strictly as a semantic heuristic text analyzer inside a localized memory environment. Since it does not encrypt or decrypt external network payloads, it does not require mandatory Russian Federal Security Service (FSB) licensing.",
+  es: "TrustNode se clasifica como un analizador heurístico semántico de datos locales y patrones de texto. El sistema NO contiene herramientas de cifrado para tráfico externo, por lo que no requiere licencias obligatorias del Servicio Federal de Seguridad (FSB) de Rusia.",
+  zh: "TrustNode 严格作为本地化内存环境中的语义启发式文本分析器运行。由于它不对外部网络负载进行加密或解密，因此不需要俄罗斯联邦安全局 (FSB) 的强制许可。",
+  hi: "TrustNode एक स्थानीयकृत मेमोरी वातावरण के भीतर अर्थगत अनुमानी पाठ विश्леषक के रूप में कार्य करता है। चूंकि यह बाहरी नेटवर्क पेलोड को एन्क्रिप्ट या डिक्रिप्ट नहीं करता है, इसलिए इसके लिए रूसी संघीय सुरक्षा सेवा (FSB) लाइसेंसिंग की आवश्यकता नहीं है।",
+  ar: "يتم تصنيف TrustNode كمحلل إرشادي دلالي للبيانات المحلية وأنماط النصوص. لا يحتوي النظام على أي أدوات تشفير لحركة مرور خارجية، وبالتالي لا يتطلب ترخيصًا إلزاميًا من جهاز الأمن الفيدرالي الروسي (FSB).",
+  pt: "O TrustNode é classificado como um analysador heurístico semântico de dados locais e padrões de texto. O sistema NÃO содержит ferramentas de criptografia para tráfego de terceiros, portanto, não exige licenciamento obrigatório do FSB russo.",
+  fr: "TrustNode est classé comme un analyseur heuristique sémantique de données locales et de motifs textuels. Le système ne contient aucun outil de chiffrement tiers, il n'est donc pas soumis à l'octroi d'une licence obligatoire par le FSB russe.",
+  de: "TrustNode arbeitet ausschließlich als semantisch-heuristischer Textanalysator in einer lokalen Speicherumgebung. Da es keine externen Netzwerknutzdaten verschlüsselt oder entschlüsselt, ist keine gesetzlich vorgeschriebene FSB-Lizenzierung erforderlich.",
+  ja: "TrustNodeは、ローカルメモリ環境内の意味論的ヒューリスティックテキスト分析ツールとしてのみ動作します。外部ネットワークペイロードを暗号化または復号することはないため、ロシア連邦保安庁（FSB）による強制ライセンスの対象外となります。",
+  tr: "TrustNode, yerelleştirilmiş bir bellek ortamında kesinlikle semantik bir sezgisel metin analizörü olarak çalışır. Harici ağ yüklerini şifrelemediği veya şifresini çözmediği için, zorunlu Rusya Federal Güvenlik Servisi (FSB) lisanslaması gerektirmez."
 };
 
 export const features: Partial<Record<LanguageCode, Array<{ title: string; desc: string }>>> = {

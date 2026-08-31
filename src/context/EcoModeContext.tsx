@@ -5,56 +5,44 @@ interface EcoModeContextType {
   toggleEcoMode: () => void;
 }
 
+const STORAGE_KEY = 'trustnode_eco';
 const EcoModeContext = createContext<EcoModeContextType | undefined>(undefined);
+// A user who has never touched the header toggle is assumed to follow their
+// OS-level accessibility preference instead: if the system asks for reduced
+// motion (make it more usable for us too), eco mode turns on automatically.
+// As soon as the user toggles manually, that explicit choice wins and is
+// persisted; a later OS change never overrides it.
+const CHOICE_KEY = 'trustnode_eco_explicit';
 
-/**
- * Best-effort, conservative detection of a low-end device.
- * Never assumes "weak" from a single vague signal — requires at least one
- * concrete low-resource indicator (few CPU cores, low RAM, save-data mode,
- * or the OS-level "prefers reduced motion" setting) before defaulting the
- * background animation to eco mode. This only changes the DEFAULT; a user
- * who has already toggled the switch manually always keeps their choice.
- */
-function detectLowEndDevice(): boolean {
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
-
-  try {
-    const cores = (navigator as any).hardwareConcurrency;
-    if (typeof cores === 'number' && cores > 0 && cores <= 4) return true;
-
-    const memory = (navigator as any).deviceMemory;
-    if (typeof memory === 'number' && memory > 0 && memory <= 4) return true;
-
-    const connection = (navigator as any).connection;
-    if (connection?.saveData) return true;
-    if (typeof connection?.effectiveType === 'string' && /2g/.test(connection.effectiveType)) return true;
-
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
-  } catch (_e) {
-    // If detection throws for any reason, fail safe: treat as a normal device.
-    return false;
-  }
-
-  return false;
-}
+const queried = (): boolean => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 export const EcoModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [ecoMode, setEcoMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem('trustnode_eco');
-    // Respect an explicit prior choice (on OR off) if the user already set one.
-    if (saved === 'true') return true;
-    if (saved === 'false') return false;
-    // No prior choice recorded yet: pick a sensible default based on device capability.
-    return detectLowEndDevice();
+    const explicit = localStorage.getItem(CHOICE_KEY);
+    if (explicit) return localStorage.getItem(STORAGE_KEY) === 'true';
+    // No explicit choice yet — default to the OS reduced-motion preference.
+    return queried();
   });
 
   const toggleEcoMode = () => {
     setEcoMode((prev) => {
       const next = !prev;
-      localStorage.setItem('trustnode_eco', String(next));
+      localStorage.setItem(CHOICE_KEY, 'true');
+      localStorage.setItem(STORAGE_KEY, String(next));
       return next;
     });
   };
+
+  // While the user still has no explicit preference, keep following OS changes
+  // (e.g. enabling reduced motion while the page is open).
+  useEffect(() => {
+    if (localStorage.getItem(CHOICE_KEY)) return;
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!mq || !mq.addEventListener) return;
+    const apply = () => setEcoMode(mq.matches);
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
 
   useEffect(() => {
     if (ecoMode) {

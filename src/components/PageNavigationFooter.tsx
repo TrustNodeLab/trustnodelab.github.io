@@ -1,8 +1,11 @@
 import React from "react";
-import { ArrowRight, Sparkles, Cpu, Layers, Milestone, Users, Ticket, BarChart3, ArrowUpRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { useNavigation, PageId } from "../navigation/NavigationContext";
 import { useTranslation } from "../i18n/LanguageContext";
 import { motion } from "motion/react";
+import { getNextNavItem } from "./Navigation";
+import { usePersonalItems } from "../lib/personalRoute";
+import ScanCard from "./ScanCard";
 
 const NEXT_LABEL: Record<string, string> = {
   ru: "Следующий раздел",
@@ -18,263 +21,181 @@ const NEXT_LABEL: Record<string, string> = {
   ja: "次のセクション",
 };
 
-interface PageConfig {
-  id: PageId;
-  description: Record<string, string>;
-}
+export const PAGE_DESCRIPTIONS: Record<PageId, Record<string, string>> = {
+  features: {
 
-const PAGES_SEQ: PageConfig[] = [
-  {
-    id: "how-it-works",
-    description: {
-      ru: "Подробный разбор ИБ-купола и ассистента Kira",
-      en: "Deep dive into the security dome and Kira Assistant",
-      es: "Análisis detallado de la cúpula y el asistente Kira",
-      zh: "深入了解安全穹顶与 Kira 智能助手",
-      tr: "Güvenlik kubbesi ve Kira Asistanı hakkında detaylı inceleme",
-      hi: "सुरक्षा डोम और Kira सहायक का विस्तृत विवरण",
-      ar: "شرح مفصل لقبة الأمان ومساعد Kira",
-      pt: "Análise detalhada do domo de segurança e assistente Kira",
-      fr: "Analyse détaillée du dôme de sécurité et de l'assistant Kira",
-      de: "Detaillierte Analyse der Sicherheitskuppel und des Kira-Assistenten",
-      ja: "セキュリティドームとKiraアシスタントの詳細解説",
-    }
-  },
-  {
-    id: "tech",
-    description: {
-      ru: "Технические подробности и доказательства разработки",
-      en: "Technical details and active development evidence",
-      es: "Detalles técnicos y evidencia de desarrollo activo",
-      zh: "技术细节与活跃开发证据",
-      tr: "Teknik detaylar ve aktif geliştirme kanıtları",
-      hi: "तकनीकी विवरण and सक्रिय विकास साक्ष्य",
-      ar: "التفاصيل التقنية وأدلة التطوير النشط",
-      pt: "Detalhes técnicos e evidências de desenvolvimento ativo",
-      fr: "Détails techniques et preuves de développement actif",
-      de: "Technische Details und Nachweise der aktiven Entwicklung",
-      ja: "技術的な詳細とアクティブな开发実績",
-    }
-  },
-  {
-    id: "roadmap",
-    description: {
-      ru: "Карта разработки, научные грамоты и ONNX-ядро",
-      en: "Development roadmap, academic credentials, and ONNX engine",
-      es: "Mapa de desarrollo, credenciales académicas y motor ONNX",
-      zh: "研发路线图、学术凭证及 ONNX 核心引擎",
-      tr: "Geliştirme yol haritası, akademik belgeler ve ONNX motoru",
-      hi: "विकास रोडमैप, शैक्षणिक कредиंशियल्स और ONNX इंजन",
-      ar: "خريطة طريق التطوير والمؤهلات الأكاديمية ومحرك ONNX",
-      pt: "Roteiro de desenvolvimento, credenciais acadêmicas e motor ONNX",
-      fr: "Feuille de route de développement, diplômes universitaires et moteur ONNX",
-      de: "Entwicklungs-Roadmap, akademische Referenzen und ONNX-Motor",
-      ja: "開発ロードマップ、学術的資格、およびONNXエンジン",
-    }
-  },
-  {
-    id: "about",
-    description: {
-      ru: "Заявка на патент, история создания и команда",
-      en: "Patent application, origin story, and the core team",
-      es: "Solicitud de patente, historia y el equipo central",
-      zh: "已申请专利、创立历程以及核心团队",
-      tr: "Patent başvurusu, kuruluş hikayesi ve çekirdek ekip",
-      hi: "पेटेंट आवेदन, इतिहास और मुख्य टीम",
-      ar: "طلب براءة الاختراع وقصة التأسيس والفريق الأساسي",
-      pt: "Pedido de patente, história de origem e equipe principal",
-      fr: "Demande de brevet, histoire de création et équipe principale",
-      de: "Patentanmeldung, Entstehungsgeschichte und Kernteam",
-      ja: "特許出願、誕生ストーリー、そしてコアチーム",
-    }
-  },
-  {
-    id: "comparison",
-    description: {
-      ru: "Сравнение TrustNode с существующими решениями на рынке",
-      en: "Compare TrustNode with existing market solutions",
-      es: "Compare TrustNode con las soluciones de mercado existentes",
-      zh: "将 TrustNode 与市面上现有的解决方案进行对比",
-      tr: "TrustNode'u mevcut piyasa çözümleriyle karşılaştırın",
-      hi: "मौजूदा बाजार समाधानों के साथ TrustNode की तुलना करें",
-      ar: "مقارنة TrustNode مع الحلول الحالية في السوق",
-      pt: "Compare o TrustNode com as soluções de mercado existentes",
-      fr: "Comparez TrustNode avec les solutions existantes du marché",
-      de: "Vergleichen Sie TrustNode mit bestehenden Marktlösungen",
-      ja: "TrustNodeと既存の市場ソリューションを比較する",
-    }
-  },
-  {
-    id: "early-access",
-    description: {
-      ru: "Получение приоритетного доступа и участие в закрытом тестировании",
-      en: "Get priority access and join the private testing phase",
-      es: "Obtenga acceso prioritario y únase a la fase de prueba privada",
-      zh: "获取优先体验资格并加入非公开测试阶段",
-      tr: "Öncelikli erişim sağlayın ve özel test aşamasına katılın",
-      hi: "प्राथमिकता प्राप्त करें और निजी परीक्षण चरण में शामिल हों",
-      ar: "احصل на وصول ذي أولوية وانضم إلى مرحلة الاختبار الخاصة",
-      pt: "Obtenha acesso prioritário e participe da fase de testes privada",
-      fr: "Obtenez un accès prioritaire et rejoignez la phase de test privée",
-      de: "Erhalten Sie vorab Zugriff und nehmen Sie an der geschlossenen Testphase teil",
-      ja: "優先アクセスを取得して、プライベートテストフェーズに参加する",
-    }
-  },
-  {
-    id: "home",
-    description: {
-      ru: "Вернуться на главную страницу TrustNode",
-      en: "Return to the main TrustNode landing page",
-      es: "Volver a la página principal de TrustNode",
-      zh: "返回 TrustNode 主页",
-      tr: "TrustNode ana sayfasına geri dön",
-      hi: "TrustNode के मुख्य पृष्ठ पर लौटें",
-      ar: "العودة إلى صفحة TrustNode الرئيسية",
-      pt: "Retornar à página inicial do TrustNode",
-      fr: "Retourner à la page d'accueil de TrustNode",
-      de: "Zurück zur Hauptseite von TrustNode",
-      ja: "TrustNodeメインページに戻る",
-    }
-  }
-];
+    ru: "Все работающие функции TN1 и честный статус разработок",
 
-const ALL_SUBPAGES: PageId[] = ["how-it-works", "tech", "roadmap", "about", "early-access", "comparison"];
+    en: "All working TN1 features and an honest development status",
 
-const PAGE_ICONS: Record<string, React.ComponentType<any>> = {
-  "how-it-works": Cpu,
-  tech: Layers,
-  roadmap: Milestone,
-  about: Users,
-  "early-access": Ticket,
-  comparison: BarChart3
-};
+  },
 
-const UNVISITED_SECTION_LABELS: Record<string, { heading: string; subtitle: string }> = {
-  ru: {
-    heading: "НЕИЗУЧЕННЫЕ РАЗДЕЛЫ ПРОТОКОЛА",
-    subtitle: "Разделы, которые вы еще не посещали. Защитный контур требует 100% верификации."
-  },
-  en: {
-    heading: "UNEXPLORED PROTOCOL NODES",
-    subtitle: "Sections you haven't visited yet. Complete coverage requires 100% verification."
-  },
-  es: {
-    heading: "NODOS DE PROTOCOLO INEXPLORADOS",
-    subtitle: "Secciones que aún no has visitado. La cobertura completa requiere una verificación del 100%."
-  },
-  zh: {
-    heading: "未探索的安全节点",
-    subtitle: "您尚未访问过的模块。完整防御圈需要 100% 验证。"
-  },
-  tr: {
-    heading: "KEŞFEDİLMEMİŞ GÜVENLİK DÜĞÜMLERİ",
-    subtitle: "Henüz ziyaret etmediğiniz bölümler. Tam kapsama alanı %100 doğrulama gerektirir."
-  },
-  hi: {
-    heading: "अन्वेषित प्रोटोकॉल नोड्स",
-    subtitle: "ऐसे अनुभाग जिन पर आपने अभी तक विज़िट नहीं किया है। पूर्ण सुरक्षा के लिए 100% सत्यापन आवश्यक है।"
-  },
-  ar: {
-    heading: "عقد البروتوكول غير المستكشفة",
-    subtitle: "الأقسام التي لم تقم بزيارتها بعد. التغطية الكاملة تتطلب تحققاً بنسبة 100٪."
-  },
-  pt: {
-    heading: "NODOS DE PROTOCOLO INEXPLORADOS",
-    subtitle: "Seções que você ainda não visitou. A cobertura total exige 100% de verificação."
-  },
-  fr: {
-    heading: "NODES DE PROTOCOLE NON EXPLORÉS",
-    subtitle: "Sections non visitées. La couverture complète nécessite une vérification à 100 %."
-  },
-  de: {
-    heading: "UNERKUNDETE PROTOKOLLKNOTEN",
-    subtitle: "Bereiche, die Sie noch nicht besucht haben. Die vollständige Abdeckung erfordert 100 % Verifizierung."
-  },
-  ja: {
-    heading: "未探索のプロトコルノード",
-    subtitle: "まだアクセスしていないセクション。完全なシールドには100％の検証が必要です。"
-  }
-};
+  research: {
 
-const ALL_SUBPAGE_CONFIGS: Record<string, Record<string, string>> = {
+    ru: "Метрики F1 = 0.9930 (ручная разметка 140 логов), методология и НИР",
+
+    en: "F1 = 0.9930 metrics (140 hand-labeled logs), methodology and research award",
+
+  },
+
+  "privacy-architecture": {
+
+    ru: "Как устроена локальная обработка и защита данных",
+
+    en: "How on-device processing and data protection work",
+
+  },
+
+  home: {
+    ru: "Вернуться на главную страницу TrustNode",
+    en: "Return to the main TrustNode landing page",
+    es: "Volver a la página principal de TrustNode",
+    zh: "返回 TrustNode 主页",
+    tr: "TrustNode ana sayfasına geri dön",
+    hi: "TrustNode के मुख्य पृष्ठ पर लौटें",
+    ar: "العودة إلى صفحة TrustNode الرئيسية",
+    pt: "Retornar à página inicial do TrustNode",
+    fr: "Retourner à la page d'accueil de TrustNode",
+    de: "Zurück zur Hauptseite von TrustNode",
+    ja: "TrustNodeメインページに戻る",
+  },
   "how-it-works": {
-    ru: "Разбор защитного купола и ИИ-ассистента Kira",
-    en: "Deep dive into the security dome and Kira Assistant",
-    es: "Análisis de la cúpula y el asistente Kira",
-    zh: "深入了解安全穹顶与 Kira 智能助手",
-    tr: "Güvenlik kubbesi ve Kira Asistanı incelemesi",
-    hi: "सुरक्षा डोम और Kira सहायक का विवरण",
-    ar: "شرح لقبة الأمان ومساعد Kira",
-    pt: "Análise do domo de segurança e assistente Kira",
-    fr: "Analyse du dôme de sécurité et de l'assistant Kira",
-    de: "Analyse der Sicherheitskuppel und Kira-Assistent",
-    ja: "セキュリティドームとKiraアシスタントの解説"
+    ru: "Подробный разбор ИБ-купола и Помощника",
+    en: "Deep dive into the security dome and Assistant",
+    es: "Análisis detallado de la cúpula y el asistente",
+    zh: "深入了解安全穹顶与 智能助手",
+    tr: "Güvenlik kubbesi ve Asistanı hakkında detaylı inceleme",
+    hi: "सुरक्षा डोम और सहायक का विस्तृत विवरण",
+    ar: "شرح مفصل لقبة الأمان والمساعد",
+    pt: "Análise detalhada do domo de segurança e assistente",
+    fr: "Analyse détaillée du dôme de sécurité et de l'assistant",
+    de: "Detaillierte Analyse der Sicherheitskuppel und des Assistenten",
+    ja: "セキュリティドームとアシスタントの詳細解説",
   },
   tech: {
-    ru: "Технические подробности и замеры скорости ИИ",
-    en: "Technical details and local AI latency metrics",
-    es: "Detalles técnicos y latencia local de IA",
-    zh: "技术细节与本地人工智能运行延迟指标",
-    tr: "Teknik detaylar ve yerel yapay zeka gecikmesi",
-    hi: "तकनीकी विवरण और स्थानीय एआई विलंबता मीट्रिक",
-    ar: "التفاصيل التقنية ومقاييس زمن استجابة الذكاء الاصطناعي",
-    pt: "Detalhes técnicos e latência de IA local",
-    fr: "Détails techniques et latence de l'IA locale",
-    de: "Technische Details und lokale KI-Latenzmetriken",
-    ja: "技術的な詳細とローカルAIのレイテンシ指標"
+    ru: "Технические подробности и доказательства разработки",
+    en: "Technical details and active development evidence",
+    es: "Detalles técnicos y evidencia de desarrollo activo",
+    zh: "技术细节与活跃开发证据",
+    tr: "Teknik detaylar ve aktif geliştirme kanıtları",
+    hi: "तकनीकी विवरण and सक्रिय विकास साक्ष्य",
+    ar: "التفاصيل التقنية وأدلة التطوير النشط",
+    pt: "Detalhes técnicos e evidências de desenvolvimento ativo",
+    fr: "Détails techniques et preuves de développement actif",
+    de: "Technische Details und Nachweise der aktiven Entwicklung",
+    ja: "技術的な詳細とアクティブな開発実績",
   },
   roadmap: {
-    ru: "Карта разработки, заявки на патент и верификация",
-    en: "Development roadmap, patent applications, and verification",
-    es: "Mapa de desarrollo, solicitudes de patente y verificación",
-    zh: "研发路线图、已申请专利与技术验证证明",
-    tr: "Geliştirme yol haritası, patent başvuruları ve doğrulama",
-    hi: "विकास रोडमैप, पेटेंट आवेदन और सत्यापन",
-    ar: "خريطة طريق التطوير وطلبات براءات الاختراع والتحقق",
-    pt: "Roteiro de desenvolvimento, pedidos de patente e verificação",
-    fr: "Feuille de route de développement, demandes de brevet et vérification",
-    de: "Entwicklungs-Roadmap, Patentanmeldungen und Verifizierung",
-    ja: "開発ロードマップ、特許出願、および技術検証"
+    ru: "Карта разработки, научные грамоты и ONNX-ядро",
+    en: "Development roadmap, academic credentials, and ONNX engine",
+    es: "Mapa de desarrollo, credenciales académicas y motor ONNX",
+    zh: "研发路线图、学术凭证及 ONNX 核心引擎",
+    tr: "Geliştirme yol haritası, akademik belgeler ve ONNX motoru",
+    hi: "विकास रोडमैप, शैक्षणिक कrediेंशियल्स और ONNX इंजन",
+    ar: "خريطة طريق التطوير والمؤهلات الأكاديمية ومحرك ONNX",
+    pt: "Roteiro de desenvolvimento, credenciais acadêmicas e motor ONNX",
+    fr: "Feuille de route de développement, diplômes universitaires et moteur ONNX",
+    de: "Entwicklungs-Roadmap, akademische Referenzen und ONNX-Motor",
+    ja: "開発ロードマップ、学術的資格、およびONNXエンジン",
   },
   about: {
-    ru: "История создания, заявка на патент ФИПС и наша команда",
-    en: "Origin story, patent application, and core team",
-    es: "Historia de origen, solicitud de patente y equipo",
-    zh: "已申请专利、创立历程以及核心团队介绍",
-    tr: "Kuruluş hikayesi, patent başvurusu ve çekirdek ekip",
-    hi: "उत्पत्ति की कहानी, पेटेंट आवेदन और मुख्य टीम",
-    ar: "قصة التأسيس وطلب براءة الاختراع الرسمي والفريق",
-    pt: "História de origem, pedido de patente e equipe principal",
-    fr: "Histoire de création, demande de brevet et équipe",
-    de: "Entstehung, Patentanmeldung und Kernteam",
-    ja: "誕生ストーリー、特許出願、熟練開発チーム"
-  },
-  "early-access": {
-    ru: "Получение приоритетного доступа до релиза",
-    en: "Get priority VIP/Pro access before release",
-    es: "Obtener acceso VIP prioritario antes del lanzamiento",
-    zh: "在正式发布前获取优先 VIP/Pro 权限",
-    tr: "Yayınlanmadan önce öncelikli VIP erişimi alın",
-    hi: "रिलीज़ से पहले प्राथमिकता वीआईपी/प्रो एक्सेस प्राप्त करें",
-    ar: "الحصول على وصول VIP ذي أولوية قبل الإصدار",
-    pt: "Obtenha acesso VIP/Pro prioritário antes do lançamento",
-    fr: "Obtenez un accès VIP prioritaire avant la sortie",
-    de: "Erhalten Sie vor dem Release Prioritäts-VIP-Zugriff",
-    ja: "リリース前に優先VIP/Proアクセスを取得"
+    ru: "История создания проекта и команда",
+    en: "Origin story and the core team",
+    es: "Historia del proyecto y el equipo central",
+    zh: "创立历程以及核心团队",
+    tr: "Kuruluş hikayesi ve çekirdek ekip",
+    hi: "परियोजना इतिहास और मुख्य टीम",
+    ar: "قصة التأسيس والفريق الأساسي",
+    pt: "História de origem e equipe principal",
+    fr: "Histoire de création et équipe principale",
+    de: "Entstehungsgeschichte und Kernteam",
+    ja: "誕生ストーリー、そしてコアチーム",
   },
   comparison: {
-    ru: "Сравнение TrustNode с аналогами на рынке",
-    en: "Compare TrustNode with market competitors",
-    es: "Comparar TrustNode con los competidores del mercado",
-    zh: "将 TrustNode 与市场竞品进行多维对比",
-    tr: "TrustNode'u piyasadaki rakiplerle karşılaştırın",
-    hi: "बाजार के प्रतिस्पर्धियों के साथ TrustNode की तुलना करें",
-    ar: "مقارنة TrustNode مع المنافسين في السوق",
-    pt: "Compare o TrustNode com os concorrentes de mercado",
-    fr: "Comparez TrustNode avec les concurrents du marché",
-    de: "Vergleichen Sie TrustNode com Marktkonkurrenten",
-    ja: "TrustNodeと市場の競合他社を比較"
-  }
+    ru: "Сравнить TrustNode с альтернативами по функциям и офлайн-защите",
+    en: "Compare TrustNode with alternatives across features and offline protection",
+    es: "Compare TrustNode con alternativas por funciones y protección offline",
+    zh: "按功能与离线防护对比 TrustNode 和其他方案",
+    tr: "Özellikler ve çevrimdışı koruma açısından TrustNode'u alternatiflerle karşılaştırın",
+    hi: "फ़ीचर्स और ऑफलाइन सुरक्षा के आधार पर TrustNode की तुलना विकल्पों से करें",
+    ar: "قارن TrustNode بالبدائل من حيث الميزات والحماية دون اتصال",
+    pt: "Compare o TrustNode com alternativas por recursos e proteção offline",
+    fr: "Comparez TrustNode aux alternatives selon les fonctions et la protection hors ligne",
+    de: "Vergleichen Sie TrustNode mit Alternativen nach Funktionen und Offline-Schutz",
+    ja: "機能とオフライン保護で TrustNode を他製品と比較します",
+  },
+  download: {
+    ru: "Скачать TrustNode и получить доступ к бета-версии",
+    en: "Download TrustNode and get beta access",
+    es: "Descargue TrustNode y obtenga acceso beta",
+    zh: "下载 TrustNode 并获取测试版访问权限",
+    tr: "TrustNode'u indirin ve beta erişimi alın",
+    hi: "TrustNode डाउनलोड करें और बीटा एक्सेस प्राप्त करें",
+    ar: "نزّل TrustNode واحصل على وصول تجريبي",
+    pt: "Baixe o TrustNode e obtenha acesso beta",
+    fr: "Téléchargez TrustNode et obtenez un accès bêta",
+    de: "Laden Sie TrustNode herunter und erhalten Sie Beta-Zugriff",
+    ja: "TrustNodeをダウンロードしてベータアクセスを入手",
+  },
+  news: {
+    ru: "Новости проекта из Telegram и VK",
+    en: "Project news from Telegram and VK",
+    es: "Noticias del proyecto desde Telegram y VK",
+    zh: "来自 Telegram 和 VK 的项目新闻",
+    tr: "Telegram ve VK'dan proje haberleri",
+    hi: "Telegram और VK से प्रोजेक्ट समाचार",
+    ar: "أخبار المشروع من Telegram و VK",
+    pt: "Notícias do projeto do Telegram e VK",
+    fr: "Actualités du projet depuis Telegram et VK",
+    de: "Projekt-Neuigkeiten aus Telegram und VK",
+    ja: "Telegram と VK からのプロジェクトニュース",
+  },
+  sections: {
+    ru: "Полный список разделов сайта на одной странице",
+    en: "The full list of site sections on one page",
+  },
+  "not-found": {},
+  privacy: {},
+  terms: {},
+  glossary: {
+    ru: "Простые объяснения терминов безопасности: RASP, ONNX, фишинг и другие",
+    en: "Plain-language explanations of security terms: RASP, ONNX, phishing and more",
+    es: "Explicaciones sencillas de términos de seguridad: RASP, ONNX, phishing y más",
+    zh: "通俗解释安全术语：RASP、ONNX、网络钓鱼等",
+    tr: "Güvenlik terimlerinin sade açıklamaları: RASP, ONNX, oltalama ve daha fazlası",
+    hi: "सुरक्षा शब्दों की सरल व्याख्या: RASP, ONNX, फ़िशिंग और अन्य",
+    ar: "شرح مبسط لمصطلحات الأمان: RASP وONNX والتصيد وغيرها",
+    pt: "Explicações simples de termos de segurança: RASP, ONNX, phishing e mais",
+    fr: "Explications simples des termes de sécurité : RASP, ONNX, phishing et plus",
+    de: "Einfache Erklärungen von Sicherheitsbegriffen: RASP, ONNX, Phishing u. a.",
+    ja: "セキュリティ用語のわかりやすい解説：RASP、ONNX、フィッシングなど",
+  },
+  test: {
+    ru: "Интерактивный тест: 6 сценариев мошенничества — распознайте обман",
+    en: "Interactive quiz: 6 scam scenarios — can you spot the fraud?",
+    es: "Cuestionario interactivo: 6 escenarios de fraude — ¿reconoces el engaño?",
+    zh: "互动测验：6 个诈骗场景 — 你能识破骗局吗？",
+    tr: "Etkileşimli test: 6 dolandırıcılık senaryosu — aldatmacayı tanıyabilir misiniz?",
+    hi: "इंटरैक्टिव क्विज़: 6 धोखाधड़ी परिदृश्य — क्या आप ठगी पहचान सकते हैं?",
+    ar: "اختبار تفاعلي: 6 سيناريوهات احتيال — هل تستطيع اكتشاف الخداع؟",
+    pt: "Teste interativo: 6 cenários de fraude — reconhece o golpe?",
+    fr: "Quiz interactif : 6 scénarios d'arnaque — saurez-vous repérer l'escroquerie ?",
+    de: "Interaktiver Test: 6 Betrugsszenarien — erkennen Sie den Schwindel?",
+    ja: "インタラクティブテスト：詐欺シナリオ6問 — あなたは見抜けますか？",
+  },
+  help: {
+    ru: "Пошаговая инструкция: что делать, если вас обманули мошенники",
+    en: "Step-by-step guide: what to do if scammers got you",
+    es: "Guía paso a paso: qué hacer si le han estafado",
+    zh: "分步指南：被骗后该怎么办",
+    tr: "Adım adım rehber: dolandırıldıysanız ne yapmalı",
+    hi: "चरण-दर-चरण मार्गदर्शिका: ठगे जाने पर क्या करें",
+    ar: "دليل خطوة بخطوة: ماذا تفعل إذا تم احتيالك",
+    pt: "Guia passo a passo: o que fazer se for enganado",
+    fr: "Guide pas à pas : que faire si vous êtes victime d'arnaque",
+    de: "Schritt-für-Schritt-Anleitung: Was tun, wenn Sie betrogen wurden",
+    ja: "ステップバイステップガイド：詐欺に遭ったらどうする",
+  },
 };
 
 interface PageNavigationFooterProps {
@@ -284,20 +205,20 @@ interface PageNavigationFooterProps {
 export default function PageNavigationFooter({ currentPage }: PageNavigationFooterProps) {
   const { navigateTo } = useNavigation();
   const { t, language } = useTranslation();
+  // Порядок переходов — из схемы, ограниченной персональным маршрутом квиза;
+  // список всегда замыкается страницей «Скачать» (FINALE_ID из personalRoute).
+  const seq = usePersonalItems();
 
-  // Find index of current page in sequence
-  const currentIndex = PAGES_SEQ.findIndex((p) => p.id === currentPage);
-  
-  // Determine the next page in sequence
-  let nextPage = PAGES_SEQ[0];
-  if (currentIndex !== -1) {
-    const nextPageIndex = (currentIndex + 1) % PAGES_SEQ.length;
-    nextPage = PAGES_SEQ[nextPageIndex];
-  }
+  // «Скачать» — финал сайта: после неё карточки «следующий раздел» нет.
+  if (currentPage === "download") return null;
+
+  const i = seq.indexOf(currentPage);
+  const nextId = i === -1 || i === seq.length - 1 ? seq[0] : seq[i + 1];
+  const nextPage = { id: nextId };
 
   // Get localized labels
   const pageLabel = t.pageNames[nextPage.id] || nextPage.id;
-  const pageDesc = nextPage.description[language] || nextPage.description.en;
+  const pageDesc = PAGE_DESCRIPTIONS[nextPage.id]?.[language] || PAGE_DESCRIPTIONS[nextPage.id]?.en || "";
   const nextLabel = NEXT_LABEL[language] || NEXT_LABEL.en;
 
   const handleNextNavigation = () => {
@@ -306,50 +227,55 @@ export default function PageNavigationFooter({ currentPage }: PageNavigationFoot
   };
 
   return (
-    <div className="w-full py-12 px-4 border-t border-[#1F2937]/30 bg-[#060608]/90 relative overflow-hidden select-none" id="page-nav-footer">
-      <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-[#2E7DFF]/20 to-transparent pointer-events-none" />
-      <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-[500px] h-[150px] bg-[radial-gradient(circle_at_center,rgba(46,125,255,0.03)_0%,rgba(0,0,0,0)_70%)] pointer-events-none" />
+    <div className="w-full py-10 px-4 bg-[#0A0A0B]/90 relative overflow-hidden select-none" id="page-nav-footer">
+      <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-[500px] h-[150px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.03)_0%,rgba(0,0,0,0)_70%)] pointer-events-none" />
 
       <div className="max-w-5xl mx-auto flex flex-col items-center">
-        {/* Next page card */}
-        {currentIndex !== -1 && (
-          <motion.div
-            whileHover={{ y: -4 }}
-            transition={{ duration: 0.3 }}
+        <motion.div
+          whileHover={{ y: -4 }}
+          transition={{ duration: 0.2 }}
+          onClick={handleNextNavigation}
+          className="group relative w-full md:max-w-2xl cursor-pointer"
+        >
+          <ScanCard
+            accent="59,130,246"
+            borderColor="border-[#3C404A]/30"
+            cardClassName="bg-[#12141A] backdrop-blur-md hover:border-[#3B82F6]/45 hover:shadow-glow-md"
             onClick={handleNextNavigation}
-            className="group relative w-full md:max-w-2xl p-6 sm:p-8 border border-[#1F2937]/30 bg-[#070709]/75 backdrop-blur-md rounded-3xl hover:border-[#2E7DFF]/45 hover:shadow-[0_0_25px_rgba(46,125,255,0.12)] transition-all duration-300 cursor-pointer overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6"
+            padding="p-6 sm:p-8"
+            className="sm:flex-row sm:items-center sm:justify-between gap-6"
           >
-            {/* Accent light overlay */}
-            <div className="absolute -inset-px rounded-3xl bg-gradient-to-r from-[#2E7DFF]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+          {/* Accent light overlay */}
+          <div className="absolute -inset-px rounded-xl bg-gradient-to-r from-[#3B82F6]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+          
+          <div className="relative z-10">
+            {/* Small Monospaced Badge */}
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#3B82F6] animate-pulse" />
+              <span className="font-mono text-[9px] sm:text-[10px] font-bold tracking-[0.18em] text-[#3B82F6] uppercase">
+                {nextLabel}
+              </span>
+            </div>
+
+            {/* Next Page Title */}
+            <h4 className="font-display font-medium text-xl sm:text-2xl text-[#F5F5F0] group-hover:text-[#3B82F6] transition-colors mb-2">
+              {pageLabel}
+            </h4>
             
-            <div className="relative z-10">
-              {/* Small Monospaced Badge */}
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <Sparkles className="w-3.5 h-3.5 text-[#2E7DFF] animate-pulse" />
-                <span className="font-mono text-[9px] sm:text-[10px] font-bold tracking-[0.18em] text-[#2E7DFF] uppercase">
-                  {nextLabel}
-                </span>
-              </div>
+            {/* Description */}
+            <p className="font-sans text-xs sm:text-sm text-gray-500 max-w-md leading-relaxed">
+              {pageDesc}
+            </p>
+          </div>
 
-              {/* Next Page Title */}
-              <h4 className="font-display font-bold text-xl sm:text-2xl text-[#F5F5F0] group-hover:text-[#2E7DFF] transition-colors mb-2">
-                {pageLabel}
-              </h4>
-              
-              {/* Description */}
-              <p className="font-sans text-xs sm:text-sm text-gray-500 max-w-md leading-relaxed">
-                {pageDesc}
-              </p>
+          {/* Action indicator arrow */}
+          <div className="relative z-10 flex items-center gap-2 self-end sm:self-center shrink-0">
+            <div className="w-10 h-10 rounded-full border border-[#3B82F6]/20 bg-[#3B82F6]/5 group-hover:border-[#3B82F6]/50 group-hover:bg-[#3B82F6]/15 flex items-center justify-center text-[#3B82F6] group-hover:text-white transition duration-300 group-hover:scale-[1.05]">
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </div>
-
-            {/* Action indicator arrow */}
-            <div className="relative z-10 flex items-center gap-2 self-end sm:self-center shrink-0">
-              <div className="w-10 h-10 rounded-full border border-[#2E7DFF]/20 bg-[#2E7DFF]/5 group-hover:border-[#2E7DFF]/50 group-hover:bg-[#2E7DFF]/15 flex items-center justify-center text-[#2E7DFF] group-hover:text-white transition-all duration-300 group-hover:scale-110">
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-              </div>
-            </div>
-          </motion.div>
-        )}
+          </div>
+          </ScanCard>
+        </motion.div>
       </div>
     </div>
   );

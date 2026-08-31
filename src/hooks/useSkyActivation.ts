@@ -11,42 +11,66 @@ export function useSkyActivation(activeEcoMode: boolean = false) {
   useEffect(() => {
     if (activeEcoMode) return;
 
-    if (cachedSatellites === null && !isFetchingTLEs) {
-      isFetchingTLEs = true;
-      const fetchTLEs = async () => {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 6000);
-          const res = await fetch(
-            "https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=tle",
-            { signal: controller.signal }
-          );
-          clearTimeout(timeoutId);
-          if (res.ok) {
-            const text = await res.text();
-            cachedSatellites = parseTLEs(text);
-          } else {
+    // Both fetches are deferred off the critical window of the intro flight:
+    // satellites aren't rendered until the flight approaches Earth (p~0.8) and
+    // small bodies are only drawn in the background layers, so nothing needs
+    // them during the first seconds of the page. Racing a 12k-satellite
+    // download + parse against the WebGL boot is what froze the opening frames.
+    // Parse is time-budgeted (~8ms/blocks, see parseTLEs), so the parse itself
+    // no longer freezes frames; but keep the download+parse off the pre-logo
+    // beats by deferring the fetch start past the 0-1s boot/compile window.
+    // Starting at 1.2s still leaves >6s of headroom: the worker gets its init as
+    // soon as the catalog lands (initWorker gates until p~0.25), parses the
+    // ~12k satrecs off-thread and is ready long before satellites fade in at
+    // p~0.82 (8.2s). If the fetch ran only at 3.8s (as it used to), the worker
+    // often wasn't ready by 8s and the MAIN-THREAD fallback had to run bounded
+    // but still synchronous SGP4 every 250ms through the whole 8-10s window —
+    // exactly the stalls seen before the Earth fade.
+    const tleTimer = setTimeout(() => {
+      if (cachedSatellites === null && !isFetchingTLEs) {
+        isFetchingTLEs = true;
+        const fetchTLEs = async () => {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 20000);
+            const res = await fetch(
+              "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle",
+              { signal: controller.signal }
+            );
+            clearTimeout(timeoutId);
+            if (res.ok) {
+              const text = await res.text();
+              cachedSatellites = await parseTLEs(text);
+            } else {
+              cachedSatellites = [];
+            }
+          } catch {
             cachedSatellites = [];
           }
-        } catch (_e) {
-          cachedSatellites = [];
-        }
-        isFetchingTLEs = false;
-      };
-      fetchTLEs();
-    }
+          isFetchingTLEs = false;
+        };
+        fetchTLEs();
+      }
+    }, 1200);
 
-    if (!isFetchingSmallBodies && cachedSmallBodies === SMALL_BODIES) {
-      isFetchingSmallBodies = true;
-      fetchSmallBodyElements().then((bodies) => {
-        if (bodies && bodies.length > 0) {
-          cachedSmallBodies = bodies;
-        }
-        isFetchingSmallBodies = false;
-      }).catch(() => {
-        isFetchingSmallBodies = false;
-      });
-    }
+    const smallBodyTimer = setTimeout(() => {
+      if (!isFetchingSmallBodies && cachedSmallBodies === SMALL_BODIES) {
+        isFetchingSmallBodies = true;
+        fetchSmallBodyElements().then((bodies) => {
+          if (bodies && bodies.length > 0) {
+            cachedSmallBodies = bodies;
+          }
+          isFetchingSmallBodies = false;
+        }).catch(() => {
+          isFetchingSmallBodies = false;
+        });
+      }
+    }, 2500);
+
+    return () => {
+      clearTimeout(tleTimer);
+      clearTimeout(smallBodyTimer);
+    };
   }, [activeEcoMode]);
 
   return {

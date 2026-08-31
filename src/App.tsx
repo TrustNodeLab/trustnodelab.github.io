@@ -1,159 +1,376 @@
-import { useState, useEffect, useRef, Suspense, lazy } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react";
 const NetworkBackground = lazy(() => import("./components/NetworkBackground"));
+const CinematicScene = lazy(() => import("./components/CinematicScene"));
+const RealDevelopmentSection = lazy(() => import("./components/RealDevelopmentSection"));
+import { isWebGLAvailable, type CinematicPhases } from "./components/cinematicShared";
+import CinematicOverlays from "./components/CinematicOverlays";
+import { cinematicProgressRef, setCinematicProgressValue, subscribeCinematic, getCinematicProgress } from "./lib/cinematicStore";
 import AssembledLogo from "./components/AssembledLogo";
 
-const hudTranslations: Record<string, { core: string; nodes: string; mode: string }> = {
-  ru: { core: "ЛОКАЛЬНОЕ ЯДРО", nodes: "АКТИВНЫЕ УЗЛЫ", mode: "РЕЖИМ ЗАЩИТЫ" },
-  en: { core: "LOCAL CORE", nodes: "ACTIVE NODES", mode: "PROTECTION MODE" },
-  es: { core: "NÚCLEO LOCAL", nodes: "NODOS ACTIVOS", mode: "MODO DE PROTECCIÓN" },
-  zh: { core: "本地核心", nodes: "活动节点", mode: "防护模式" },
-  tr: { core: "YEREL ÇEKİRDEK", nodes: "AKTİF DÜĞÜMLER", mode: "KORUMA MODU" },
-  hi: { core: "स्थानीय कोर", nodes: "सक्रिय नोड्स", mode: "सुरक्षा मोड" },
-  ar: { core: "النواة المحلية", nodes: "العقد النشطة", mode: "وضع الحماية" },
-  pt: { core: "NÚCLEO LOCAL", nodes: "NÓS ATIVOS", mode: "MODO DE PROTEÇÃO" },
-  fr: { core: "NOYAU LOCAL", nodes: "NŒUDS ACTIFS", mode: "MODE DE PROTECTION" },
-  de: { core: "LOKALER KERN", nodes: "AKTIVE KNOTEN", mode: "SCHUTZMODUS" },
-  ja: { core: "ローカルコア", nodes: "アクティブノード", mode: "保護モード" }
+// Extra scroll distance of open space to fly through between the title and the logo.
+const FLIGHT_CORRIDOR_DVH = 150;
+
+// 3D cinematic corridor: the WebGL flight through the 3D logo + approach to Earth.
+// This corridor replaces the legacy empty corridor when WebGL is available.
+// The flight auto-plays like a video at the top of the page, so the corridor is
+// kept minimal — just enough scroll room to reach the real site content quickly
+// once the flight is over. Scrolling only fast-forwards the sequence.
+const CINEMATIC_CORRIDOR_DVH = 60;
+
+// Phase boundaries of the cinematic flight, as fractions of the corridor scroll.
+const CINEMATIC_PHASES: CinematicPhases = {
+  underEnd: 0.12,
+  orbitEnd: 0.3,
+  throughEnd: 0.45,
+  assemblyEnd: 0.62,
+  turnEnd: 0.76,
+  approachEnd: 0.92
 };
 
 function SkyPlaceholder() {
   return <div className="absolute inset-0 w-full h-full bg-[#0A0A0B] pointer-events-none" />;
 }
 import ProblemSection from "./components/ProblemSection";
-import IntroSection from "./components/IntroSection";
 import LiveSimulatorSection from "./components/LiveSimulatorSection";
-// The following components are only ever rendered on secondary pages
-// (how-it-works, tech, roadmap, about, early-access, comparison) - never on
-// the initial home page. Lazy-loading them keeps them out of the main JS
-// bundle entirely, so a first-time visitor only downloads and parses what's
-// needed to render the home page, not every page on the site at once.
-const HowItWorksSection = lazy(() => import("./components/HowItWorksSection"));
-const AppSecuritySection = lazy(() => import("./components/AppSecuritySection"));
-const KiraAssistantSection = lazy(() => import("./components/KiraAssistantSection"));
-const RealDevelopmentSection = lazy(() => import("./components/RealDevelopmentSection"));
-const OriginStorySection = lazy(() => import("./components/OriginStorySection"));
-const EarlyAccessPage = lazy(() => import("./components/EarlyAccessPage"));
-const ComparisonSection = lazy(() => import("./components/ComparisonSection"));
+import HowItWorksSection from "./components/HowItWorksSection";
 import TrustSection from "./components/TrustSection";
-import WaitlistSection from "./components/WaitlistSection";
-import WaitlistBanner from "./components/WaitlistBanner";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
-import ExplorePagesSection from "./components/ExplorePagesSection";
-import LegalModal from "./components/LegalModals";
+import AppSecuritySection from "./components/AppSecuritySection";
+import KiraAssistantSection from "./components/KiraAssistantSection";
+import ModelTesterSection from "./components/ModelTesterSection";
+import OriginStorySection from "./components/OriginStorySection";
+import LegalPage from "./components/LegalPage";
 import CookieConsent from "./components/CookieConsent";
+import BackToTop from "./components/BackToTop";
+import Announcer from "./i18n/Announcer";
 import Breadcrumbs from "./components/Breadcrumbs";
 import NotFoundPage from "./components/NotFoundPage";
+import { FeaturesSection, ResearchSection, PrivacyArchitectureSection } from "./components/NewPages";
+import AllSectionsPage from "./components/AllSectionsPage";
+import QuizFlow from "./components/QuizFlow";
+import ConstellationField from "./components/ConstellationField";
 import PageNavigationFooter from "./components/PageNavigationFooter";
-import { motion, AnimatePresence, useInView } from "motion/react";
+import EarlyAccessPage from "./components/EarlyAccessPage";
+import ComparisonSection from "./components/ComparisonSection";
+import NewsSection from "./components/NewsSection";
+import GlossarySection from "./components/GlossarySection";
+import ScamQuizSection from "./components/ScamQuizSection";
+import HelpChecklistSection from "./components/HelpChecklistSection";
+import SearchModal from "./components/SearchModal";
+import ReadingProgress from "./components/ReadingProgress";
+
+import DamageCalculator from "./components/DamageCalculator";
+import FaqSection from "./components/FaqSection";
+import HomePersonalBlocks from "./components/HomePersonalBlocks";
+import { acquireScrollLock, releaseScrollLock } from "./lib/scrollLock";
+import { motion, MotionConfig, AnimatePresence } from "motion/react";
 import { useTranslation } from "./i18n/LanguageContext";
-import { useNavigation, PageId } from "./navigation/NavigationContext";
+import { useNavigation, PageId, homeIntroSkipSignal } from "./navigation/NavigationContext";
 import { useEcoMode } from "./context/EcoModeContext";
+import { useSectionSnap } from "./hooks/useSectionSnap";
 
 export default function App() {
   const { t, language } = useTranslation();
   const { activePage } = useNavigation();
   const { ecoMode, toggleEcoMode } = useEcoMode();
-  const [scrollY, setScrollY] = useState(0);
   const [windowHeight, setWindowHeight] = useState(0);
-  const [activeMobileCard, setActiveMobileCard] = useState(0);
-  const [userInteractedWithMobileCards, setUserInteractedWithMobileCards] = useState(false);
-  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
-  const [legalModalTab, setLegalModalTab] = useState<"privacy" | "terms">("privacy");
   const [skyStatus, setSkyStatus] = useState<string>("");
-
-  const mobileCards = t.mobileCards;
-
-  useEffect(() => {
-    if (userInteractedWithMobileCards) return;
-    const interval = setInterval(() => {
-      setActiveMobileCard((prev) => (prev + 1) % 4);
-    }, 4500);
-    return () => clearInterval(interval);
-  }, [userInteractedWithMobileCards]);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)").matches : false
+  );
 
   useEffect(() => {
-    let scrollRafId: number | null = null;
-    let lastScrollUpdate = 0;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
 
-    const handleScroll = () => {
-      if (scrollRafId !== null) return;
-      const now = performance.now();
-      if (now - lastScrollUpdate < 48) return;
-      lastScrollUpdate = now;
-      scrollRafId = requestAnimationFrame(() => {
-        scrollRafId = null;
-        setScrollY(window.scrollY);
-      });
-    };
-
+  useEffect(() => {
     const handleResize = () => {
       setWindowHeight(window.visualViewport?.height || window.innerHeight);
     };
 
     handleResize();
-    window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleResize, { passive: true });
     window.visualViewport?.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
       window.visualViewport?.removeEventListener("resize", handleResize);
-      if (scrollRafId !== null) cancelAnimationFrame(scrollRafId);
     };
   }, []);
+
+  const coreLandingRef = useRef<HTMLDivElement>(null);
 
   const vh = windowHeight || 800;
 
   const section2Ref = useRef<HTMLDivElement>(null);
-  const isSection2InView = useInView(section2Ref, { once: true, margin: "-100px" });
-  const [logoProgress, setLogoProgress] = useState(0);
+  // One continuous scroll-driven cinematic: we fly through the starfield, past the
+  // "TrustNode" title, while the logo assembles — all from a single progress value.
+  // It builds 0->1 as the logo block approaches, holds while it's on screen, then
+  // eases out behind the content that follows. Stops the instant scrolling stops.
+  // 2D logo-assembly progress, shared as a mutable ref so per-frame scroll updates
+  // never re-render React (mirrors the 3D cinematic's cinematicProgressRef). The
+  // hero fade, the OFFLINE-FIRST/ZERO TELEMETRY labels and the enter-dome arrow are
+  // driven imperatively from a rAF loop below that reads this ref.
+  const sceneProgressRef = useRef(0);
+  const assemblyLeftRef = useRef<HTMLDivElement>(null);
+  const assemblyRightRef = useRef<HTMLDivElement>(null);
+  const showEnterDomeRef = useRef(false);
+  const [showEnterDome, setShowEnterDome] = useState(false);
+  const warpRAFRef = useRef(0);
 
-  useEffect(() => {
-    if (isSection2InView) {
-      let start: number | null = null;
-      const duration = 1200; // 1.2s animation
-      const animate = (timestamp: number) => {
-        if (!start) start = timestamp;
-        const elapsed = timestamp - start;
-        const p = Math.min(1, elapsed / duration);
-        // Cubic ease-out
-        const easedP = 1 - Math.pow(1 - p, 3);
-        setLogoProgress(easedP);
-        if (p < 1) {
-          requestAnimationFrame(animate);
-        }
-      };
-      requestAnimationFrame(animate);
-    }
-  }, [isSection2InView]);
+  // 3D WebGL cinematic corridor. When WebGL is available (and not in eco mode) the
+  // legacy flight corridor + assembled logo block are replaced by the 3D fly-by
+  // (under the logo -> orbit -> through the letters -> assembly -> turn -> Earth).
+  const cinematicCorridorRef = useRef<HTMLDivElement>(null);
+  const heroSectionRef = useRef<HTMLDivElement>(null);
+  const [cinematicActive, setCinematicActive] = useState(false);
+  const [webglReady] = useState(() => isWebGLAvailable());
+  const cinematicEnabled = webglReady && !ecoMode;
+  // In eco mode there is no animation to give scroll room to, so collapse the
+  // otherwise 150dvh-deep empty flight corridor (the source of the huge blank
+  // space users saw when toggling eco mode on).
+  const flightCorridorDvh = ecoMode ? 0 : FLIGHT_CORRIDOR_DVH;
 
-  // Listen for custom event to open privacy modal from Waitlist consent link
-  useEffect(() => {
-    const handler = () => {
-      setLegalModalTab("privacy");
-      setIsLegalModalOpen(true);
-    };
-    window.addEventListener("open-privacy-modal", handler);
-    return () => window.removeEventListener("open-privacy-modal", handler);
+  // Smooth snap scroll between the landing sections (desktop wheel only).
+  // Disabled in eco mode (no motion) and reduced-motion, and on any page other
+  // than home. Free scrolling is kept until the user reaches the core landing.
+  const snapEnabled = activePage === "home" && !cinematicEnabled && !ecoMode && !prefersReducedMotion;
+  const snapGate = useCallback(() => {
+    const el = coreLandingRef.current;
+    if (!el) return 0;
+    return el.offsetTop + window.innerHeight * 0.15;
   }, []);
+  const snapTargets = useCallback((): HTMLElement[] => {
+    const landing = coreLandingRef.current;
+    if (!landing) return [];
+    return Array.from(landing.querySelectorAll<HTMLElement>("[data-snap-section]"));
+  }, []);
+  useSectionSnap({ enabled: snapEnabled, reducedMotion: prefersReducedMotion || ecoMode, gateOffset: snapGate, getTargets: snapTargets });
 
-  // Register visited page
-  useEffect(() => {
-    if (activePage) {
-      try {
-        const visitedStr = localStorage.getItem("trustnode_visited_pages") || "[]";
-        const visited = JSON.parse(visitedStr) as string[];
-        if (!visited.includes(activePage)) {
-          visited.push(activePage);
-          localStorage.setItem("trustnode_visited_pages", JSON.stringify(visited));
-        }
-      } catch (e) {
-        console.error("Error updating visited pages", e);
-      }
+  // The header stays hidden while the cinematic intro plays, then fades in once the
+  // animation reaches the very end (progress 1.0 = Earth approach complete, cards
+  // settled). On non-cinematic pages it's shown straight away.
+  const [showHeader, setShowHeader] = useState(() => activePage !== "home" || !cinematicEnabled);
+  // While the 3D cinematic is playing it fully covers the viewport, so the 2D
+  // NetworkBackground starfield is suspended to avoid double-rendering on mobile.
+  const [cinematicDone, setCinematicDone] = useState(false);
+  // Якорный переход на главную (например, «Сколько теряют…» из футера) пропускает
+  // кинематик-интро и квиз: пользователь должен попасть сразу к нужному блоку.
+  const [skipIntro, setSkipIntro] = useState(() => {
+    try {
+      const v = sessionStorage.getItem("tn_home_skip_intro") === "1";
+      if (v) sessionStorage.removeItem("tn_home_skip_intro");
+      return v;
+    } catch {
+      return false;
     }
-  }, [activePage]);
+  });
+  // Deep-link во время сессии (App уже смонтирован, useState-инициализатор не
+  // перезапустится): consume синхронного сигнала прямо в рендере — React
+  // перерендерит компонент до эффектов, поэтому кинематик/квиз/локи не успеют
+  // запуститься для этого же перехода.
+  if (homeIntroSkipSignal.current && !skipIntro) {
+    homeIntroSkipSignal.current = false;
+    try { sessionStorage.removeItem("tn_home_skip_intro"); } catch {}
+    setSkipIntro(true);
+  }
+  const bgSuspended = cinematicEnabled && !cinematicDone;
+  useEffect(() => {
+    if (activePage !== "home") {
+      setShowHeader(true);
+      return;
+    }
+    if (!cinematicEnabled) {
+      setShowHeader(true);
+      return;
+    }
+    if (skipIntro) {
+      setShowHeader(true);
+      setCinematicDone(true);
+      return;
+    }
+    if (getCinematicProgress() >= 1) {
+      setShowHeader(true);
+      setCinematicDone(true);
+      return;
+    }
+    const unsubscribe = subscribeCinematic(() => {
+      if (getCinematicProgress() >= 1) {
+        setShowHeader(true);
+        setCinematicDone(true);
+      }
+    });
+    return unsubscribe;
+  }, [activePage, cinematicEnabled, skipIntro]);
+
+  // Auto-play: the whole flight (title -> logo assembly -> turn -> Earth -> cards)
+  // runs by itself on page load like a video, no scrolling required. The scroll
+  // position can only pull the progress forward (never backward), so the flight
+  // is one continuous forward sequence. Progress lives in a shared mutable ref —
+  // the render loop reads it per frame, so no React re-render happens at 60fps.
+  // 10s, back to the original snappy length: the first frames are load-bound
+  // (JS parse + WebGL boot + first shader compile) regardless of pacing, so
+  // the intro shouldn't drag through that laggy opening — get to the reveal.
+  const AUTO_PLAY_MS = 10000;
+  useEffect(() => {
+    if (!cinematicEnabled) return;
+    if (activePage !== "home") return;
+    if (skipIntro) {
+      // Мгновенно доводим полёт до конечного состояния: оверлеи уходят в финал,
+      // квиз не показывается (suppressQuiz), контент доступен сразу.
+      setCinematicProgressValue(1);
+      return;
+    }
+    const start = performance.now();
+    let raf = 0;
+    let cancelled = false;
+    const tick = (now: number) => {
+      if (cancelled) return;
+      const t = Math.min(1, (now - start) / AUTO_PLAY_MS);
+      setCinematicProgressValue(Math.max(cinematicProgressRef.current, t));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [cinematicEnabled, activePage, skipIntro]);
+
+  useEffect(() => {
+    const computeScene = () => {
+      const el = section2Ref.current;
+      const vh = windowHeight || window.innerHeight;
+      if (!el) {
+        sceneProgressRef.current = 0;
+        return;
+      }
+      const rect = el.getBoundingClientRect();
+      // Total scroll distance from the very top to the logo block: the whole flight.
+      const span = Math.max(vh, rect.top + window.scrollY);
+      let p: number;
+      if (rect.top > 0) {
+        // Approaching: 0 at the top of the page -> 1 when the logo block fills the screen
+        p = 1 - Math.min(1, Math.max(0, rect.top / span));
+      } else if (rect.top > -vh) {
+        // Logo block fully on screen: hold the flight at full strength
+        p = 1;
+      } else {
+        // Block scrolled past: ease the flight back to 0 behind the following content
+        p = 1 - Math.min(1, Math.max(0, (-rect.top - vh) / vh));
+      }
+      sceneProgressRef.current = p;
+    };
+    const onScroll = () => {
+      if (warpRAFRef.current) return;
+      warpRAFRef.current = requestAnimationFrame(() => {
+        warpRAFRef.current = 0;
+        computeScene();
+      });
+    };
+    computeScene();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (warpRAFRef.current) cancelAnimationFrame(warpRAFRef.current);
+    };
+  }, [windowHeight]);
+
+  // Imperative driver for the 2D assembly block (non-cinematic path): reads the
+  // shared sceneProgressRef every frame and writes hero/label styles straight to
+  // the DOM — no React state, so the logo SVG and the labels are never re-rendered
+  // at 60fps while the user scrolls (the source of the pre-WebGL scroll stutter).
+  useEffect(() => {
+    if (cinematicEnabled) return;
+    let raf = 0;
+    let lastP = Number.NaN;
+    const loop = () => {
+      raf = requestAnimationFrame(loop);
+      const p = sceneProgressRef.current;
+      if (p === lastP) return;
+      lastP = p;
+
+      if (heroSectionRef.current && !ecoMode) {
+        const f = Math.min(1, p / 0.45);
+        heroSectionRef.current.style.opacity = String(Math.max(0, 1 - f));
+        heroSectionRef.current.style.transform = `scale(${1 + 0.14 * f})`;
+      }
+
+      const cOp = p > 0.15 ? Math.min(1, (p - 0.15) / 0.85) : 0;
+      if (assemblyLeftRef.current) {
+        assemblyLeftRef.current.style.opacity = String(cOp);
+        assemblyLeftRef.current.style.transform = `translateX(${-40 * (1 - Math.min(1, cOp))}px)`;
+      }
+      if (assemblyRightRef.current) {
+        assemblyRightRef.current.style.opacity = String(cOp);
+        assemblyRightRef.current.style.transform = `translateX(${40 * (1 - Math.min(1, cOp))}px)`;
+      }
+
+      const shouldShow = p > 0.1;
+      if (shouldShow !== showEnterDomeRef.current) {
+        showEnterDomeRef.current = shouldShow;
+        setShowEnterDome(shouldShow);
+      }
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [cinematicEnabled, ecoMode]);
+
+  // Scroll math for the 3D cinematic corridor. The flight is time-driven (auto-play
+  // above) and cannot be skipped: scrolling no longer fast-forwards the progress,
+  // and page scroll is locked until the cinematic finishes (see lockScroll effect).
+  // cinematicActive only tracks whether the corridor is still in view so the WebGL
+  // render loop can pause once the opaque core-landing block covers the viewport.
+  useEffect(() => {
+    if (!cinematicEnabled) return;
+    const computeCinematic = () => {
+      const el = cinematicCorridorRef.current;
+      const core = coreLandingRef.current;
+      if (!el) {
+        setCinematicActive(false);
+        return;
+      }
+      const coreRect = core?.getBoundingClientRect();
+      setCinematicActive(!coreRect || coreRect.top > 0);
+    };
+    const onScroll = () => {
+      computeCinematic();
+    };
+    let raf = 0;
+    const onScrollRAF = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        computeCinematic();
+      });
+    };
+    computeCinematic();
+    window.addEventListener("scroll", onScrollRAF, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScrollRAF, { passive: true } as EventListenerOptions);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [cinematicEnabled, windowHeight]);
+
+  // Lock page scroll while the cinematic intro is playing so it cannot be skipped.
+  // Unlocks once the flight reaches the end (cinematicDone). We set overflow on the
+  // root element: body-only overflow would not propagate to the viewport because
+  // html already has overflow-x:hidden (which breaks the propagation rule).
+  useEffect(() => {
+    if (!cinematicEnabled || activePage !== "home" || cinematicDone || skipIntro) return;
+    acquireScrollLock();
+    return () => {
+      releaseScrollLock();
+    };
+  }, [cinematicEnabled, activePage, cinematicDone, skipIntro]);
 
   // Dynamic Page Metadata & SEO Management
   useEffect(() => {
@@ -163,72 +380,204 @@ export default function App() {
         "how-it-works": "Как устроен купол защиты // TrustNode Protocol",
         tech: "Безопасность и Технологии // TrustNode Protocol",
         about: "О проекте и команде // TrustNode Protocol",
+        download: "Скачать TrustNode // TrustNode Protocol",
+        roadmap: "Карта разработки // TrustNode Protocol",
+        privacy: "Политика конфиденциальности // TrustNode Protocol",
+        terms: "Пользовательское соглашение // TrustNode Protocol",
+        news: "Новости // TrustNode Protocol",
+        features: "Возможности // TrustNode Protocol",
+        comparison: "Сравнение // TrustNode Protocol",
+        research: "Исследования // TrustNode Protocol",
+        "privacy-architecture": "Архитектура приватности // TrustNode Protocol",
+        glossary: "Глоссарий терминов // TrustNode Protocol",
+        test: "Проверь себя: распознай мошенника // TrustNode Protocol",
+        help: "Что делать, если обманули // TrustNode Protocol",
       },
       en: {
         home: "TrustNode — On-Device Anti-Fraud & Spam Shield",
         "how-it-works": "How It Works // TrustNode Protocol",
         tech: "Security & Tech // TrustNode Protocol",
         about: "About Us & Team // TrustNode Protocol",
+        download: "Download TrustNode // TrustNode Protocol",
+        roadmap: "Development Roadmap // TrustNode Protocol",
+        privacy: "Privacy Policy // TrustNode Protocol",
+        terms: "Terms of Service // TrustNode Protocol",
+        news: "News // TrustNode Protocol",
+        features: "Features // TrustNode Protocol",
+        comparison: "Comparison // TrustNode Protocol",
+        research: "Research // TrustNode Protocol",
+        "privacy-architecture": "Privacy Architecture // TrustNode Protocol",
+        glossary: "Glossary // TrustNode Protocol",
+        test: "Spot the Scam Quiz // TrustNode Protocol",
+        help: "What to Do If Scammed // TrustNode Protocol",
       },
       es: {
         home: "TrustNode — Escudo Contra el Fraude en el Dispositivo",
         "how-it-works": "Cómo Funciona // TrustNode Protocol",
         tech: "Seguridad y Tecnología // TrustNode Protocol",
         about: "Sobre Nosotros // TrustNode Protocol",
+        download: "Descargar TrustNode // TrustNode Protocol",
+        roadmap: "Hoja de Ruta de Desarrollo // TrustNode Protocol",
+        privacy: "Política de Privacidad // TrustNode Protocol",
+        terms: "Términos de Uso // TrustNode Protocol",
+        news: "Noticias // TrustNode Protocol",
+        features: "Funciones // TrustNode Protocol",
+        comparison: "Comparación // TrustNode Protocol",
+        research: "Investigación // TrustNode Protocol",
+        "privacy-architecture": "Arquitectura de Privacidad // TrustNode Protocol",
+        glossary: "Glosario // TrustNode Protocol",
+        test: "Pon a prueba: reconoce al estafador // TrustNode Protocol",
+        help: "Qué hacer si te han estafado // TrustNode Protocol",
       },
       zh: {
         home: "TrustNode — 移动端离线防诈骗安全盾",
         "how-it-works": "工作原理 // TrustNode Protocol",
         tech: "安全与技术 // TrustNode Protocol",
         about: "关于我们与团队 // TrustNode Protocol",
+        download: "下载 TrustNode // TrustNode Protocol",
+        roadmap: "发展路线图 // TrustNode Protocol",
+        privacy: "隐私政策 // TrustNode Protocol",
+        terms: "用户协议 // TrustNode Protocol",
+        news: "新闻 // TrustNode Protocol",
+        features: "功能 // TrustNode Protocol",
+        comparison: "对比 // TrustNode Protocol",
+        research: "研究 // TrustNode Protocol",
+        "privacy-architecture": "隐私架构 // TrustNode Protocol",
+        glossary: "术语表 // TrustNode Protocol",
+        test: "检验自己：识别骗子 // TrustNode Protocol",
+        help: "被骗了怎么办 // TrustNode Protocol",
       },
       tr: {
         home: "TrustNode — Cihaz Üstü Dolandırıcılık Kalkanı",
         "how-it-works": "Nasıl Çalışır // TrustNode Protocol",
         tech: "Güvenlik ve Teknoloji // TrustNode Protocol",
         about: "Hakkımızda // TrustNode Protocol",
+        download: "TrustNode İndir // TrustNode Protocol",
+        roadmap: "Geliştirme Yol Haritası // TrustNode Protocol",
+        privacy: "Gizlilik Politikası // TrustNode Protocol",
+        terms: "Kullanıcı Sözleşmesi // TrustNode Protocol",
+        news: "Haberler // TrustNode Protocol",
+        features: "Özellikler // TrustNode Protocol",
+        comparison: "Karşılaştırma // TrustNode Protocol",
+        research: "Araştırma // TrustNode Protocol",
+        "privacy-architecture": "Gizlilik Mimarisi // TrustNode Protocol",
+        glossary: "Sözlük // TrustNode Protocol",
+        test: "Kendini test et: dolandırıcıyı tanı // TrustNode Protocol",
+        help: "Dolandırıldıysanız ne yapmalı // TrustNode Protocol",
       },
       hi: {
         home: "TrustNode — ऑन-डिवाइस धोखाधड़ी सुरक्षा कवच",
         "how-it-works": "यह कैसे काम करता है // TrustNode Protocol",
         tech: "सुरक्षा और तकनीक // TrustNode Protocol",
         about: "हमारे बारे में // TrustNode Protocol",
+        download: "TrustNode डाउनलोड करें // TrustNode Protocol",
+        roadmap: "विकास रोडमैप // TrustNode Protocol",
+        privacy: "गोपनीयता नीति // TrustNode Protocol",
+        terms: "उपयोग की शर्तें // TrustNode Protocol",
+        news: "समाचार // TrustNode Protocol",
+        features: "विशेषताएं // TrustNode Protocol",
+        comparison: "तुलना // TrustNode Protocol",
+        research: "अनुसंधान // TrustNode Protocol",
+        "privacy-architecture": "गोपनीयता वास्तुकला // TrustNode Protocol",
+        glossary: "शब्दावली // TrustNode Protocol",
+        test: "खुद को जांचें: ठग को पहचानें // TrustNode Protocol",
+        help: "ठगे जाने पर क्या करें // TrustNode Protocol",
       },
       ar: {
         home: "TrustNode — درع مكافحة الاحتيال على الجهاز",
         "how-it-works": "كيف يعمل // TrustNode Protocol",
         tech: "الأمان والتكنولوجيا // TrustNode Protocol",
         about: "من نحن والوصول // TrustNode Protocol",
+        download: "تنزيل TrustNode // TrustNode Protocol",
+        roadmap: "خارطة طريق التطوير // TrustNode Protocol",
+        privacy: "سياسة الخصوصية // TrustNode Protocol",
+        terms: "شروط الاستخدام // TrustNode Protocol",
+        news: "الأخبار // TrustNode Protocol",
+        features: "الميزات // TrustNode Protocol",
+        comparison: "المقارنة // TrustNode Protocol",
+        research: "الأبحاث // TrustNode Protocol",
+        "privacy-architecture": "هندسة الخصوصية // TrustNode Protocol",
+        glossary: "المصطلحات // TrustNode Protocol",
+        test: "اختبر نفسك: تعرّف على المحتال // TrustNode Protocol",
+        help: "ماذا تفعل إذا تم احتيالك // TrustNode Protocol",
       },
       pt: {
         home: "TrustNode — Escudo Anti-Fraude no Dispositivo",
         "how-it-works": "Como Funciona // TrustNode Protocol",
         tech: "Segurança e Tecnologia // TrustNode Protocol",
         about: "Sobre Nós // TrustNode Protocol",
+        download: "Baixar TrustNode // TrustNode Protocol",
+        roadmap: "Roteiro de Desenvolvimento // TrustNode Protocol",
+        privacy: "Política de Privacidade // TrustNode Protocol",
+        terms: "Termos de Uso // TrustNode Protocol",
+        news: "Notícias // TrustNode Protocol",
+        features: "Recursos // TrustNode Protocol",
+        comparison: "Comparação // TrustNode Protocol",
+        research: "Pesquisa // TrustNode Protocol",
+        "privacy-architecture": "Arquitetura de Privacidade // TrustNode Protocol",
+        glossary: "Glossário // TrustNode Protocol",
+        test: "Teste-se: reconheça o golpista // TrustNode Protocol",
+        help: "O que fazer se for enganado // TrustNode Protocol",
       },
       fr: {
         home: "TrustNode — Protection Anti-Fraude sur l'Appareil",
         "how-it-works": "Comment ça marche // TrustNode Protocol",
         tech: "Sécurité & Technologie // TrustNode Protocol",
         about: "À Propos // TrustNode Protocol",
+        download: "Télécharger TrustNode // TrustNode Protocol",
+        roadmap: "Feuille de route de développement // TrustNode Protocol",
+        privacy: "Politique de confidentialité // TrustNode Protocol",
+        terms: "Conditions d'utilisation // TrustNode Protocol",
+        news: "Actualités // TrustNode Protocol",
+        features: "Fonctionnalités // TrustNode Protocol",
+        comparison: "Comparaison // TrustNode Protocol",
+        research: "Recherche // TrustNode Protocol",
+        "privacy-architecture": "Architecture de confidentialité // TrustNode Protocol",
+        glossary: "Glossaire // TrustNode Protocol",
+        test: "Testez-vous : repérez l'escroc // TrustNode Protocol",
+        help: "Que faire si vous êtes victime d'arnaque // TrustNode Protocol",
       },
       de: {
         home: "TrustNode — On-Device Anti-Betrugs-Schutzschild",
         "how-it-works": "Wie es funktioniert // TrustNode Protocol",
         tech: "Sicherheit & Technologie // TrustNode Protocol",
         about: "Über Uns // TrustNode Protocol",
+        download: "TrustNode Herunterladen // TrustNode Protocol",
+        roadmap: "Entwicklungs-Roadmap // TrustNode Protocol",
+        privacy: "Datenschutzerklärung // TrustNode Protocol",
+        terms: "Nutzungsbedingungen // TrustNode Protocol",
+        news: "Neuigkeiten // TrustNode Protocol",
+        features: "Funktionen // TrustNode Protocol",
+        comparison: "Vergleich // TrustNode Protocol",
+        research: "Forschung // TrustNode Protocol",
+        "privacy-architecture": "Datenschutz-Architektur // TrustNode Protocol",
+        glossary: "Glossar // TrustNode Protocol",
+        test: "Testen Sie sich: Betrüger erkennen // TrustNode Protocol",
+        help: "Was tun, wenn Sie betrogen wurden // TrustNode Protocol",
       },
       ja: {
         home: "TrustNode — オンデバイス特殊詐欺対策シールド",
         "how-it-works": "仕組み // TrustNode Protocol",
         tech: "セキュリティとテクノロジー // TrustNode Protocol",
         about: "私たちについて // TrustNode Protocol",
+        download: "TrustNode ダウンロード // TrustNode Protocol",
+        roadmap: "開発ロードマップ // TrustNode Protocol",
+        privacy: "プライバシーポリシー // TrustNode Protocol",
+        terms: "利用規約 // TrustNode Protocol",
+        news: "ニュース // TrustNode Protocol",
+        features: "機能 // TrustNode Protocol",
+        comparison: "比較 // TrustNode Protocol",
+        research: "研究 // TrustNode Protocol",
+        "privacy-architecture": "プライバシーアーキテクチャ // TrustNode Protocol",
+        glossary: "用語集 // TrustNode Protocol",
+        test: "自分を試す：詐欺師を見抜く // TrustNode Protocol",
+        help: "詐欺に遭ったらどうする // TrustNode Protocol",
       }
     };
 
     const currentLang = language || localStorage.getItem("trustnode_lang") || "ru";
     const pageTitleMap = pageTitles[currentLang] || pageTitles["ru"];
-    const pageTitle = pageTitleMap[activePage] || (activePage === "roadmap" ? (currentLang === "ru" ? "Карта разработки // TrustNode Protocol" : "Roadmap & Verification // TrustNode Protocol") : (pageTitleMap["home"] || pageTitles.ru.home));
+    const pageTitle = pageTitleMap[activePage] || (pageTitleMap["home"] || pageTitles.ru.home);
     document.title = pageTitle;
 
     let linkIcon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
@@ -238,104 +587,171 @@ export default function App() {
       linkIcon.setAttribute("type", "image/svg+xml");
       document.head.appendChild(linkIcon);
     }
-    linkIcon.setAttribute("href", "/favicon.svg");
+    linkIcon.setAttribute("href", `${import.meta.env.BASE_URL}favicon.svg`);
 
     const descriptions: Record<string, Record<string, string>> = {
       ru: {
         home: "TrustNode — первое в мире полностью локальное мобильное приложение на базе ИИ для защиты от телефонных мошенников, спама и утечек данных.",
-        "how-it-works": "Узнайте, как семислойный ИБ-купол TrustNode обнаруживает мошенничество и психологическое давление без передачи данных в интернет.",
+        "how-it-works": "Узнайте, как купол TrustNode защищает без передачи данных в интернет: акустический анализ и ML-классификация rubert-tiny2 работают на устройстве, остальные слои — в разработке (Roadmap).",
         tech: "Технические подробности и замеры скорости работы TrustNode: локальные ONNX-модели с INT8-квантованием прямо на вашем процессоре.",
         about: "История создания TrustNode, наша миссия против мошеннических сетей и команда разработчиков систем ИБ.",
-        "not-found": "Страница не найдена. Вернитесь в защищённый периметр TrustNode."
+        "not-found": "Страница не найдена. Вернитесь в защищённый периметр TrustNode.",
+        roadmap: "Статус разработки TrustNode, политика безопасного раскрытия и фазы развертывания интеллектуальных модулей",
+        privacy: "Политика конфиденциальности TrustNode: сайт не собирает, не обрабатывает и не хранит персональные данные пользователей.",
+        terms: "Пользовательское соглашение TrustNode: статус промо-ресурса, лицензии, интеллектуальная собственность и ответственность.",
+        news: "Новости проекта TrustNode из Telegram и VK: обновления разработки, анонсы и записи команды.",
+        glossary: "Глоссарий TrustNode: простые объяснения RASP, ONNX, RMS, ZCR, фишинга и других терминов безопасности.",
+        test: "Интерактивный тест TrustNode: 6 сценариев мошенничества — проверьте, сможете ли вы распознать обман.",
+        help: "Пошаговая инструкция TrustNode: что делать, если вас обманули мошенники — блокировка карты, банк, полиция.",
+
       },
       en: {
         home: "TrustNode — the world's first fully offline AI-powered security shield protecting your Android device from calls/SMS scam, phish links, and leaks.",
-        "how-it-works": "Explore how TrustNode's 7-layer security dome detects fraud tactics, robotic speech, and intimidation offline.",
+        "how-it-works": "Explore how TrustNode's security dome protects without sending data online: acoustic analysis and rubert-tiny2 ML classification run on-device, while the remaining layers are in development (Roadmap).",
         tech: "Explore the technical stack: secure sandboxed execution, quantized INT8 local ONNX models, and real latency metrics.",
         about: "The story behind TrustNode, our battle against organized fraud networks, and our core open-source team.",
-        "not-found": "Page not found. Return to the secure TrustNode perimeter."
+        "not-found": "Page not found. Return to the secure TrustNode perimeter.",
+        roadmap: "Current progress of TrustNode, responsible disclosure policy, and semantic core deployment timeline",
+        privacy: "TrustNode Privacy Policy: the website does not collect, process, or store users' personal data.",
+        terms: "TrustNode Terms of Service: site status, licenses, intellectual property, and liability.",
+        news: "TrustNode project news from Telegram and VK: development updates, announcements and team posts.",
+        glossary: "TrustNode glossary: plain-language explanations of RASP, ONNX, RMS, ZCR, phishing and other security terms.",
+        test: "TrustNode interactive quiz: 6 scam scenarios — test how well you can spot fraud.",
+        help: "TrustNode step-by-step guide: what to do if scammers got you — block card, bank, police.",
+
       },
       es: {
         home: "TrustNode — el primer escudo de seguridad impulsado por IA 100% offline que protege su dispositivo contra llamadas fraudulentas y spam.",
-        "how-it-works": "Descubra cómo el domo de seguridad de 7 capas de TrustNode detecta tácticas de fraude sin conexión.",
+        "how-it-works": "Descubra cómo el domo de seguridad de TrustNode protege sin conexión: el análisis acústico y la clasificación ML rubert-tiny2 funcionan en el dispositivo, y las capas restantes están en desarrollo (Roadmap).",
         tech: "Detalles técnicos y métricas de latencia de TrustNode: modelos ONNX locales con cuantización INT8.",
         about: "La historia de TrustNode, nuestra lucha contra las redes delictivas organizadas y el equipo de desarrollo.",
-        "not-found": "Página no encontrada. Regrese al perímetro seguro de TrustNode."
+        "not-found": "Página no encontrada. Regrese al perímetro seguro de TrustNode.",
+        roadmap: "Progreso actual de TrustNode, política de divulgación responsable y cronograma de despliegue del núcleo semántico",
+        privacy: "Política de privacidad de TrustNode: el sitio no recopila, procesa ni almacena datos personales de los usuarios.",
+        terms: "Términos de uso de TrustNode: estado del sitio, licencias, propiedad intelectual y responsabilidad.",
+        news: "Noticias del proyecto TrustNode desde Telegram y VK: actualizaciones de desarrollo, anuncios y publicaciones del equipo.",
+        glossary: "Glosario TrustNode: explicaciones sencillas de RASP, ONNX, RMS, ZCR, phishing y otros términos de seguridad.",
+        test: "Cuestionario interactivo TrustNode: 6 escenarios de fraude — compruebe si sabe reconocerlos.",
+        help: "Guía paso a paso de TrustNode: qué hacer si le han estafado — bloquear tarjeta, banco, policía.",
+
       },
       zh: {
         home: "TrustNode — 全球首款完全离线运行的 AI 移动安全防护盾，全面防御电话诈骗、垃圾短信和数据泄露。",
-        "how-it-works": "探索 TrustNode 的 7 重防御防护罩如何在无需联网的情况下实时检测诈骗和心理压迫手段。",
+        "how-it-works": "了解 TrustNode 防护穹顶如何在无需联网的情况下保护您：声学分析与 rubert-tiny2 ML 分类在设备端运行，其余层处于开发阶段（Roadmap）。",
         tech: "技术细节与性能表现：直接在移动处理器上运行的 INT8 量化本地 ONNX 引擎。",
         about: "TrustNode 的创立历程、我们与网络诈骗集团的对抗以及核心开源技术团队。",
-        "not-found": "未找到页面，请返回 TrustNode 安全区域。"
+        "not-found": "未找到页面，请返回 TrustNode 安全区域。",
+        roadmap: "TrustNode 的当前进展、负责任披露政策与语义核心部署时间表",
+        privacy: "TrustNode 隐私政策：网站不收集、不处理、不存储用户的个人数据。",
+        terms: "TrustNode 用户协议：网站性质、许可、知识产权与责任。",
+        news: "来自 Telegram 和 VK 的 TrustNode 项目新闻：开发动态、公告与团队发布。",
+        glossary: "TrustNode 术语表：RASP、ONNX、RMS、ZCR、网络钓鱼等安全术语的通俗解释。",
+        test: "TrustNode 互动测验：6 个诈骗场景 — 检验你能否识破骗局。",
+        help: "TrustNode 分步指南：被骗后怎么办 — 冻结银行卡、联系银行、报警。",
       },
       tr: {
         home: "TrustNode — Telefon dolandırıcılığı ve spama karşı %100 çevrimdışı çalışan yapay zeka destekli mobil güvenlik kalkanı.",
-        "how-it-works": "TrustNode 7 katmanlı güvenlik kubbesinin dolandırıcılık taktiklerini ve robotik konuşmaları nasıl engellediğini öğrenin.",
+        "how-it-works": "TrustNode güvenlik kubbesinin internet olmadan nasıl koruduğunu öğrenin: akustik analiz ve rubert-tiny2 ML sınıflandırma cihazda çalışır, kalan katmanlar geliştirme aşamasındadır (Roadmap).",
         tech: "Teknik detaylar ve hız ölçümleri: Doğrudan cihazınızda çalışan INT8 nicemlemeli yerel ONNX modelleri.",
         about: "TrustNode'un kuruluş hikayesi, organize dolandırıcılık ağlarına karşı mücadelemiz ve geliştirici ekibimiz.",
-        "not-found": "Sayfa bulunamadı. Güvenli TrustNode alanına geri dönün."
+        "not-found": "Sayfa bulunamadı. Güvenli TrustNode alanına geri dönün.",
+        roadmap: "TrustNode'un mevcut ilerlemesi, sorumlu açıklama politikası ve anlamsal çekirdek dağıtım zaman çizelgesi",
+        privacy: "TrustNode Gizlilik Politikası: site kullanıcıların kişisel verilerini toplamaz, işlemez veya saklamaz.",
+        terms: "TrustNode Kullanıcı Sözleşmesi: kaynak durumu, lisanslar, fikri mülkiyet ve sorumluluk.",
+        news: "Telegram ve VK'dan TrustNode proje haberleri: geliştirme güncellemeleri, duyurular ve ekip gönderileri.",
+        glossary: "TrustNode sözlüğü: RASP, ONNX, RMS, ZCR, oltalama ve diğer güvenlik terimlerinin sade açıklamaları.",
+        test: "TrustNode etkileşimli testi: 6 dolandırıcılık senaryosu — aldatmacayı tanıyabiliyor musunuz?",
+        help: "TrustNode adım adım rehber: dolandırıldıysanız ne yapmalı — kartı bloke et, banka, polis.",
       },
       hi: {
         home: "TrustNode — दुनिया का पहला पूरी तरह से ऑफलाइन AI-संचालित मोबाइल सुरक्षा कवच जो आपको स्पैम और धोखाधड़ी से बचाता है।",
-        "how-it-works": "जानें कि TrustNode का 7-स्तरीय सुरक्षा डोम बिना इंटरनेट के धोखाधड़ी और मानसिक दबाव का कैसे पता लगाता है।",
+        "how-it-works": "जानें कि TrustNode का सुरक्षा डोम इंटरनेट के बिना कैसे सुरक्षा करता है: ध्वनिक विश्लेषण और rubert-tiny2 ML वर्गीकरण डिवाइस पर चलते हैं, शेष परतें विकास में हैं (Roadmap)।",
         tech: "तकनीकी विवरण और गति माप: सीधे आपके प्रोसेसर पर चलने वाले INT8 स्थानीय ONNX मॉडल।",
         about: "TrustNode की कहानी, संगठित धोखाधड़ी नेटवर्क के खिलाफ हमारी लड़ाई और हमारी टीम।",
-        "not-found": "पृष्ठ नहीं मिला। सुरक्षित TrustNode सीमा पर लौटें।"
+        "not-found": "पृष्ठ नहीं मिला। सुरक्षित TrustNode सीमा पर लौटें।",
+        roadmap: "TrustNode की वर्तमान प्रगति, जिम्मेदार प्रकटीकरण नीति और सिमेंटिक कोर परिनियोजन समयरेखा",
+        privacy: "TrustNode गोपनीयता नीति: वेबसाइट उपयोगकर्ताओं का व्यक्तिगत डेटा एकत्र, प्रक्रिया या संग्रहीत नहीं करती।",
+        terms: "TrustNode उपयोग की शर्तें: साइट स्थिति, लाइसेंस, बौद्धिक संपदा और दायित्व।",
+        news: "Telegram और VK से TrustNode प्रोजेक्ट समाचार: विकास अपडेट, घोषणाएँ और टीम पोस्ट।",
+        glossary: "TrustNode शब्दावली: RASP, ONNX, RMS, ZCR, फ़िशिंग और अन्य सुरक्षा शब्दों की सरल व्याख्या।",
+        test: "TrustNode इंटरैक्टिव क्विज़: 6 धोखाधड़ी परिदृश्य — क्या आप ठगी पहचान सकते हैं?",
+        help: "TrustNode चरण-दर-चरण मार्गदर्शिका: ठगे जाने पर क्या करें — कार्ड ब्लॉक करें, बैंक, पुलिस।",
       },
       ar: {
         home: "TrustNode — أول درع أمني بالذكاء الاصطناعي يعمل محلياً 100% لحماية هاتفك من المكالمات الاحتيالية والرسائل المزعجة.",
-        "how-it-works": "اكتشف كيف تكتشف قبة الحماية السباعية لـ TrustNode تكتيكات الاحتيال والضغط النفسي دون اتصال بالإنترنت.",
+        "how-it-works": "اكتشف كيف يحمي قبة TrustNode دون اتصال بالإنترنت: التحليل الصوتي وتصنيف التعلم الآلي rubert-tiny2 يعملان على الجهاز، بينما الطبقات المتبقية قيد التطوير (Roadmap).",
         tech: "التفاصيل التقنية ومقاييس الأداء: نماذج ONNX المحلية بدقة INT8 تعمل مباشرة على معالج هاتفك.",
         about: "قصة إنشاء TrustNode ومهمتنا ضد شبكات الاحتيال المنظمة وفريق المطورين.",
-        "not-found": "الصفحة غير موجودة. عد إلى محيط TrustNode الآمن."
+        "not-found": "الصفحة غير موجودة. عد إلى محيط TrustNode الآمن.",
+        roadmap: "التقدم الحالي لـ TrustNode، سياسة الكشف المسؤول، والجدول الزمني لتطوير النواة الدلالية",
+        privacy: "سياسة خصوصية TrustNode: الموقع لا يجمع بيانات المستخدمين الشخصية ولا يعالجها ولا يخزنها.",
+        terms: "شروط استخدام TrustNode: وضع الموقع والتراخيص والملكية الفكرية والمسؤولية.",
+        news: "أخبار مشروع TrustNode من Telegram و VK: تحديثات التطوير والإعلانات ومنشورات الفريق.",
+        glossary: "قاموس TrustNode: شرح مبسط لمصطلحات RASP وONNX وRMS وZCR والتصيد وغيرها من مصطلحات الأمان.",
+        test: "اختبار TrustNode التفاعلي: 6 سيناريوهات احتيال — تحقق من قدرتك على اكتشاف الخداع.",
+        help: "دليل TrustNode خطوة بخطوة: ماذا تفعل إذا تم احتيالك — تجميد البطاقة، البنك، الشرطة.",
       },
       pt: {
         home: "TrustNode — o primeiro escudo de segurança 100% offline com IA para proteger seu celular contra fraudes e spam.",
-        "how-it-works": "Veja como o domo de segurança de 7 camadas do TrustNode detecta fraudes e coerção verbal sem internet.",
+        "how-it-works": "Veja como o domo de segurança do TrustNode protege sem internet: a análise acústica e a classificação ML rubert-tiny2 rodam no dispositivo, e as demais camadas estão em desenvolvimento (Roadmap).",
         tech: "Detalhes técnicos e métricas de velocidade: modelos ONNX locais INT8 rodando diretamente no processador.",
         about: "A história do TrustNode, nossa luta contra redes de fraude organizadas e nossa equipe de engenharia.",
-        "not-found": "Página não encontrada. Retorne ao perímetro seguro do TrustNode."
+        "not-found": "Página não encontrada. Retorne ao perímetro seguro do TrustNode.",
+        roadmap: "Progresso atual do TrustNode, política de divulgação responsável e cronograma de implantação do núcleo semântico",
+        privacy: "Política de Privacidade da TrustNode: o site não coleta, processa nem armazena dados pessoais dos usuários.",
+        terms: "Termos de Uso da TrustNode: status do site, licenças, propriedade intelectual e responsabilidade.",
+        news: "Notícias do projeto TrustNode do Telegram e VK: atualizações de desenvolvimento, anúncios e publicações da equipe.",
+        glossary: "Glossário TrustNode: explicações simples de RASP, ONNX, RMS, ZCR, phishing e outros termos de segurança.",
+        test: "Teste interativo TrustNode: 6 cenários de fraude — veja se consegue reconhecê-los.",
+        help: "Guia passo a passo TrustNode: o que fazer se for enganado — bloquear cartão, banco, polícia.",
       },
       fr: {
         home: "TrustNode — le premier bouclier de sécurité mobile 100% hors ligne propulsé par l'IA contre les fraudes et le spam.",
-        "how-it-works": "Découvrez comment le dôme de 7 couches de TrustNode détecte les tactiques de fraude sans connexion Internet.",
+        "how-it-works": "Découvrez comment le dôme de sécurité TrustNode protège sans connexion : l'analyse acoustique et la classification ML rubert-tiny2 fonctionnent sur l'appareil, tandis que les autres couches sont en cours de développement (Roadmap).",
         tech: "Détails techniques et performances : modèles ONNX locaux quantifiés en INT8 fonctionnant sur votre processeur.",
         about: "L'histoire de TrustNode, notre combat contre les réseaux de fraude organisés et notre équipe d'ingénieurs.",
-        "not-found": "Page introuvable. Retournez dans le périmètre sécurisé TrustNode."
+        "not-found": "Page introuvable. Retournez dans le périmètre sécurisé TrustNode.",
+        roadmap: "Progrès actuels de TrustNode, politique de divulgation responsable et calendrier de déploiement du noyau sémantique",
+        privacy: "Politique de confidentialité de TrustNode : le site ne collecte, ne traite et ne stocke pas les données personnelles des utilisateurs.",
+        terms: "Conditions d'utilisation de TrustNode : statut du site, licences, propriété intellectuelle et responsabilité.",
+        news: "Actualités du projet TrustNode depuis Telegram et VK : mises à jour de développement, annonces et publications de l'équipe.",
+        glossary: "Glossaire TrustNode : explications simples de RASP, ONNX, RMS, ZCR, phishing et autres termes de sécurité.",
+        test: "Quiz interactif TrustNode : 6 scénarios d'arnaque — saurez-vous les repérer ?",
+        help: "Guide pas à pas TrustNode : que faire en cas d'arnaque — bloquer la carte, la banque, la police.",
+
       },
       de: {
         home: "TrustNode — der weltweit erste vollständig offline funktionierende KI-Schutzschild gegen Telefonbetrug und Spam.",
-        "how-it-works": "Erfahren Sie, wie die 7-schichtige Sicherheitskuppel von TrustNode Betrugstaktiken lokal und ohne Internet erkennt.",
+        "how-it-works": "Erfahren Sie, wie die Sicherheitskuppel von TrustNode ohne Internet schützt: Akustikanalyse und ML-Klassifikation rubert-tiny2 laufen auf dem Gerät, die übrigen Ebenen befinden sich in Entwicklung (Roadmap).",
         tech: "Technische Details und Latenzmetriken: INT8-quantisierte lokale ONNX-Modelle direkt auf Ihrem Prozessor.",
         about: "Die Geschichte von TrustNode, unser Kampf gegen organisierte Betrugsnetzwerke und unser Kernteam.",
-        "not-found": "Seite nicht gefunden. Kehren Sie zum sicheren TrustNode-Bereich zurück."
+        "not-found": "Seite nicht gefunden. Kehren Sie zum sicheren TrustNode-Bereich zurück.",
+        roadmap: "Aktueller Fortschritt von TrustNode, Richtlinie zur verantwortungsvollen Offenlegung und Zeitplan für die Bereitstellung des semantischen Kerns",
+        privacy: "Datenschutzerklärung von TrustNode: Die Website erhebt, verarbeitet und speichert keine personenbezogenen Daten der Nutzer.",
+        terms: "Nutzungsbedingungen von TrustNode: Website-Status, Lizenzen, geistiges Eigentum und Haftung.",
+        news: "Projekt-Neuigkeiten von TrustNode aus Telegram und VK: Entwicklungs-Updates, Ankündigungen und Beiträge des Teams.",
+        glossary: "TrustNode Glossar: einfache Erklärungen zu RASP, ONNX, RMS, ZCR, Phishing und anderen Sicherheitsbegriffen.",
+        test: "TrustNode interaktiver Test: 6 Betrugsszenarien — erkennen Sie den Schwindel?",
+        help: "TrustNode Schritt-für-Schritt-Anleitung: Was tun, wenn Sie betrogen wurden — Karte sperren, Bank, Polizei.",
       },
       ja: {
         home: "TrustNode — 世界初の完全オフライン動作AI搭載モバイルセキュリティシールド。特殊詐欺やスパム通話を防ぎます。",
-        "how-it-works": "TrustNodeの7層セキュリティドームが、インターネットに接続せず詐欺の手口をどう検知するかご覧ください。",
+        "how-it-works": "TrustNodeのセキュリティドームがインターネットなしでどう守るかご覧ください：音響解析と rubert-tiny2 のML分類は端末上で稼働し、その他のレイヤーは開発中（Roadmap）です。",
         tech: "技術仕様と遅延メトリクス：プロセッサ上で直接動作するINT8量子化ローカルONNXモデル。",
         about: "TrustNode誕生のストーリー、組織的詐欺ネットワークとの戦い、そして開発チームのご紹介。",
-        "not-found": "ページが見つかりません。安全なTrustNodeエリアへお戻りください。"
+        "not-found": "ページが見つかりません。安全なTrustNodeエリアへお戻りください。",
+        roadmap: "TrustNode の現在の進捗状況、責任ある開示ポリシー、セマンティックコア展開のタイムライン",
+        privacy: "TrustNode プライバシーポリシー：当サイトはユーザーの個人データを収集・処理・保存しません。",
+        terms: "TrustNode 利用規約：サイトの位置付け、ライセンス、知的財産、および責任。",
+        news: "Telegram と VK からの TrustNode プロジェクトニュース：開発情報、お知らせ、チームの投稿。",
+        glossary: "TrustNode 用語集：RASP、ONNX、RMS、ZCR、フィッシングなどのセキュリティ用語をわかりやすく解説。",
+        test: "TrustNode インタラクティブテスト：詐欺シナリオ6問 — あなたは見抜けますか？",
+        help: "TrustNode ステップバイステップガイド：詐欺に遭ったら — カード停止、銀行、警察。",
       }
     };
 
     const descMap = descriptions[currentLang] || descriptions["en"] || descriptions["ru"];
-    const descText = descMap[activePage] || (
-      activePage === "roadmap" ? (
-        currentLang === "ru"
-          ? "Документальные подтверждения реальной стадии разработки, научные грамоты и слепки архитектуры."
-          : "Documentary proof of active development, academic credentials, and software architecture artifacts."
-      ) : activePage === "comparison" ? (
-        currentLang === "ru"
-          ? "Честная сравнительная таблица TrustNode с существующими антивирусами и защитными приложениями по ключевым параметрам безопасности."
-          : "Honest comparison table of TrustNode vs existing antivirus and security apps across key safety metrics."
-      ) : activePage === "early-access" ? (
-        currentLang === "ru"
-          ? "Получите ранний доступ к TrustNode — выберите тариф и сгенерируйте лицензионный билет для приоритетной установки."
-          : "Get early access to TrustNode — choose a plan and generate your license ticket for priority installation."
-      ) : (descMap["home"] || "")
-    );
+    const descText = descMap[activePage] || (descMap["home"] || "");
     
     const setMetaTag = (selector: string, attrName: string, attrVal: string, content: string) => {
       let tag = document.querySelector(selector);
@@ -351,72 +767,53 @@ export default function App() {
     setMetaTag('meta[property="og:title"]', "property", "og:title", pageTitle);
     setMetaTag('meta[property="og:description"]', "property", "og:description", descText);
     setMetaTag('meta[property="og:url"]', "property", "og:url", window.location.href);
-    setMetaTag('meta[property="og:type"]', "property", "og:type", "website");
-    setMetaTag('meta[property="og:image"]', "property", "og:image", "https://trustnode.app/og-image.png");
-    setMetaTag('meta[property="og:image:width"]', "property", "og:image:width", "1200");
-    setMetaTag('meta[property="og:image:height"]', "property", "og:image:height", "630");
-    setMetaTag('meta[name="twitter:card"]', "name", "twitter:card", "summary_large_image");
-
-    // Set html lang attribute dynamically
-    document.documentElement.setAttribute("lang", currentLang);
-
-    // Update hreflang links
-    const pagePath = activePage === "home" ? "" : `/${activePage}`;
-    const hreflangCodes: Record<string, string> = {
-      ru: "ru", en: "en", es: "es", zh: "zh", tr: "tr",
-      hi: "hi", ar: "ar", pt: "pt", fr: "fr", de: "de", ja: "ja"
-    };
-    for (const [code] of Object.entries(hreflangCodes)) {
-      let link = document.querySelector(`link[hreflang="${code}"][rel="alternate"]`);
-      if (!link) {
-        link = document.createElement("link");
-        link.setAttribute("rel", "alternate");
-        link.setAttribute("hreflang", code);
-        document.head.appendChild(link);
-      }
-      const href = code === "ru" ? `https://trustnode.app${pagePath}` : `https://trustnode.app/${code}${pagePath}`;
-      link.setAttribute("href", href);
-    }
   }, [activePage, language]);
 
   // Continuous zoom factor for the starfield
   const zoomFactor = 1.05;
 
-  // Beautiful Header is always visible for instant navigation
-  const showHeader = true;
-
   return (
     <div 
-      className="relative w-full max-w-full overflow-x-hidden bg-[#0A0A0B] selection:bg-[#2E7DFF]/30 selection:text-[#F5F5F0]"
+      className="relative w-full max-w-full overflow-x-hidden bg-[#0A0A0B] selection:bg-[#3B82F6]/30 selection:text-[#F5F5F0] pl-16 sm:pl-20"
       style={{ minHeight: "100vh" }}
       id="app-container"
     >
+      {/* Skip to content link (keyboard/screen-reader users) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[999] focus:px-4 focus:py-2 focus:rounded-xl focus:bg-[#3B82F6] focus:text-white focus:font-sans focus:text-sm"
+      >
+        {t.skipToContent}
+      </a>
       {/* Fixed Network Background (Acts as the uniform starfield throughout) */}
       <div className="fixed inset-0 w-full h-full pointer-events-none">
         <Suspense fallback={<SkyPlaceholder />}>
-          <NetworkBackground zoomFactor={zoomFactor} warpProgress={0} isEcoMode={ecoMode} onSkyStatusChange={setSkyStatus} language={language} />
+          <NetworkBackground zoomFactor={zoomFactor} warpProgressRef={sceneProgressRef} isEcoMode={ecoMode} onSkyStatusChange={setSkyStatus} language={language} suspended={bgSuspended} />
         </Suspense>
       </div>
 
-      {/* Universal Fixed Header - Displayed on all pages across the application */}
+      {/* Universal Fixed Header (vertical sidebar on the left) - Displayed on all pages across the application */}
       <div 
-        className="transition-all duration-500 fixed top-0 left-0 right-0 z-50"
+        className="transition-opacity duration-300 fixed top-0 left-0 bottom-0 z-50 w-16 sm:w-20"
         style={{ 
-          opacity: 1, 
-          transform: "translateY(0)",
-          pointerEvents: "auto" 
+          opacity: showHeader ? 1 : 0, 
+          pointerEvents: showHeader ? "auto" : "none" 
         }}
       >
-        <Header isEcoMode={ecoMode} onToggleEcoMode={toggleEcoMode} />
+        <Header />
       </div>
 
       {/* DYNAMIC PAGE ROUTER */}
-      <div className="relative z-10 w-full flex flex-col" id="page-router-outlet">
-        <Suspense fallback={null}>
+      <main
+        id="main-content"
+        className="relative z-10 w-full flex flex-col"
+        tabIndex={-1}
+      >
         <AnimatePresence mode="wait">
+          <MotionConfig reducedMotion={prefersReducedMotion || ecoMode ? "always" : "user"}>
           {activePage === "home" && (
             <motion.div
-              key="home-page"
+              key={`home-page-${language}`}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
@@ -429,8 +826,14 @@ export default function App() {
                   
                   {/* SECTION 1: HERO TITLE (100dvh) */}
                   <div 
-                    className="relative w-full flex items-center justify-center px-4 select-none pointer-events-none"
-                    style={{ height: "100dvh" }}
+                    ref={heroSectionRef}
+                    className="relative z-20 w-full flex items-center justify-center px-4 select-none pointer-events-none"
+                    style={{
+                      height: "100dvh",
+                      opacity: 1,
+                      transform: "scale(1)",
+                      transformOrigin: "center center"
+                    }}
                     id="main-hero-section-container"
                   >
                     {/* Title and Status Badge Container */}
@@ -442,45 +845,51 @@ export default function App() {
                       id="main-hero-section"
                     >
                       {/* Status Badge */}
+                      {!cinematicEnabled && (
                       <div 
-                        className={`inline-flex flex-col items-center justify-center px-4 py-1.5 ${!ecoMode && skyStatus ? "rounded-2xl gap-1 py-2" : "rounded-full"} bg-[#0A162C]/80 border border-[#2E7DFF]/40 shadow-[0_0_15px_rgba(46,125,255,0.25)] mb-8 transition-all duration-300`}
+                        className={`inline-flex flex-col items-center justify-center px-4 py-1.5 ${!ecoMode && skyStatus ? "rounded-sm gap-1 py-2" : "rounded-sm"} bg-[#12141A]/80 border border-[#3C404A] shadow-glow-sm mb-8 transition duration-300`}
                         id="status-badge"
                       >
                         <div className="inline-flex items-center gap-2.5">
                           <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2E7DFF] opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2E7DFF]"></span>
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2DD4BF] opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2DD4BF]"></span>
                           </span>
-                          <span className="font-mono text-[10px] sm:text-xs font-semibold tracking-[0.18em] text-[#2E7DFF]">
+                          <span className="font-mono text-[11px] sm:text-sm font-semibold tracking-[0.18em] text-[#2DD4BF]">
                             {t.hero.badge}
                           </span>
                         </div>
                         {!ecoMode && skyStatus && (
-                          <span className="font-mono text-[9px] sm:text-[10.5px] font-medium tracking-[0.12em] text-[#2E7DFF]/85 text-center">
+                          <span className="font-mono text-[10px] sm:text-xs font-medium tracking-[0.12em] text-[#3B82F6]/85 text-center">
                             {skyStatus}
                           </span>
                         )}
                       </div>
+                      )}
 
                       {/* Huge Hero Title */}
                       <h1 
-                        className="font-display font-bold text-5xl sm:text-7xl md:text-[110px] lg:text-[130px] xl:text-[140px] leading-[0.9] tracking-tight mb-6 filter drop-shadow-[0_0_35px_rgba(46,125,255,0.35)]"
+                        className="font-display font-medium text-4xl sm:text-7xl md:text-[120px] lg:text-[140px] xl:text-[150px] leading-[0.9] tracking-tighter mb-6"
                         id="main-title"
                       >
                         <span className="text-[#F5F5F0]">Trust</span>
-                        <span className="text-[#2E7DFF]">Node</span>
+                        <span className="text-[#3B82F6]">Node</span>
                       </h1>
 
                       {/* Monospaced Bracketed Subtitle */}
+                      {!cinematicEnabled && (
                       <p 
                         className="font-mono text-xs sm:text-sm tracking-[0.22em] text-gray-500 max-w-2xl px-2"
                         id="main-subtitle"
                       >
                         {t.hero.titleSub}
                       </p>
+                      )}
+
                     </motion.div>
 
                     {/* Scroll Down Indicator */}
+                    {!cinematicEnabled && (
                     <motion.div 
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -490,12 +899,12 @@ export default function App() {
                     >
                       <button 
                         onClick={() => {
-                          window.scrollTo({ top: vh * 1.0, behavior: "smooth" });
+                          window.scrollTo({ top: vh * (1 + flightCorridorDvh / 100), behavior: "smooth" });
                         }}
                         className="flex flex-col items-center gap-2 cursor-pointer group pointer-events-auto z-30 transition-opacity duration-300"
                         id="scroll-indicator-container"
                       >
-                        <span className="font-mono text-[10px] tracking-[0.25em] text-[#2E7DFF] group-hover:text-white transition-colors uppercase font-bold">
+                        <span className="font-mono text-[10px] tracking-[0.25em] text-[#3B82F6] group-hover:text-[#2DD4BF] transition-colors uppercase font-bold">
                           {t.hero.scrollStart}
                         </span>
                         <svg 
@@ -509,179 +918,166 @@ export default function App() {
                         </svg>
                       </button>
                     </motion.div>
-                  </div>
-
-                  {/* SECTION 2: LOGO ASSEMBLY & PANELS (100dvh) */}
-                  <div 
-                    ref={section2Ref}
-                    className="relative w-full flex items-center justify-center px-4 pb-28 pt-16 select-none pointer-events-none"
-                    style={{ 
-                      minHeight: "100dvh",
-                    }}
-                    id="slide2-assembly-section-container"
-                  >
-                    {/* Central content container shifted slightly higher to feel perfectly framed */}
-                    <motion.div 
-                      initial={{ opacity: 0, y: 40 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: "-100px" }}
-                      transition={{ duration: 0.8, ease: "easeOut" }}
-                      className="flex flex-col items-center justify-center gap-6 sm:gap-8 lg:gap-10 w-full px-4 pointer-events-auto"
-                      style={{
-                        transform: "translateY(-75px)",
-                      }}
-                      id="slide2-assembly-section"
-                    >
-                         
-                      <div className="flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-16 w-full max-w-5xl mx-auto shrink-0">
-                        {/* Left Status Label */}
-                        <motion.div
-                          style={{
-                            opacity: logoProgress > 0.15 ? Math.min(1, (logoProgress - 0.15) / 0.85) : 0,
-                            x: logoProgress > 0.15 ? -40 * (1 - Math.min(1, (logoProgress - 0.15) / 0.85)) : -40
-                          }}
-                          className="flex flex-col items-center lg:items-end text-center lg:text-right w-full lg:w-64"
-                        >
-                          <span className="font-display font-extrabold text-xl sm:text-2xl text-[#F5F5F0] tracking-tight">
-                            {t.assembly?.leftPrimary || "OFFLINE-FIRST"}
-                          </span>
-                          <span className="font-mono text-[9px] sm:text-[10px] text-[#2E7DFF] tracking-wider mt-1.5 uppercase">
-                            {t.assembly?.leftSub || "// ДАННЫЕ НЕ ПОКИДАЮТ УСТРОЙСТВО"}
-                          </span>
-                        </motion.div>
-
-                        {/* Central Logo */}
-                        <div className="flex items-center justify-center shrink-0">
-                          <AssembledLogo progress={logoProgress} ecoMode={ecoMode} />
-                        </div>
-
-                        {/* Right Status Label */}
-                        <motion.div
-                          style={{
-                            opacity: logoProgress > 0.15 ? Math.min(1, (logoProgress - 0.15) / 0.85) : 0,
-                            x: logoProgress > 0.15 ? 40 * (1 - Math.min(1, (logoProgress - 0.15) / 0.85)) : 40
-                          }}
-                          className="flex flex-col items-center lg:items-start text-center lg:text-left w-full lg:w-64"
-                        >
-                          <span className="font-display font-extrabold text-xl sm:text-2xl text-[#F5F5F0] tracking-tight">
-                            {t.assembly?.rightPrimary || "ZERO TELEMETRY"}
-                          </span>
-                          <span className="font-mono text-[9px] sm:text-[10px] text-[#2E7DFF] tracking-wider mt-1.5 uppercase">
-                            {t.assembly?.rightSub || "// НИКАКОЙ ТЕЛЕМЕТРИИ"}
-                          </span>
-                        </motion.div>
-                      </div>
-
-                      {/* Minimalist HUD Status Bar */}
-                      <AnimatePresence>
-                        {logoProgress > 0.6 && (
-                          <motion.div
-                            initial="hidden"
-                            animate="visible"
-                            exit="hidden"
-                            variants={{
-                              visible: {
-                                transition: {
-                                  staggerChildren: 0.15
-                                }
-                              }
-                            }}
-                            className="flex flex-wrap items-center justify-center gap-3 mt-2 pointer-events-none select-none"
-                            id="logo-assembly-hud-bar"
-                          >
-                            {[
-                              hudTranslations[language]?.core || hudTranslations.en.core,
-                              hudTranslations[language]?.nodes || hudTranslations.en.nodes,
-                              hudTranslations[language]?.mode || hudTranslations.en.mode
-                            ].map((text, idx) => (
-                              <motion.div
-                                key={idx}
-                                variants={{
-                                  hidden: { opacity: 0, y: 10, scale: 0.95 },
-                                  visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 100, damping: 15 } }
-                                }}
-                                className="font-mono text-[9px] sm:text-[11px] tracking-[0.1em] font-semibold text-[#2E7DFF] bg-[#0A162C]/50 border border-[#2E7DFF]/20 px-3.5 py-1.5 rounded-full shadow-[0_0_10px_rgba(46,125,255,0.08)] whitespace-nowrap"
-                              >
-                                {text}
-                              </motion.div>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                    </motion.div>
-                    
-                    {/* Bottom Area of Section 2 with Dynamic Dome Navigator */}
-                    {logoProgress > 0.1 && (
-                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center shrink-0">
-                        <button
-                          onClick={() => {
-                            window.scrollTo({ top: vh * 2.0, behavior: "smooth" });
-                          }}
-                          className="flex flex-col items-center gap-3 cursor-pointer group z-30 transition-all duration-300 pointer-events-auto"
-                          id="enter-dome-arrow-btn"
-                        >
-                          <div className="relative flex items-center justify-center w-10 h-10 rounded-full border border-[#2E7DFF]/30 bg-[#0A162C]/40 backdrop-blur-md group-hover:border-[#2E7DFF]/80 group-hover:shadow-[0_0_15px_rgba(46,125,255,0.4)] transition-all duration-300">
-                            <svg 
-                              className="w-5 h-5 text-[#2E7DFF] group-hover:text-[#F5F5F0] transition-colors translate-y-0 group-hover:translate-y-0.5 transition-transform animate-bounce" 
-                              fill="none" 
-                              stroke="currentColor" 
-                              strokeWidth="2.5" 
-                              viewBox="0 0 24 24"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 13l-7 7-7-7m14-6l-7 7-7-7" />
-                            </svg>
-                          </div>
-                          <span className="font-mono text-[9px] tracking-[0.3em] text-[#2E7DFF] group-hover:text-white transition-colors uppercase font-bold animate-pulse mt-2">
-                            {t.hero.enterDome}
-                          </span>
-                        </button>
-                      </div>
                     )}
-
                   </div>
+
+                  {cinematicEnabled ? (
+                    skipIntro ? (
+                    /* SKIP INTRO: user came via deep-link or logo click — no 3D corridor,
+                       just a minimal spacer so landing content is immediately visible. */
+                    <div
+                      ref={cinematicCorridorRef}
+                      className="relative w-full pointer-events-none"
+                      style={{ height: 0 }}
+                      id="cinematic-corridor"
+                    />
+                    ) : (
+                    /* CINEMATIC CORRIDOR: the whole 3D flight plays across this tall scroll span */
+                    <div
+                      ref={cinematicCorridorRef}
+                      className="relative w-full pointer-events-none"
+                      style={{ height: `${CINEMATIC_CORRIDOR_DVH}dvh` }}
+                      id="cinematic-corridor"
+                    >
+                      <Suspense fallback={<SkyPlaceholder />}>
+                        <CinematicScene progressRef={cinematicProgressRef} phases={CINEMATIC_PHASES} active={cinematicActive} />
+                      </Suspense>
+
+                      <CinematicOverlays
+                        progressRef={cinematicProgressRef}
+                        heroRef={heroSectionRef}
+                        suppressQuiz={skipIntro}
+                        onEnterDome={() => {
+                          window.scrollTo({ top: coreLandingRef.current?.offsetTop ?? vh * 2, behavior: "smooth" });
+                        }}
+                      />
+                    </div>
+                    )
+                  ) : (
+                    <>
+                      {/* SECTION 1.5: DEEP SPACE FLIGHT CORRIDOR (open space to fly through) */}
+                      <div
+                        className="relative w-full pointer-events-none"
+                        style={{ height: `${flightCorridorDvh}dvh` }}
+                        id="flight-corridor"
+                      />
+
+                      {/* SECTION 2: LOGO ASSEMBLY & PANELS. Full viewport when the
+                         2D flight needs scroll room; compact in eco mode (no
+                         animation, so a 100dvh screen would just be dead space). */}
+                      <div 
+                        ref={section2Ref}
+                        className="relative w-full flex items-center justify-center px-4 pt-16 pb-28 select-none pointer-events-none"
+                        style={{ 
+                          minHeight: ecoMode ? "auto" : "100dvh",
+                        }}
+                        id="slide2-assembly-section-container"
+                      >
+                        {/* Central content container shifted slightly higher to feel perfectly framed */}
+                        <motion.div 
+                          initial={{ opacity: 0, y: 40 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true, margin: "-100px" }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          className="flex flex-col items-center justify-center gap-6 sm:gap-8 lg:gap-10 w-full px-4 pointer-events-auto"
+                          style={{
+                            transform: ecoMode ? "none" : "translateY(-75px)",
+                          }}
+                          id="slide2-assembly-section"
+                        >
+                             
+                          <div className="flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-16 w-full max-w-5xl mx-auto shrink-0">
+                            {/* Left Status Label */}
+                            <div
+                              ref={assemblyLeftRef}
+                              style={{ opacity: 0, transform: "translateX(-40px)" }}
+                              className="flex flex-col items-center lg:items-end text-center lg:text-right w-full lg:w-64"
+                            >
+                              <span className="font-display font-medium text-xl sm:text-2xl text-[#F5F5F0] tracking-tighter">
+                                {t.assembly?.leftPrimary || "OFFLINE-FIRST"}
+                              </span>
+                              <span className="font-mono text-[9px] sm:text-[10px] text-[#3B82F6] tracking-wider mt-1.5 uppercase">
+                                {t.assembly?.leftSub || "// ДАННЫЕ НЕ ПОКИДАЮТ УСТРОЙСТВО"}
+                              </span>
+                            </div>
+
+                            {/* Central Logo */}
+                            <div className="flex items-center justify-center shrink-0">
+                              <AssembledLogo progressRef={sceneProgressRef} phaseStart={0} phaseSpan={1} ecoMode={ecoMode} />
+                            </div>
+
+                            {/* Right Status Label */}
+                            <div
+                              ref={assemblyRightRef}
+                              style={{ opacity: 0, transform: "translateX(40px)" }}
+                              className="flex flex-col items-center lg:items-start text-center lg:text-left w-full lg:w-64"
+                            >
+                              <span className="font-display font-medium text-xl sm:text-2xl text-[#F5F5F0] tracking-tighter">
+                                {t.assembly?.rightPrimary || "ZERO TELEMETRY"}
+                              </span>
+                              <span className="font-mono text-[9px] sm:text-[10px] text-[#3B82F6] tracking-wider mt-1.5 uppercase">
+                                {t.assembly?.rightSub || "// НИКАКОЙ ТЕЛЕМЕТРИИ"}
+                              </span>
+                            </div>
+                          </div>
+
+                        </motion.div>
+                        
+                        {/* Bottom Area of Section 2 with Dynamic Dome Navigator */}
+                        {showEnterDome && (
+                          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center shrink-0">
+                            <button
+                              onClick={() => {
+                                window.scrollTo({ top: coreLandingRef.current?.offsetTop ?? vh * (2 + flightCorridorDvh / 100), behavior: "smooth" });
+                              }}
+                              className="flex flex-col items-center gap-3 cursor-pointer group z-30 transition duration-300 pointer-events-auto"
+                              id="enter-dome-arrow-btn"
+                            >
+                              <div className="relative flex items-center justify-center w-10 h-10 rounded-sm border border-[#3C404A] bg-[#12141A]/60 group-hover:border-[#2DD4BF] group-hover:shadow-glow-success transition duration-300">
+                                <svg 
+                                  className="w-5 h-5 text-[#8B8F9C] group-hover:text-[#2DD4BF] transition-colors translate-y-0 group-hover:translate-y-0.5 transition-transform animate-bounce" 
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  strokeWidth="2.5" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 13l-7 7-7-7m14-6l-7 7-7-7" />
+                                </svg>
+                              </div>
+                              <span className="font-mono text-[9px] tracking-[0.3em] text-[#8B8F9C] group-hover:text-[#2DD4BF] transition-colors uppercase font-bold animate-pulse mt-2">
+                                {t.hero.enterDome}
+                              </span>
+                            </button>
+                          </div>
+                        )}
+
+                      </div>
+                    </>
+                  )}
               </div>
 
               {/* CORE LANDING CONTENT (NORMAL DOCUMENT FLOW) */}
-              <div className="relative z-20 w-full flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm shadow-[0_-30px_60px_rgba(10,10,11,0.95)]" id="core-landing-page">
-                {scrollY > vh * 1.9 && (
-                  <div className="max-w-6xl mx-auto w-full px-4 pt-8 pb-2 flex justify-start">
-                    <button
-                      onClick={() => {
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                      className="font-mono text-[9px] text-gray-500 hover:text-[#2E7DFF] transition-all flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1F2937]/30 bg-[#0F0F12]/85 cursor-pointer hover:border-[#2E7DFF]/45 hover:shadow-[0_0_12px_rgba(46,125,255,0.08)]"
-                      id="replay-intro-btn"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                      </svg>
-                      <span>{t.replayIntro}</span>
-                    </button>
-                  </div>
-                )}
-                <IntroSection />
-                <ProblemSection />
-                <TrustSection />
-                <LiveSimulatorSection />
-                <ExplorePagesSection />
-                <Footer 
-                  onOpenPrivacy={() => {
-                    setLegalModalTab("privacy");
-                    setIsLegalModalOpen(true);
-                  }}
-                  onOpenTerms={() => {
-                    setLegalModalTab("terms");
-                    setIsLegalModalOpen(true);
-                  }}
-                />
+              <div ref={coreLandingRef} className="aurora-top aurora-stars relative z-20 w-full flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm shadow-[0_-30px_60px_rgba(10,10,11,0.95)]" id="core-landing-page">
+                {/* Квиз сразу после кинематик-анимации Земли — вместо плашек «как это устроено» */}
+      {!cinematicEnabled && (
+        <div data-snap-section className="relative">
+          {/* Живой созвездие-фон позади квиза (сам квиз прозрачный, контент в z-10) */}
+          <div className="absolute inset-0 z-0 opacity-70" aria-hidden="true">
+            <ConstellationField />
+          </div>
+          <QuizFlow />
+        </div>
+      )}
+                {/* Сборка главной по блокам: только разделы из персонального маршрута квиза */}
+                <HomePersonalBlocks />
+                <Footer />
               </div>
             </motion.div>
           )}
 
           {activePage === "how-it-works" && (
             <motion.div
-              key="how-it-works-page"
+              key={`how-it-works-page-${language}`}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
@@ -694,22 +1090,13 @@ export default function App() {
                 <KiraAssistantSection />
               </div>
               <PageNavigationFooter currentPage={activePage} />
-              <Footer 
-                onOpenPrivacy={() => {
-                  setLegalModalTab("privacy");
-                  setIsLegalModalOpen(true);
-                }}
-                onOpenTerms={() => {
-                  setLegalModalTab("terms");
-                  setIsLegalModalOpen(true);
-                }}
-              />
+              <Footer />
             </motion.div>
           )}
 
           {activePage === "tech" && (
             <motion.div
-              key="tech-page"
+              key={`tech-page-${language}`}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
@@ -719,25 +1106,16 @@ export default function App() {
               <Breadcrumbs currentPage={activePage} />
               <div className="flex-1 flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm">
                 <AppSecuritySection />
-                <RealDevelopmentSection onlyRoadmap={false} />
+                <ModelTesterSection />
               </div>
               <PageNavigationFooter currentPage={activePage} />
-              <Footer 
-                onOpenPrivacy={() => {
-                  setLegalModalTab("privacy");
-                  setIsLegalModalOpen(true);
-                }}
-                onOpenTerms={() => {
-                  setLegalModalTab("terms");
-                  setIsLegalModalOpen(true);
-                }}
-              />
+              <Footer />
             </motion.div>
           )}
 
           {activePage === "roadmap" && (
             <motion.div
-              key="roadmap-page"
+              key={`roadmap-page-${language}`}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
@@ -746,25 +1124,18 @@ export default function App() {
             >
               <Breadcrumbs currentPage={activePage} />
               <div className="flex-1 flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm">
-                <RealDevelopmentSection onlyRoadmap={true} />
+                <Suspense fallback={<div className="min-h-[50vh]" />}>
+                  <RealDevelopmentSection onlyRoadmap={true} />
+                </Suspense>
               </div>
               <PageNavigationFooter currentPage={activePage} />
-              <Footer 
-                onOpenPrivacy={() => {
-                  setLegalModalTab("privacy");
-                  setIsLegalModalOpen(true);
-                }}
-                onOpenTerms={() => {
-                  setLegalModalTab("terms");
-                  setIsLegalModalOpen(true);
-                }}
-              />
+              <Footer />
             </motion.div>
           )}
 
           {activePage === "about" && (
             <motion.div
-              key="about-page"
+              key={`about-page-${language}`}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
@@ -776,22 +1147,12 @@ export default function App() {
                 <OriginStorySection />
               </div>
               <PageNavigationFooter currentPage={activePage} />
-              <Footer 
-                onOpenPrivacy={() => {
-                  setLegalModalTab("privacy");
-                  setIsLegalModalOpen(true);
-                }}
-                onOpenTerms={() => {
-                  setLegalModalTab("terms");
-                  setIsLegalModalOpen(true);
-                }}
-              />
+              <Footer />
             </motion.div>
           )}
-
-          {activePage === "early-access" && (
+          {activePage === "download" && (
             <motion.div
-              key="early-access-page"
+              key={`download-page-${language}`}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
@@ -801,24 +1162,16 @@ export default function App() {
               <Breadcrumbs currentPage={activePage} />
               <div className="flex-1 flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm">
                 <EarlyAccessPage />
+                <FaqSection />
               </div>
               <PageNavigationFooter currentPage={activePage} />
-              <Footer 
-                onOpenPrivacy={() => {
-                  setLegalModalTab("privacy");
-                  setIsLegalModalOpen(true);
-                }}
-                onOpenTerms={() => {
-                  setLegalModalTab("terms");
-                  setIsLegalModalOpen(true);
-                }}
-              />
+              <Footer />
             </motion.div>
           )}
 
           {activePage === "comparison" && (
             <motion.div
-              key="comparison-page"
+              key={`comparison-page-${language}`}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
@@ -830,22 +1183,103 @@ export default function App() {
                 <ComparisonSection />
               </div>
               <PageNavigationFooter currentPage={activePage} />
-              <Footer 
-                onOpenPrivacy={() => {
-                  setLegalModalTab("privacy");
-                  setIsLegalModalOpen(true);
-                }}
-                onOpenTerms={() => {
-                  setLegalModalTab("terms");
-                  setIsLegalModalOpen(true);
-                }}
-              />
+              <Footer />
+            </motion.div>
+          )}
+
+          {activePage === "news" && (
+            <motion.div
+              key={`news-page-${language}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="w-full min-h-[100vh] flex flex-col justify-between"
+            >
+              <Breadcrumbs currentPage={activePage} />
+              <div className="flex-1 flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm">
+                <NewsSection />
+              </div>
+              <PageNavigationFooter currentPage={activePage} />
+              <Footer />
+            </motion.div>
+          )}
+
+          {activePage === "features" && (
+            <motion.div
+              key={`features-page-${language}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="w-full min-h-[100vh] flex flex-col justify-between"
+            >
+              <Breadcrumbs currentPage={activePage} />
+              <div className="flex-1 flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm">
+                <FeaturesSection />
+              </div>
+              <PageNavigationFooter currentPage={activePage} />
+              <Footer />
+            </motion.div>
+          )}
+
+          {activePage === "research" && (
+            <motion.div
+              key={`research-page-${language}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="w-full min-h-[100vh] flex flex-col justify-between"
+            >
+              <Breadcrumbs currentPage={activePage} />
+              <div className="flex-1 flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm">
+                <ResearchSection />
+              </div>
+              <PageNavigationFooter currentPage={activePage} />
+              <Footer />
+            </motion.div>
+          )}
+
+          {activePage === "privacy-architecture" && (
+            <motion.div
+              key={`privacy-architecture-page-${language}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="w-full min-h-[100vh] flex flex-col justify-between"
+            >
+              <Breadcrumbs currentPage={activePage} />
+              <div className="flex-1 flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm">
+                <PrivacyArchitectureSection />
+                <AppSecuritySection />
+              </div>
+              <PageNavigationFooter currentPage={activePage} />
+              <Footer />
+            </motion.div>
+          )}
+
+          {activePage === "sections" && (
+            <motion.div
+              key={`sections-page-${language}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="w-full min-h-[100vh] flex flex-col justify-between"
+            >
+              <Breadcrumbs currentPage={activePage} />
+              <div className="flex-1 flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm">
+                <AllSectionsPage />
+              </div>
+              <Footer />
             </motion.div>
           )}
 
           {activePage === "not-found" && (
             <motion.div
-              key="not-found-page"
+              key={`not-found-page-${language}`}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
@@ -856,35 +1290,103 @@ export default function App() {
               <div className="flex-1 flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm">
                 <NotFoundPage />
               </div>
-              <Footer 
-                onOpenPrivacy={() => {
-                  setLegalModalTab("privacy");
-                  setIsLegalModalOpen(true);
-                }}
-                onOpenTerms={() => {
-                  setLegalModalTab("terms");
-                  setIsLegalModalOpen(true);
-                }}
-              />
+              <Footer />
             </motion.div>
           )}
+
+          {activePage === "privacy" && (
+            <motion.div
+              key={`privacy-page-${language}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="w-full min-h-[100vh] flex flex-col justify-between"
+            >
+              <Breadcrumbs currentPage={activePage} />
+              <LegalPage tab="privacy" />
+              <Footer />
+            </motion.div>
+          )}
+
+          {activePage === "terms" && (
+            <motion.div
+              key={`terms-page-${language}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="w-full min-h-[100vh] flex flex-col justify-between"
+            >
+              <Breadcrumbs currentPage={activePage} />
+              <LegalPage tab="terms" />
+              <Footer />
+            </motion.div>
+          )}
+
+          {activePage === "glossary" && (
+            <motion.div
+              key={`glossary-page-${language}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="w-full min-h-[100vh] flex flex-col justify-between"
+            >
+              <Breadcrumbs currentPage={activePage} />
+              <div className="flex-1 flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm">
+                <GlossarySection />
+              </div>
+              <PageNavigationFooter currentPage={activePage} />
+              <Footer />
+            </motion.div>
+          )}
+
+          {activePage === "test" && (
+            <motion.div
+              key={`test-page-${language}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="w-full min-h-[100vh] flex flex-col justify-between"
+            >
+              <Breadcrumbs currentPage={activePage} />
+              <div className="flex-1 flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm">
+                <ScamQuizSection />
+              </div>
+              <PageNavigationFooter currentPage={activePage} />
+              <Footer />
+            </motion.div>
+          )}
+
+          {activePage === "help" && (
+            <motion.div
+              key={`help-page-${language}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="w-full min-h-[100vh] flex flex-col justify-between"
+            >
+              <Breadcrumbs currentPage={activePage} />
+              <div className="flex-1 flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm">
+                <HelpChecklistSection />
+              </div>
+              <PageNavigationFooter currentPage={activePage} />
+              <Footer />
+            </motion.div>
+          )}
+          </MotionConfig>
         </AnimatePresence>
-        </Suspense>
-      </div>
+      </main>
 
       {/* Legal documents and FZ-152 Cookie Consent modules */}
-      <CookieConsent 
-        onOpenPrivacy={() => {
-          setLegalModalTab("privacy");
-          setIsLegalModalOpen(true);
-        }}
-      />
-
-      <LegalModal 
-        isOpen={isLegalModalOpen} 
-        onClose={() => setIsLegalModalOpen(false)} 
-        tab={legalModalTab} 
-      />
+      <BackToTop />
+      <SearchModal />
+      <ReadingProgress />
+      <Announcer />
+      <CookieConsent />
 
     </div>
   );

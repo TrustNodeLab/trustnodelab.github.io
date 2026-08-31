@@ -1,8 +1,11 @@
 import React from "react";
-import { Shield, Lock, Eye, AlertCircle, RefreshCw, ShieldCheck } from "lucide-react";
+import { Shield, Lock, Eye, AlertCircle, RefreshCw } from "lucide-react";
+import { motion } from "motion/react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { LanguageCode } from "../i18n/languages";
-import { motion } from "motion/react";
+import { useEcoMode } from "../context/EcoModeContext";
+import { useDepth } from "../context/DepthContext";
+import SectionBadge from "./SectionBadge";
 
 const TITLE_BY_LANG: Partial<Record<LanguageCode, string>> = {
   ru: "Безопасность купола",
@@ -14,8 +17,7 @@ const TITLE_BY_LANG: Partial<Record<LanguageCode, string>> = {
   pt: "Segurança da Cúpula",
   fr: "Sécurité du Dôme",
   de: "Kuppelsicherheit",
-  ja: "ドームの安全対策",
-  tr: "Kubbe Güvenliği"
+  ja: "ドームの安全対策"
 };
 
 const SUBTITLE_BY_LANG: Partial<Record<LanguageCode, string>> = {
@@ -28,8 +30,7 @@ const SUBTITLE_BY_LANG: Partial<Record<LanguageCode, string>> = {
   pt: "Como o TrustNode protege seus próprios algoritmos e seus dados contra análise e invasão",
   fr: "Comment TrustNode protège ses propres algorithmes et vos données contre l'analyse et le piratage",
   de: "Wie TrustNode seine eigenen Algorithmen und Ihre Daten vor Analyse und Hacking schützt",
-  ja: "TrustNodeが独自のアルゴリズムとユーザーデータを解析やハッキングから保護する方法",
-  tr: "TrustNode kendi algoritmalarını ve verilerinizi analiz ile hackleme girişimlerine karşı nasıl korur"
+  ja: "TrustNodeが独自のアルゴリズムとユーザーデータを解析やハッキングから保護する方法"
 };
 
 const BADGE_BY_LANG: Partial<Record<LanguageCode, string>> = {
@@ -42,8 +43,7 @@ const BADGE_BY_LANG: Partial<Record<LanguageCode, string>> = {
   pt: "MODELO DE PROTEÇÃO DO APLICATIVO",
   fr: "MODÈLE DE SÉCURITÉ DE L'APPLICATION",
   de: "ANWENDUNGSSICHERHEITSMODELL",
-  ja: "アプリケーション加固モデル",
-  tr: "UYGULAMA GÜÇLENDİRME MODELİ"
+  ja: "アプリケーション加固モデル"
 };
 
 const COMPLIANCE_LABEL_BY_LANG: Partial<Record<LanguageCode, string>> = {
@@ -60,16 +60,16 @@ const COMPLIANCE_LABEL_BY_LANG: Partial<Record<LanguageCode, string>> = {
 };
 
 const COMPLIANCE_TEXT_BY_LANG: Partial<Record<LanguageCode, string>> = {
-  ru: "Юридический статус программного обеспечения TrustNode в отношении применимых нормативных требований в настоящее время уточняется.",
-  en: "The legal status of TrustNode software under applicable regulatory requirements is currently under review.",
-  es: "El estado legal del software TrustNode respecto a los requisitos regulatorios aplicables esta siendo revisado actualmente.",
-  zh: "TrustNode 软件在相关监管要求下的法律地位目前正在审查中。",
-  hi: "लागू नियामक आवश्यकताओं के तहत TrustNode सॉफ़्टवेयर की कानूनी स्थिति की वर्तमान में समीक्षा की जा रही है।",
-  ar: "الوضع القانوني لبرنامج TrustNode بموجب المتطلبات التنظيمية المعمول بها قيد المراجعة حاليا.",
-  pt: "O status legal do software TrustNode em relacao aos requisitos regulatorios aplicaveis esta atualmente em analise.",
-  fr: "Le statut juridique du logiciel TrustNode au regard des exigences reglementaires applicables est actuellement en cours d'examen.",
-  de: "Der rechtliche Status der TrustNode-Software im Hinblick auf geltende regulatorische Anforderungen wird derzeit geprueft.",
-  ja: "TrustNodeソフトウェアの関連法規制上の法的地位については現在確認中です。"
+  ru: "TrustNode классифицируется как семантический эвристический анализатор локальных данных и текстовых паттернов. Система НЕ содержит встроенных средств шифрования стороннего трафика, благодаря чему не требует обязательного лицензирования в ФСБ России по Постановлению Правительства №313.",
+  en: "TrustNode operates strictly as a semantic heuristic text analyzer inside a localized memory environment. Since it does not encrypt or decrypt external network payloads, it does not require mandatory Russian Federal Security Service (FSB) licensing.",
+  es: "TrustNode se clasifica como un analizador heurístico semántico de datos locales y patrones de texto. El sistema NO contiene herramientas de cifrado para tráfico externo, por lo que no requiere licencias obligatorias del Servicio Federal de Seguridad (FSB) de Rusia.",
+  zh: "TrustNode 严格作为本地化内存环境中的语义启发式文本分析器运行。由于它不对外部网络负载进行加密或解密，因此不需要俄罗斯联邦安全局 (FSB) 的强制许可。",
+  hi: "TrustNode एक स्थानीयकृत मेमोरी वातावरण के भीतर अर्थगत अनुमानी पाठ विश्लेषक के रूप में कार्य करता है। चूंकि यह बाहरी नेटवर्क पेलोд को एन्क्रिप्ट या डिक्रिप्ट नहीं करता है, इसलिए इसके लिए रूसी संघीय सुरक्षा सेवा (FSB) लाइसेंसिंग की आवश्यकता नहीं है।",
+  ar: "يتم تصنيف TrustNode كمحلل إرشادي دلالي للبيانات المحلية وأنماط النصوص. لا يحتوي النظام على أي أدوات تشفير لحركة مرور خارجية، وبالتالي لا يتطلب ترخيصًا إلزاميًا من جهاز الأمن الفيدرالي الروسي (FSB).",
+  pt: "O TrustNode é classificado como um analisador heurístico semântico de dados locais e padrões de texto. O sistema NÃO contém ferramentas de criptografia para tráfego de terceiros, portanto, não exige licenciamento obrigatório do FSB russo.",
+  fr: "TrustNode est classé comme un analyseur heuristique sémantique de données locales et de motifs textuels. Le système ne contient aucun outil de chiffrement tiers, il n'est donc pas soumis à l'octroi d'une licence obligatoire par le FSB russe.",
+  de: "TrustNode arbeitet ausschließlich als semantisch-heuristischer Textanalysator in einer lokalen Speicherumgebung. Da es keine externen Netzwerknutzdaten verschlüsselt oder entschlüsselt, ist keine gesetzlich vorgeschriebene FSB-Lizenzierung erforderlich.",
+  ja: "TrustNodeは、ローカルメモリ環境内の意味論的ヒューリスティックテキスト分析ツールとしてのみ動作します。外部网络ペイロードを暗号化または復号することはないため、ロシア連邦保安庁（FSB）による強制ライセンスの対象外となります。"
 };
 
 const FEATURES_BY_LANG: Partial<Record<LanguageCode, Array<{ title: string; desc: string }>>> = {
@@ -252,44 +252,301 @@ const FEATURES_BY_LANG: Partial<Record<LanguageCode, Array<{ title: string; desc
       title: "オンデバイス・サンドボックスと個人情報保護法",
       desc: "個人データ保護法に完全準拠。音声、記録、テキストのログはデバイスの RAM 上でのみ処理され、サーバーに送信されることはありません。"
     }
+  ]
+};
+
+/* ── Simplified variants (depth="simple": no technical jargon) ──────────── */
+const SIMPLE_TITLE_BY_LANG: Partial<Record<LanguageCode, string>> = {
+  ru: "Как TrustNode защищает ваши данные",
+  en: "How TrustNode Protects Your Data",
+  es: "Cómo TrustNode Protege Tus Datos",
+  zh: "TrustNode 如何保护您的数据",
+  hi: "TrustNode आपके डेटा की रक्षा कैसे करता है",
+  ar: "كيف يحمي TrustNode بياناتك",
+  pt: "Como o TrustNode Protege Seus Dados",
+  fr: "Comment TrustNode Protège Vos Données",
+  de: "Wie TrustNode Ihre Daten Schützt",
+  ja: "TrustNodeがあなたのデータを保護する方法"
+};
+
+const SIMPLE_SUBTITLE_BY_LANG: Partial<Record<LanguageCode, string>> = {
+  ru: "TrustNode хранит ваши данные в безопасности прямо на вашем устройстве",
+  en: "TrustNode keeps your data safe right on your device",
+  es: "TrustNode mantiene tus datos seguros directamente en tu dispositivo",
+  zh: "TrustNode 直接在您的设备上保护数据安全",
+  hi: "TrustNode आपके डेटा को सीधे आपके डिवाइस पर सुरक्षित रखता है",
+  ar: "يحافظ TrustNode على بياناتك بأمان على جهازك مباشرة",
+  pt: "O TrustNode mantém seus dados seguros diretamente no seu dispositivo",
+  fr: "TrustNode garde vos données en sécurité directement sur votre appareil",
+  de: "TrustNode schützt Ihre Daten direkt auf Ihrem Gerät",
+  ja: "TrustNodeはあなたのデバイス上でデータを安全に保ちます"
+};
+
+const SIMPLE_FEATURES_BY_LANG: Partial<Record<LanguageCode, Array<{ title: string; desc: string }>>> = {
+  ru: [
+    {
+      title: "Зашифрованное хранилище",
+      desc: "Ваши данные защищены шифрованием — никто, даже если украдёт телефон, не сможет их прочитать."
+    },
+    {
+      title: "Защита от взлома",
+      desc: "Приложение само себя защищает: если кто-то попытается его вскрыть или подменить, оно об этом узнает."
+    },
+    {
+      title: "Проверка целостности",
+      desc: "TrustNode периодически проверяет, что его файлы не были изменены — как врач проверяет здоровье."
+    },
+    {
+      title: "Всё остаётся на телефоне",
+      desc: "Записи звонков, расшифровки и логи хранятся только в памяти вашего устройства и никогда не уходят на сервер."
+    }
   ],
-  tr: [
+  en: [
     {
-      title: "VAULT Şifreli Depolama",
-      desc: "Android Keystore / StrongBox donanım çipleriyle desteklenen askeri düzeyde AES-256-GCM şifreleme. Yerel veritabanları SQLCipher ve PBKDF2+HKDF ile korunur."
+      title: "Encrypted Storage",
+      desc: "Your data is protected by encryption — no one, even if they steal your phone, can read it."
     },
     {
-      title: "AEGIS Aktif RASP Koruması",
-      desc: "Çalışma zamanı uygulama kendini koruma (RASP). Bellek bütünlüğünü sürekli denetler; hata ayıklamayı (Anti-Debug), root yetkilerini, emülatörleri ve kod enjeksiyonu girişimlerini engeller."
+      title: "Tamper Protection",
+      desc: "The app protects itself: if someone tries to break in or replace it, it will know."
     },
     {
-      title: "Periyodik Self-Audit Motoru",
-      desc: "WorkManager tabanlı arka plan dosya ve bileşen bütünlüğü denetimi. Yerel NDK ikili dosyalarının CRC32 sağlama toplamlarını hesaplayarak müdahaleyi anında tespit eder."
+      title: "Health Check",
+      desc: "TrustNode regularly checks that its files haven't been changed — like a doctor checking your health."
     },
     {
-      title: "Cihaz Üzerinde Sanal Alan ve 152-FZ Kanunu",
-      desc: "Rusya Federal 152-FZ Kanunu'na tam uyum. Tüm çağrı transkriptleri, mesajlar ve bellek kayıtları yalnızca cihazın yerel RAM'inde kalır."
+      title: "Everything Stays on Your Phone",
+      desc: "Call recordings, transcriptions, and logs stay only in your device's memory and never leave to a server."
+    }
+  ],
+  es: [
+    {
+      title: "Almacenamiento Cifrado",
+      desc: "Tus datos están protegidos por cifrado — nadie, incluso si roba tu teléfono, podrá leerlos."
+    },
+    {
+      title: "Protección contra Alteraciones",
+      desc: "La app se protege sola: si alguien intenta abrirla o reemplazarla, lo sabrá."
+    },
+    {
+      title: "Verificación de Integridad",
+      desc: "TrustNode verifica periódicamente que sus archivos no hayan sido modificados — como un médico revisando tu salud."
+    },
+    {
+      title: "Todo se Queda en tu Teléfono",
+      desc: "Las grabaciones, transcripciones y registros solo se almacenan en la memoria de tu dispositivo."
+    }
+  ],
+  zh: [
+    {
+      title: "加密存储",
+      desc: "您的数据受到加密保护——即使有人偷走您的手机，也无法读取。"
+    },
+    {
+      title: "防篡改保护",
+      desc: "应用会自我保护：如果有人试图破解或替换它，它会立即发现。"
+    },
+    {
+      title: "完整性检查",
+      desc: "TrustNode 定期检查其文件是否被更改——就像医生检查您的健康。"
+    },
+    {
+      title: "一切留在手机上",
+      desc: "通话录音、转写和日志只存储在您设备的内存中，绝不会上传到服务器。"
+    }
+  ],
+  hi: [
+    {
+      title: "एन्क्रिप्टेड स्टोरेज",
+      desc: "आपका डेटा एन्क्रिप्शन से सुरक्षित है — कोई भी, फ़ोन चुराने पर भी, इसे नहीं पढ़ पाएगा।"
+    },
+    {
+      title: "छेड़छाड़ से सुरक्षा",
+      desc: "ऐप खुद को बचाता है: अगर कोई इसे तोड़ने की कोशिश करे, तो उसे पता चल जाएगा।"
+    },
+    {
+      title: "स्वास्थ्य जाँच",
+      desc: "TrustNode समय-समय पर जाँचता है कि उसकी फ़ाइलें बदली नहीं गई हैं — जैसे डॉक्टर आपकी जाँच करता है।"
+    },
+    {
+      title: "सब कुछ फ़ोन पर ही रहता है",
+      desc: "कॉल रिकॉर्डिंग, ट्रांसक्रिप्शन और लॉग केवल आपके डिवाइस की मेमोरी में रहते हैं।"
+    }
+  ],
+  ar: [
+    {
+      title: "تخزين مشفر",
+      desc: "بياناتك محمية بالتشفير — لا أحد، حتى لو سرق هاتفك، سيتمكن من قراءتها."
+    },
+    {
+      title: "حماية من العبث",
+      desc: "التطبيق يحمي نفسه: إذا حاول شخص كسره أو استبداله، سيعرف."
+    },
+    {
+      title: "فحص السمعة",
+      desc: "يتحقق TrustNode بانتظام من أن ملفاته لم تتغير — مثل طبيب يفحص صحتك."
+    },
+    {
+      title: "كل شيء يبقى على هاتفك",
+      desc: "التسجيلات والنصوص والسجلات تبقى فقط في ذاكرة جهازك."
+    }
+  ],
+  pt: [
+    {
+      title: "Armazenamento Criptografado",
+      desc: "Seus dados são protegidos por criptografia — ninguém, mesmo se roubar seu celular, poderá ler."
+    },
+    {
+      title: "Proteção contra Alterações",
+      desc: "O app se protege: se alguém tentar abri-lo ou substituí-lo, ele vai saber."
+    },
+    {
+      title: "Verificação de Integridade",
+      desc: "TrustNode verifica periodicamente se seus arquivos não foram alterados — como um médico verificando sua saúde."
+    },
+    {
+      title: "Tudo Fica no Celular",
+      desc: "Gravações, transcrições e registros ficam apenas na memória do seu dispositivo."
+    }
+  ],
+  fr: [
+    {
+      title: "Stockage Chiffré",
+      desc: "Vos données sont protégées par le chiffrement — personne, même en volant votre téléphone, ne pourra les lire."
+    },
+    {
+      title: "Protection contre la Manipulation",
+      desc: "L'application se protège elle-même : si quelqu'un tente de l'ouvrir ou de la remplacer, elle le saura."
+    },
+    {
+      title: "Vérification d'Intégrité",
+      desc: "TrustNode vérifie régulièrement que ses fichiers n'ont pas été modifiés — comme un médecin vérifiant votre santé."
+    },
+    {
+      title: "Tout Reste sur Votre Téléphone",
+      desc: "Les enregistrements, transcriptions et journaux restent uniquement dans la mémoire de votre appareil."
+    }
+  ],
+  de: [
+    {
+      title: "Verschlüsselter Speicher",
+      desc: "Ihre Daten werden durch Verschlüsselung geschützt — niemand, selbst nicht bei Diebstahl Ihres Telefons, kann sie lesen."
+    },
+    {
+      title: "Manipulationsschutz",
+      desc: "Die App schützt sich selbst: Wenn jemand versucht, sie zu öffnen oder zu ersetzen, wird sie es wissen."
+    },
+    {
+      title: "Integritätsprüfung",
+      desc: "TrustNode überprüft regelmäßig, ob seine Dateien nicht verändert wurden — wie ein Arzt, der Ihre Gesundheit prüft."
+    },
+    {
+      title: "Alles Bleibt auf Ihrem Telefon",
+      desc: "Aufnahmen, Transkriptionen und Protokolle verbleiben nur im Speicher Ihres Geräts."
+    }
+  ],
+  ja: [
+    {
+      title: "暗号化ストレージ",
+      desc: "データは暗号化で守られています — たとえ誰かが電話を盗んでも、読むことはできません。"
+    },
+    {
+      title: "改ざん保護",
+      desc: "アプリは自らを守ります：誰かが開こうとしたり置き換えようとしたりすると、すぐに気づきます。"
+    },
+    {
+      title: "整合性チェック",
+      desc: "TrustNodeは定期的にファイルが変更されていないか確認します — まるで医師があなたの健康をチェックするように。"
+    },
+    {
+      title: "すべては電話の中に",
+      desc: "通話録音、文字起こし、ログはデバイスのメモリにのみ保存され、サーバーに送信されることはありません。"
     }
   ]
 };
 
 const FEATURE_ICONS = [
-  <Lock className="w-5 h-5 text-[#2E7DFF]" />,
-  <Shield className="w-5 h-5 text-[#2E7DFF]" />,
-  <RefreshCw className="w-5 h-5 text-[#2E7DFF]" />,
-  <Eye className="w-5 h-5 text-[#2E7DFF]" />
+  <Lock className="w-5 h-5 text-[#3B82F6]" />,
+  <Shield className="w-5 h-5 text-[#3B82F6]" />,
+  <RefreshCw className="w-5 h-5 text-[#3B82F6]" />,
+  <Eye className="w-5 h-5 text-[#3B82F6]" />
 ];
 
-const AppSecuritySection = React.memo(function AppSecuritySection() {
-  const { t } = useTranslation();
+type ScanState = "idle" | "active" | "exiting";
 
-  const title = t.security.title;
-  const subtitle = t.security.subtitle;
+interface SecurityCardProps {
+  feat: { icon: React.ReactNode; title: string; desc: string };
+  className: string;
+  ecoMode: boolean;
+}
+
+const SecurityCard: React.FC<SecurityCardProps> = ({ feat, className, ecoMode }) => {
+  const [scan, setScan] = React.useState<ScanState>("idle");
+  const scanning = !ecoMode && scan !== "idle";
+
+  return (
+    <div
+      className={`relative p-6 sm:p-8 rounded-xl bg-[#0A0A0B]/95 border border-white/[0.04] hover:border-[#3B82F6]/40 transition duration-300 group flex gap-5 overflow-hidden ${className}`}
+      onPointerEnter={(e) => { if (e.pointerType === "mouse" && !ecoMode) setScan("active"); }}
+      onPointerLeave={(e) => {
+        if (e.pointerType === "mouse" && !ecoMode) setScan((s) => (s === "active" ? "exiting" : s));
+      }}
+    >
+      {/* Single scan stripe: slow infinite sweep on hover; on leave the SAME
+          stripe accelerates from its current position and exits */}
+      {scanning && (
+        <div className="absolute inset-x-0 top-0 h-full pointer-events-none overflow-hidden rounded-xl">
+          <motion.div
+            className="absolute left-0 w-full h-[2px]"
+            style={{
+              background: "linear-gradient(to right, transparent, rgba(59,130,246,0.5), transparent)",
+              boxShadow: "0 0 10px rgba(59,130,246,0.35)",
+            }}
+            animate={scan === "active" ? { top: ["-12%", "102%"] } : { top: "102%" }}
+            transition={
+              scan === "active"
+                ? { duration: 1.3, ease: "easeInOut", repeat: Infinity }
+                : { duration: 0.8, ease: "easeOut" }
+            }
+            onAnimationComplete={() => {
+              if (scan === "exiting") setScan("idle");
+            }}
+          />
+        </div>
+      )}
+      <div className="w-10 h-10 rounded-xl bg-[#12141A] flex items-center justify-center border border-[#3B82F6]/10 shrink-0 group-hover:border-[#3B82F6]/30 transition duration-300">
+        {feat.icon}
+      </div>
+      <div>
+        <h3 className="font-display font-medium text-base sm:text-lg text-[#F5F5F0] mb-2 group-hover:text-[#3B82F6] transition duration-300 group-hover:appsec-glitch">
+          {feat.title}
+        </h3>
+        <p className="font-sans text-xs sm:text-sm text-gray-400 leading-relaxed">
+          {feat.desc}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const AppSecuritySection = React.memo(function AppSecuritySection() {
+  const { t, language } = useTranslation();
+  const { ecoMode } = useEcoMode();
+  const { isSimple } = useDepth();
+
+  const title = isSimple
+    ? (SIMPLE_TITLE_BY_LANG[language] ?? t.security.title)
+    : t.security.title;
+  const subtitle = isSimple
+    ? (SIMPLE_SUBTITLE_BY_LANG[language] ?? t.security.subtitle)
+    : t.security.subtitle;
   const badgeText = t.security.badge;
   const complianceLabel = t.security.complianceLabel;
   const complianceText = t.security.complianceText;
 
-  const currentFeatures = t.security.features || [];
+  const currentFeatures = isSimple
+    ? (SIMPLE_FEATURES_BY_LANG[language] ?? SIMPLE_FEATURES_BY_LANG.en ?? [])
+    : (t.security.features || []);
   const securityFeatures = currentFeatures.map((feat: any, index: number) => ({
     icon: FEATURE_ICONS[index] || FEATURE_ICONS[0],
     title: feat.title,
@@ -298,63 +555,58 @@ const AppSecuritySection = React.memo(function AppSecuritySection() {
 
   return (
     <section 
-      className="relative w-full pt-8 pb-16 sm:pt-10 sm:pb-20 px-4 border-t border-[#1F2937]/30 bg-[#0A0A0B]" 
+      className="relative w-full pt-8 pb-16 sm:pt-10 sm:pb-20 px-4 bg-[#0A0A0B]" 
       id="app-security"
     >
       {/* Background soft tech visual accents */}
-      <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-[#2E7DFF]/[0.02] to-transparent pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[radial-gradient(circle_at_center,rgba(46,125,255,0.02)_0%,rgba(0,0,0,0)_70%)] pointer-events-none" />
+      <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-[#3B82F6]/[0.02] to-transparent pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.02)_0%,rgba(0,0,0,0)_70%)] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto relative z-10">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-24">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#111827] border border-[#2E7DFF]/20 mb-6">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#2E7DFF]" />
-            <span className="font-mono text-[10px] sm:text-xs font-semibold tracking-wider text-[#2E7DFF] uppercase">
-              {badgeText}
-            </span>
-          </div>
+        <motion.div
+          className="text-center max-w-3xl mx-auto mb-16 sm:mb-24"
+          initial={ecoMode ? false : { opacity: 0, y: 16 }}
+          whileInView={ecoMode ? undefined : { opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
+          <SectionBadge variant="brackets" label={badgeText} className="mb-6" />
           
-          <h2 className="font-display font-bold text-3xl sm:text-5xl text-[#F5F5F0] tracking-tight mb-6">
+          <h2 className="font-display font-medium text-3xl sm:text-5xl text-[#F5F5F0] tracking-tighter mb-6">
             {title}
           </h2>
           
           <p className="font-sans text-sm sm:text-base text-gray-400 max-w-xl mx-auto leading-relaxed">
             {subtitle}
           </p>
-        </div>
+        </motion.div>
 
         {/* Feature grid with clean layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
           {securityFeatures.map((feat, index) => (
-            <motion.div 
+            <motion.div
               key={index}
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="p-6 sm:p-8 rounded-2xl bg-[#0F0F11]/95 border border-white/[0.04] hover:border-[#2E7DFF]/40 transition-all duration-300 group flex gap-5"
+              initial={ecoMode ? false : { opacity: 0, y: 16 }}
+              whileInView={ecoMode ? undefined : { opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.2, delay: Math.min(index * 0.05, 0.2), ease: "easeOut" }}
+              className={index === 3 ? "md:col-span-3" : ""}
             >
-              <div className="w-10 h-10 rounded-xl bg-[#111622] flex items-center justify-center border border-[#2E7DFF]/10 shrink-0 group-hover:border-[#2E7DFF]/30 transition-all duration-300">
-                {feat.icon}
-              </div>
-              <div>
-                <h3 className="font-display font-bold text-base sm:text-lg text-[#F5F5F0] mb-2 group-hover:text-[#2E7DFF] transition-all duration-300">
-                  {feat.title}
-                </h3>
-                <p className="font-sans text-xs sm:text-sm text-gray-400 leading-relaxed">
-                  {feat.desc}
-                </p>
-              </div>
+              <SecurityCard
+                feat={feat}
+                ecoMode={ecoMode}
+                className=""
+              />
             </motion.div>
           ))}
         </div>
 
         {/* Technical Architecture Info Row */}
-        <div className="mt-16 p-6 rounded-2xl border border-[#2E7DFF]/15 bg-[#090F1B]/40 backdrop-blur-md max-w-4xl mx-auto flex flex-col sm:flex-row items-center gap-5">
-          <div className="w-12 h-12 rounded-full bg-[#2E7DFF]/10 flex items-center justify-center shrink-0 border border-[#2E7DFF]/20">
-            <AlertCircle className="w-6 h-6 text-[#2E7DFF]" />
+        <div className="mt-16 p-6 rounded-xl border border-[#3B82F6]/15 bg-[#090F1B]/40 backdrop-blur-md max-w-4xl mx-auto flex flex-col sm:flex-row items-center gap-5">
+          <div className="w-12 h-12 rounded-full bg-[#3B82F6]/10 flex items-center justify-center shrink-0 border border-[#3B82F6]/20">
+            <AlertCircle className="w-6 h-6 text-[#3B82F6]" />
           </div>
           <div className="text-center sm:text-left">
             <h4 className="font-mono text-xs font-bold text-[#F5F5F0] uppercase tracking-wider mb-1">

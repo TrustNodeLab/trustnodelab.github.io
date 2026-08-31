@@ -1,0 +1,14 @@
+{
+  "name": "trustnode-assets",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TrustNode assets worker — news photos + ML model proxy",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev --port 8787"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241230.0",
+    "wrangler": "^3.99.0"
+  }
+}

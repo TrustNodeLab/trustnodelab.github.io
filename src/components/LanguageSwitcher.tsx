@@ -1,76 +1,134 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Globe, Check } from "lucide-react";
 import { LANGUAGES } from "../i18n/languages";
 import { useTranslation } from "../i18n/LanguageContext";
+import { announce } from "../i18n/Announcer";
 
 interface LanguageSwitcherProps {
   variant?: "desktop" | "mobile";
 }
 
+const MENU_ID = "language-switcher-portal";
+
+const OPTION_HEIGHT = 36;
+const MENU_VERTICAL_PADDING = 14;
+
 export default function LanguageSwitcher({ variant = "desktop" }: LanguageSwitcherProps) {
-  const { language, setLanguage } = useTranslation();
+  const { t, language, setLanguage } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState<{ top: number; left: number; origin: string } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const current = LANGUAGES.find((l) => l.code === language) ?? LANGUAGES[0];
+
+  const close = useCallback(() => setIsOpen(false), []);
+
+  const handleButtonClick = () => {
+    if (!isOpen) {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (rect) {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const isNarrow = vw < 640;
+        const panelWidth = Math.min(vw - 16, isNarrow ? 320 : 224);
+        const rows = isNarrow ? Math.ceil(LANGUAGES.length / 2) : LANGUAGES.length;
+        const menuHeight = rows * OPTION_HEIGHT + MENU_VERTICAL_PADDING;
+        const gap = 8;
+
+        let left = rect.right - panelWidth;
+        left = Math.max(gap, Math.min(left, vw - panelWidth - gap));
+
+        // Open upward: menu bottom edge aligns with the button top edge.
+        // Clamp so the menu never leaves the viewport (top limit + bottom limit).
+        let top = rect.top - menuHeight - gap;
+        top = Math.max(gap, Math.min(top, vh - menuHeight - gap));
+
+        // Origin-aware entrance: the pop-in scale animation grows from the
+        // trigger button (bottom edge, x aligned with the button center),
+        // clamped inside the panel so the origin never leaves the surface.
+        const originX = Math.max(12, Math.min(rect.left + rect.width / 2 - left, panelWidth - 12));
+        const origin = `${originX}px calc(100% + ${gap}px)`;
+
+        setPosition({ top, left, origin });
+      }
+    }
+    setIsOpen((v) => !v);
+  };
 
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
+      const target = e.target as Node;
+      const menu = document.getElementById(MENU_ID);
+      if (buttonRef.current && !buttonRef.current.contains(target) && menu && !menu.contains(target)) {
+        close();
       }
     };
+
+    const handleScroll = (e: Event) => {
+      const menu = document.getElementById(MENU_ID);
+      if (menu && e.target instanceof Node && menu.contains(e.target)) return;
+      close();
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    window.addEventListener("scroll", handleScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [isOpen, close]);
 
   const buttonClass =
-    variant === "desktop"
-      ? "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A162C]/60 hover:bg-[#2E7DFF]/20 border border-[#2E7DFF]/30 text-xs font-mono font-medium text-[#2E7DFF] hover:text-white transition-all duration-300 hover:shadow-[0_0_12px_rgba(46,125,255,0.25)] cursor-pointer"
-      : "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-[#0F0F12] border border-[#1F2937] text-gray-300 cursor-pointer";
+    "inline-flex items-center justify-center w-9 h-9 rounded-xl bg-[#0A0A0B]/60 border border-[#3B82F6]/30 text-[#3B82F6] hover:text-white hover:bg-[#3B82F6]/20 transition duration-300 cursor-pointer";
 
   return (
     <div className="relative" ref={containerRef} id={`language-switcher-${variant}`}>
       <button
-        onClick={() => setIsOpen((v) => !v)}
+        ref={buttonRef}
+        onClick={handleButtonClick}
         className={buttonClass}
         aria-label="Change language"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <span className="flex items-center gap-1.5">
-          <Globe className="w-3.5 h-3.5 shrink-0" />
-          <span className="uppercase">{current.code}</span>
-        </span>
+        <Globe className="w-4 h-4" />
       </button>
 
-      {isOpen && (
-        <div
-          className={`absolute z-50 mt-2 w-48 max-h-72 overflow-y-auto rounded-xl border border-[#1F2937] bg-[#0F0F12]/98 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.5)] py-1.5 animate-fade-in ${
-            variant === "desktop" ? "right-0" : "left-0 right-0"
-          }`}
-          role="listbox"
-        >
-          {LANGUAGES.map((lang) => (
-            <button
-              key={lang.code}
-              onClick={() => {
-                setLanguage(lang.code);
-                setIsOpen(false);
-              }}
-              className={`w-full flex items-center justify-between gap-2 px-3.5 py-2 text-sm font-sans text-left transition-colors cursor-pointer ${
-                lang.code === language
-                  ? "text-[#2E7DFF] bg-[#2E7DFF]/10"
-                  : "text-gray-300 hover:bg-[#1F2937]/50 hover:text-white"
-              }`}
-              role="option"
-              aria-selected={lang.code === language}
-            >
-              <span>{lang.nativeName}</span>
-              {lang.code === language && <Check className="w-3.5 h-3.5 shrink-0" />}
-            </button>
-          ))}
-        </div>
-      )}
+      {isOpen &&
+        position &&
+        createPortal(
+          <div
+            id={MENU_ID}
+            role="listbox"
+            aria-label="Language"
+            className="fixed z-[9999] w-[min(calc(100vw-16px),20rem)] sm:w-56 max-h-[calc(100vh-16px)] overflow-y-auto grid grid-cols-2 sm:grid-cols-1 rounded-xl border border-[#3C404A] bg-[#0A0A0B] backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.5)] py-1.5 animate-pop-in"
+            style={{ top: position.top, left: position.left, transformOrigin: position.origin }}
+          >
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => {
+                  setLanguage(lang.code);
+                  announce(t.langChanged.replace("{lang}", lang.nativeName));
+                  close();
+                }}
+                className={`w-full flex items-center justify-between gap-2 px-3.5 py-2 text-sm font-sans text-left transition-colors cursor-pointer ${
+                  lang.code === language
+                    ? "text-[#3B82F6] bg-[#3B82F6]/10"
+                    : "text-gray-300 hover:bg-[#3C404A]/50 hover:text-white"
+                }`}
+                role="option"
+                aria-selected={lang.code === language}
+              >
+                <span className="truncate">{lang.nativeName}</span>
+                {lang.code === language && <Check className="w-3.5 h-3.5 shrink-0" />}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

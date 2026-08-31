@@ -2,103 +2,103 @@ import { LanguageCode } from "../languages";
 
 export const sevenLayers: Partial<Record<LanguageCode, Array<{ name: string; tech: string; desc: string }>>> = {
   ru: [
-    { name: "Быстрые эвристики (HeuristicsLayer)", tech: "Regex & Signature Maps", desc: "Первичный мгновенный фильтр входящих потоков. Блокирует известные паттерны спам-сетей, подозрительные ссылки и сигнатуры мошеннических скриптов без нагрузки на батарею." },
-    { name: "Нейросетевой классификатор (BertPhantomClassifier)", tech: "ONNX Runtime / 28.4 MB Local Model", desc: "Локальный анализ текста звонков и сообщений. Нейросеть rubert-tiny2 обрабатывает данные строго на устройстве, отдельно от алгоритмов консенсуса." },
-    { name: "Сценарии социнженерии (Social Eng. Layer) — по заявке на патент", tech: "DeGenome (18 примитивов) · в разработке", desc: "Архитектура (по заявке на патент): будет выявлять таксономию манипуляций по 18 примитивам DeGenome — искусственную спешку, запугивание, требования конфиденциальности и эмоциональный прессинг." },
-    { name: "Поведенческий анализ (Behavioral Layer) — по заявке на патент", tech: "Context-Aware State Machine · в разработке", desc: "Архитектура (по заявке на патент): будет следить за динамикой взаимодействия в реальном времени — скоростью набора текста, задержками ответов, частотой переходов между экранами мобильного банка." },
-    { name: "Репутационный контур (Reputation Layer) — по заявке на патент", tech: "PCD Identity Profiles · в разработке", desc: "Архитектура (по заявке на патент): будет сверять манеру общения звонящего с профилями поведенческой идентичности организаций — кто, когда и в каком тоне действительно имеет право звонить от лица банка или ведомства." },
-    { name: "Консенсус и принятие решений (Consensus Agent) — по заявке на патент", tech: "Consensus Voting Engine · в разработке", desc: "Архитектура (по заявке на патент): алгоритм консенсуса JudgeAgent будет независимо взвешивать оценки со всех уровней системы, при угрозе блокировать действия и оповещать доверенные контакты." },
-    { name: "Иммунная память (Immune Memory) — по заявке на патент", tech: "Adaptive Incident Shield · в разработке", desc: "Архитектура (по заявке на патент): долгосрочная изолированная память об атаках, которая будет локально адаптировать профили защиты на основе предотвращённых инцидентов." }
+    { name: "Акустический анализ (на устройстве, experimental)", tech: "On-device acoustic features (RMS / ZCR / Silence / Energy) · experimental", desc: "Акустические признаки считаются на устройстве в реальном времени (RMS, ZCR, паузы, энергия). Это не блокировка и не спектрометр в браузере — признаки используются как дополнительный сигнал. Логика экспериментальная, считается на устройстве через acoustic-features (или напрямую, если libsignal недоступен)." },
+    { name: "ML-классификация (ruBERT)", tech: "ONNX Runtime / INT8 / ~28 MB", desc: "Используется облегчённая нейросеть ruBERT (ONNX INT8, ~28 МБ) для анализа текста и метаданных на устройстве. Обновления моделей и баз данных поставляются вместе с обновлением приложения — интернет не требуется для повседневной работы, только для установки новых версий." },
+    { name: "Распознавание речи (ASR) — Roadmap (оценка вариантов)", tech: "ASR — Roadmap (Vosk / W2V BERT / альтернативы)", desc: "Распознавание речи на устройстве — в дорожной карте. Рассматриваются варианты Vosk (STT, ~45 МБ) и альтернативы (W2V BERT и др.). Выбор зависит от качества, размера и производительности. Пока не в MVP." },
+    { name: "Семантический анализ содержания — В разработке (Roadmap)", tech: "DeGenome (18 примитивов) — Roadmap", desc: "Семантический анализ содержания разговора: детекция ключевых фраз-триггеров, признаков психологического давления и требований срочных действий. Следующий этап эволюции TrustNode." },
+    { name: "Репутационный контур (PCD) — В разработке (Roadmap)", tech: "PCD Identity Profiles — Roadmap", desc: "Сверяет манеру общения звонящего с профилями поведенческой идентичности организаций. В разработке (Roadmap)." },
+    { name: "Сверка с базой номеров — В разработке (Roadmap)", tech: "Local Blacklist DB — Roadmap", desc: "Быстрая локальная проверка номера по базе подозрительных номеров и чёрным спискам. В разработке (Roadmap)." },
+    { name: "Итоговый вердикт · ECHO (в разработке)", tech: "Threshold Calibration / PostProc / LegitContextRule / ECHO", desc: "Итоговый вердикт принимается многоступенчатым конвейером: пороговая калибровка (threshold calibration) сопоставляет оценки слоёв, постобработка PostProc фильтрует ложные срабатывания, правило LegitContextRule проверяет легитимный контекст звонка, а ECHO-протокол добавляет поведенческие детекторы манипулятивных паттернов. При угрозе — полноэкранное предупреждение." }
   ],
   en: [
-    { name: "Fast Heuristics (HeuristicsLayer)", tech: "Regex & Signature Maps", desc: "An instant, lightweight filter for incoming data streams. Blocks known spam-networks, phishing links, and malicious automation patterns without draining battery power." },
-    { name: "Neural Classification (BertPhantomClassifier)", tech: "ONNX Runtime / 28.4 MB Local Model", desc: "Local real-time multimodal analysis (text, voice, screen behavior, and network traffic). The rubert-tiny2 on-device neural network operates strictly offline, separate from consensus voting algorithms." },
-    { name: "Social Engineering (Social Eng. Layer) — per patent app.", tech: "DeGenome (18 Primitives) · in development", desc: "Roadmap: will identify manipulation tactics using the DeGenome taxonomy of 18 primitives — artificial urgency, pressure speech, fear triggers, and isolation requests." },
-    { name: "Behavioral Auditing (Behavioral Layer) — per patent app.", tech: "Context-Aware State Machine · in development", desc: "Roadmap: will continuously track live user interactions — typing cadence, cognitive processing delays, and switching frequencies between financial and calling apps." },
-    { name: "Reputation Verification (Reputation Layer) — per patent app.", tech: "PCD Identity Profiles · in development", desc: "Roadmap: will cross-check caller traits with corporate identity profiles (PCD), identifying mismatches with official protocols." },
-    { name: "Consensus Resolution (Consensus Agent) — per patent app.", tech: "Consensus Voting Engine · in development", desc: "Roadmap: a dedicated consensus voting algorithm (JudgeAgent) will aggregate risk markers from all levels to lock executions and send alerts." },
-    { name: "Immune Memory — per patent app.", tech: "Adaptive Incident Shield · in development", desc: "Roadmap: a localized secure attack repository that will enable on-device fine-tuning of security filters based on recently mitigated threats." }
+    { name: "Acoustic Analysis (on-device, experimental)", tech: "On-device acoustic features (RMS / ZCR / Silence / Energy) · experimental", desc: "Acoustic features are computed on-device in real time (RMS, ZCR, pauses, energy). This is not a block and not a browser spectrometer — the features are used as an additional signal. The logic is experimental and runs on-device via acoustic-features (or directly if libsignal is unavailable)." },
+    { name: "ML Classification (ruBERT)", tech: "ONNX Runtime / INT8 / ~28 MB", desc: "Uses the lightweight ruBERT neural network (ONNX INT8, ~28 MB) to analyze text and metadata on-device. Model and database updates ship with app updates — no internet is required for daily use, only to install new versions." },
+    { name: "Speech Recognition (ASR) — Roadmap (evaluating options)", tech: "ASR — Roadmap (Vosk / W2V BERT / alternatives)", desc: "On-device speech recognition — on the roadmap. Evaluating Vosk (STT, ~45 MB) and alternatives (W2V BERT, etc.). Choice depends on quality, size, and performance. Not yet in MVP." },
+    { name: "Semantic Content Analysis — Roadmap", tech: "DeGenome (18 Primitives) — Roadmap", desc: "Semantic analysis of the conversation's content: detection of key trigger phrases, signs of psychological pressure, and demands for urgent action. The next stage of TrustNode's evolution." },
+    { name: "Reputation Verification (PCD) — Roadmap", tech: "PCD Identity Profiles — Roadmap", desc: "Cross-checks the caller's manner of speech against corporate identity profiles (PCD). In development (Roadmap)." },
+    { name: "Number Blacklist Check — Roadmap", tech: "Local Blacklist DB — Roadmap", desc: "A fast local check of the number against a database of suspicious numbers and blacklists. In development (Roadmap)." },
+    { name: "Final Verdict · ECHO (in development)", tech: "Threshold Calibration / PostProc / LegitContextRule / ECHO", desc: "The final verdict is produced by a multi-stage pipeline: threshold calibration weighs the layer scores, PostProc filters false positives, LegitContextRule validates legitimate call context, and the ECHO protocol adds behavioral detectors for manipulative patterns. On threat — full-screen warning." }
   ],
   es: [
-    { name: "Heurística rápida (HeuristicsLayer)", tech: "Regex & Signature Maps", desc: "Un filtro instantáneo y ligero para flujos de datos entrantes. Bloquea redes de spam conocidas, enlaces de phishing y patrones de automatización maliciosos sin agotar la batería." },
-    { name: "Clasificación neuronal (BertPhantomClassifier)", tech: "ONNX Runtime / 28.4 MB Local Model", desc: "Una red neuronal rubert-tiny2 comprimida que analiza transcripciones de llamadas y textos en tiempo real. Detecta guiones conversacionales ocultos, manipulación y roles como 'cuenta segura'." },
-    { name: "Ingeniería social (Social Eng. Layer) — según solicitud de patente", tech: "DeGenome (18 Primitives) · en desarrollo", desc: "Roadmap: identificará tácticas de manipulación mediante la taxonomía DeGenome — urgencia artificial, discursos de presión, desencadenantes de miedo y solicitudes de aislamiento." },
-    { name: "Auditoría de comportamiento (Behavioral Layer) — según solicitud de patente", tech: "Context-Aware State Machine · en desarrollo", desc: "Roadmap: realizará un seguimiento continuo de interacciones — cadencia de escritura, retrasos cognitivos y cambios entre apps." },
-    { name: "Verificación de reputación (Reputation Layer) — según solicitud de patente", tech: "PCD Identity Profiles · en desarrollo", desc: "Roadmap: verificará las características del llamador con perfiles de identidad corporativa (PCD)." },
-    { name: "Resolución de consenso (Consensus Agent) — según solicitud de patente", tech: "Consensus Voting Engine · en desarrollo", desc: "Roadmap: un motor JudgeAgent agregará marcadores de riesgo de todos los niveles para bloquear ejecuciones y alertar." },
-    { name: "Memoria inmune (Immune Memory) — según solicitud de patente", tech: "Adaptive Incident Shield · en desarrollo", desc: "Roadmap: repositorio local seguro de ataques que permitirá ajuste fino según amenazas recientes." }
+    { name: "Análisis acústico (en el dispositivo, experimental)", tech: "Características acústicas en el dispositivo (RMS / ZCR / Silence / Energy) · experimental", desc: "Las características acústicas se calculan en el dispositivo en tiempo real (RMS, ZCR, pausas, energía). No es un bloqueo ni un espectrómetro en el navegador: las características se usan como señal adicional. La lógica es experimental y se ejecuta en el dispositivo a través de acoustic-features (o directamente si libsignal no está disponible)." },
+    { name: "Clasificación ML (ruBERT)", tech: "ONNX Runtime / INT8 / ~28 MB", desc: "Se utiliza una red neuronal ligera ruBERT (ONNX INT8, ~28 MB) para analizar texto y metadatos en el dispositivo. Las actualizaciones de modelos y bases de datos llegan con la actualización de la app; no se requiere internet para el uso diario, solo para instalar nuevas versiones." },
+    { name: "Reconocimiento de voz (ASR) — Roadmap (evaluando opciones)", tech: "ASR — Roadmap (Vosk / W2V BERT / alternativas)", desc: "Reconocimiento de voz en el dispositivo — en la hoja de ruta. Se evalúan Vosk (STT, ~45 MB) y alternativas (W2V BERT, etc.). La elección depende de calidad, tamaño y rendimiento. Aún no está en MVP." },
+    { name: "Análisis semántico del contenido — En desarrollo (Roadmap)", tech: "DeGenome (18 Primitives) — Roadmap", desc: "Análisis semántico del contenido de la conversación: detección de frases clave, indicios de presión psicológica y exigencias de acciones urgentes. La siguiente etapa de la evolución de TrustNode." },
+    { name: "Verificación de reputación (PCD) — En desarrollo (Roadmap)", tech: "PCD Identity Profiles — Roadmap", desc: "Compara la forma de hablar del interlocutor con los perfiles de identidad corporativa (PCD). En desarrollo (Roadmap)." },
+    { name: "Comprobación de números en lista negra — En desarrollo (Roadmap)", tech: "Local Blacklist DB — Roadmap", desc: "Verificación local rápida del número contra una base de números sospechosos y listas negras. En desarrollo (Roadmap)." },
+    { name: "Veredicto final · ECHO (en desarrollo)", tech: "Threshold Calibration / PostProc / LegitContextRule / ECHO", desc: "El veredicto final lo produce un pipeline multietapa: la calibración de umbrales sopesa las puntuaciones de las capas, PostProc filtra falsos positivos, LegitContextRule valida el contexto legítimo de la llamada y el protocolo ECHO añade detectores conductuales de patrones manipulativos. Ante amenazas — advertencia a pantalla completa." }
   ],
   zh: [
-    { name: "快速启发式分析 (HeuristicsLayer)", tech: "Regex & Signature Maps", desc: "对输入数据流进行即时、轻量级的过滤。在不消耗电池电量的情况下，阻止已知的垃圾邮件网络、钓鱼链接和恶意自动化模式。" },
-    { name: "神经网络分类 (BertPhantomClassifier)", tech: "ONNX Runtime / 28.4 MB Local Model", desc: "一个压缩的 rubert-tiny2 神经网络，实时分析通话记录和文本。检测隐藏的对话脚本、操纵行为和诸如“安全账户”之类扮演的角色。" },
-    { name: "社会工程学分析 (Social Eng. Layer) — 专利申请路线图", tech: "DeGenome (18基元) · 开发中", desc: "路线图：未来将使用 DeGenome 分类法识别操纵策略——人为紧迫感、施压言论、恐惧触发和孤立请求。" },
-    { name: "行为审计 (Behavioral Layer) — 专利申请路线图", tech: "Context-Aware State Machine · 开发中", desc: "路线图：未来将持续跟踪用户实时交互——打字节奏、认知延迟及应用切换频率。" },
-    { name: "信誉验证 (Reputation Layer) — 专利申请路线图", tech: "PCD Identity Profiles · 开发中", desc: "路线图：未来将把呼叫者特征与企业身份档案 (PCD) 交叉比对。" },
-    { name: "共识决策 (Consensus Agent) — 专利申请路线图", tech: "Consensus Voting Engine · 开发中", desc: "路线图：JudgeAgent 引擎未来将汇总风险标记以锁定执行并通知联系人。" },
-    { name: "免疫记忆 (Immune Memory) — 专利申请路线图", tech: "Adaptive Incident Shield · 开发中", desc: "路线图：未来将建立本地安全攻击存储库以微调防护。" }
+    { name: "声学分析（设备端，实验性）", tech: "设备端声学特征 (RMS / ZCR / Silence / Energy) · experimental", desc: "在设备端实时计算声学特征（RMS、ZCR、停顿、能量）。这不是拦截，也不是浏览器中的频谱仪——这些特征仅作为附加信号使用。该逻辑为实验性，通过 acoustic-features 在设备端运行（若 libsignal 不可用则直接计算）。" },
+    { name: "ML 分类 (ruBERT)", tech: "ONNX Runtime / INT8 / ~28 MB", desc: "使用轻量级神经网络 ruBERT（ONNX INT8，约 29 MB）在设备端分析文本和元数据。模型与数据库随应用更新一起发布——日常使用无需联网，仅在安装新版本时需要。" },
+    { name: "语音识别 (ASR) — 路线图（评估方案）", tech: "ASR — 路线图 (Vosk / W2V BERT / 其他方案)", desc: "设备端语音识别——列入路线图。正在评估 Vosk (STT, ~45 MB) 和替代方案 (W2V BERT 等)。选择取决于质量、大小和性能。尚未进入 MVP。" },
+    { name: "对话内容语义分析 — 开发中 (Roadmap)", tech: "DeGenome (18基元) — Roadmap", desc: "对话内容语义分析：检测关键触发短语、心理施压迹象以及要求紧急操作的指令。TrustNode 进化的下一阶段。" },
+    { name: "信誉验证 (PCD) — 开发中 (Roadmap)", tech: "PCD Identity Profiles — Roadmap", desc: "将对方说话方式与企业身份配置文件 (PCD) 进行比对。开发中（Roadmap）。" },
+    { name: "号码黑名单核验 — 开发中 (Roadmap)", tech: "Local Blacklist DB — Roadmap", desc: "在设备端快速将号码与可疑号码库及黑名单进行比对。开发中（Roadmap）。" },
+    { name: "最终裁决 · ECHO（开发中）", tech: "Threshold Calibration / PostProc / LegitContextRule / ECHO", desc: "最终裁决由多阶段流水线生成：阈值校准（threshold calibration）权衡各层评分，PostProc 后处理过滤误报，LegitContextRule 规则校验合法通话情境，ECHO 协议添加行为检测器识别操纵性对话模式。检测到威胁时——全屏警告。" }
   ],
   hi: [
-    { name: "त्वरित हेयुरिस्टिक्स (HeuristicsLayer)", tech: "Regex & Signature Maps", desc: "आने वाले डेटा स्ट्रीम के लिए एक त्वरित, हल्का फ़िल्टर। बिना बैटरी खर्च किए ज्ञात स्पैम-नेटवर्क, फ़िशिंग लिंक और दुर्भावनापूर्ण ऑटोमेशन पैटर्न को रोकता है।" },
-    { name: "न्यूरल वर्गीकरण (BertPhantomClassifier)", tech: "ONNX Runtime / 28.4 MB Local Model", desc: "एक संपीड़ित rubert-tiny2 न्यूरल नेटवर्क जो वास्तविक समय में कॉल ट्रांसक्रिप्ट और टेक्स्ट का विश्लेषण करता है। छिपी हुई बातचीत की स्क्रिप्ट, हेरफेर और 'सुरक्षित खाता' जैसी भूमिकाओं का पता लगाता है।" },
-    { name: "सोशल इंजीनियरिंग (Social Eng. Layer) — पेटेंट आवेदन रोडमैप", tech: "DeGenome (18 प्रिमिटिव्स) · विकासाधीन", desc: "रोडमैप: भविष्य में DeGenome वर्गीकरण से हेरफेर की रणनीति पहचानी जाएगी।" },
-    { name: "व्यवहार ऑडिटिंग (Behavioral Layer) — पेटेंट आवेदन रोडमैप", tech: "Context-Aware State Machine · विकासाधीन", desc: "रोडमैप: भविष्य में लाइव इंटरैक्शन ट्रैक किया जाएगा।" },
-    { name: "प्रतिष्ठा सत्यापन (Reputation Layer) — पेटेंट आवेदन रोडमैप", tech: "PCD Identity Profiles · विकासाधीन", desc: "रोडमैप: भविष्य में कॉलर लक्षणों को PCD प्रोफाइल से मिलाया जाएगा।" },
-    { name: "सर्वसम्मति समाधान (Consensus Agent) — पेटेंट आवेदन रोडमैप", tech: "Consensus Voting Engine · विकासाधीन", desc: "रोडमैप: JudgeAgent इंजन भविष्य में जोखिम मार्कर एकत्र कर सूचित करेगा।" },
-    { name: "प्रतिरक्षा मेमोरी (Immune Memory) — पेटेंट आवेदन रोडमैप", tech: "Adaptive Incident Shield · विकासाधीन", desc: "रोडमैप: भविष्य में स्थानीय हमला रिपॉजिटरी सुरक्षा फ़िल्टर को ट्यून करेगी।" }
+    { name: "ध्वनिक विश्लेषण (डिवाइस पर, प्रयोगात्मक)", tech: "डिवाइस पर ध्वनिक विशेषताएँ (RMS / ZCR / Silence / Energy) · प्रयोगात्मक", desc: "ध्वनिक विशेषताएँ डिवाइस पर रीयल-टाइम में गणना की जाती हैं (RMS, ZCR, ठहराव, ऊर्जा)। यह ब्लॉक नहीं है और ब्राउज़र स्पेक्ट्रोमीटर नहीं है — विशेषताएँ अतिरिक्त संकेत के रूप में उपयोग होती हैं। यह तर्क प्रयोगात्मक है और acoustic-features के माध्यम से डिवाइस पर चलता है (या libsignal उपलब्ध न होने पर सीधे)।" },
+    { name: "ML वर्गीकरण (ruBERT)", tech: "ONNX Runtime / INT8 / ~28 MB", desc: "डिवाइस पर टेक्स्ट और मेटाडेटा का विश्लेषण करने के लिए हल्के ruBERT न्यूरल नेटवर्क (ONNX INT8, ~28 MB) का उपयोग किया जाता है। मॉडल और डेटाबेस अपडेट ऐप अपडेट के साथ आते हैं; दैनिक उपयोग के लिए इंटरनेट की आवश्यकता नहीं होती, केवल नए संस्करण स्थापित करने के लिए होती है।" },
+    { name: "वाक् पहचान (ASR) — रोडमैप (विकल्पों का मूल्यांकन)", tech: "ASR — रोडमैप (Vosk / W2V BERT / वैकल्पिक)", desc: "ऑन-डिवाइस वाक् पहचान — रोडमैप में है। Vosk (STT, ~45 MB) और वैकल्पिक (W2V BERT आदि) का मूल्यांकन चल रहा है। चयन गुणवत्ता, आकार और प्रदर्शन पर निर्भर करता है। अभी MVP में नहीं।" },
+    { name: "सामग्री का सिमेंटिक विश्लेषण — विकासाधीन (Roadmap)", tech: "DeGenome (18 प्रिमिटिव्स) — Roadmap", desc: "बातचीत की सामग्री का सिमेंटिक विश्लेषण: मुख्य ट्रिगर वाक्यांशों, मनोवैज्ञानिक दबाव के संकेतों और तत्काल कार्रवाई की मांगों का पता लगाना। TrustNode विकास का अगला चरण।" },
+    { name: "प्रतिष्ठा सत्यापन (PCD) — विकासाधीन (Roadmap)", tech: "PCD Identity Profiles — Roadmap", desc: "कॉलर के बोलने के तरीके की तुलना कॉर्पोरेट पहचान प्रोफाइल (PCD) से करता है। विकासाधीन (Roadmap)।" },
+    { name: "नंबर ब्लैकलिस्ट जाँच — विकासाधीन (Roadmap)", tech: "Local Blacklist DB — Roadmap", desc: "संदिग्ध नंबरों के डेटाबेस और ब्लैकलिस्ट के विरुद्ध नंबर की त्वरित स्थानीय जाँच। विकासाधीन (Roadmap)।" },
+    { name: "अंतिम फैसला · ECHO (विकासाधीन)", tech: "Threshold Calibration / PostProc / LegitContextRule / ECHO", desc: "अंतिम फैसला एक बहु-चरणीय पाइपलाइन द्वारा उत्पन्न होता है: थ्रेशोल्ड कैलिब्रेशन स्तरों के स्कोर को तौलता है, PostProc झूठी सकारात्मकताओं को फ़िल्टर करता है, LegitContextRule वैध कॉल संदर्भ की पुष्टि करता है, और ECHO प्रोटोकॉल हेरफेर पैटर्न के व्यवहारिक डिटेक्टर जोड़ता है। खतरे पर — फुल-स्क्रीन चेतावनी।" }
   ],
   ar: [
-    { name: "الاستدلال السريع (HeuristicsLayer)", tech: "Regex & Signature Maps", desc: "فلتر فوري وخفيف لتدفقات البيانات الواردة. يحظر شبكات البريد العشوائي المعروفة، وروابط التصيد الاحتيالي، وأنماط الأتمتة الخبيثة دون استهلاك البطارية." },
-    { name: "التصنيف العصبي (BertPhantomClassifier)", tech: "ONNX Runtime / 28.4 MB Local Model", desc: "شبكة عصبية مضغوطة من طراز rubert-tiny2 تحلل النصوص والمكالمات في الوقت الفعلي. تكتشف سيناريوهات الحوار المخفية، والتلاعب، وأدوار مثل 'الحساب الآمن'." },
-    { name: "الهندسة الاجتماعية (Social Eng. Layer) — وفقًا لطلب براءة الاختراع", tech: "DeGenome · قيد التطوير", desc: "خارطة الطريق: ستحدد تكتيكات التلاعب باستخدام تصنيف DeGenome مستقبلاً." },
-    { name: "التدقيق السلوكي (Behavioral Layer) — وفقًا لطلب براءة الاختراع", tech: "Context-Aware State Machine · قيد التطوير", desc: "خارطة الطريق: ستتابع تفاعلات المستخدم المباشرة مستقبلاً." },
-    { name: "التحقق من السمعة (Reputation Layer) — وفقًا لطلب براءة الاختراع", tech: "PCD Identity Profiles · قيد التطوير", desc: "خارطة الطريق: ستطابق سمات المتصل مع ملفات الهوية المؤسسية مستقبلاً." },
-    { name: "حل التوافق (Consensus Agent) — وفقًا لطلب براءة الاختراع", tech: "Consensus Voting Engine · قيد التطوير", desc: "خارطة الطريق: سيجمع محرك JudgeAgent مؤشرات الخطر مستقبلاً لتنبيه جهات الاتصال." },
-    { name: "الذاكرة المناعية (Immune Memory) — وفقًا لطلب براءة الاختراع", tech: "Adaptive Incident Shield · قيد التطوير", desc: "خارطة الطريق: سيتيح مستودع الهجمات المحلي ضبط الفلاتر مستقبلاً." }
+    { name: "التحليل الصوتي (على الجهاز، تجريبي)", tech: "ميزات صوتية على الجهاز (RMS / ZCR / Silence / Energy) · تجريبي", desc: "تُحسب الميزات الصوتية على الجهاز في الوقت الفعلي (RMS، ZCR، التوقفات، الطاقة). هذا ليس حظرًا وليس مطيافًا في المتصفح — تُستخدم الميزات كإشارة إضافية. المنطق تجريبي ويعمل على الجهاز عبر acoustic-features (أو مباشرة إذا كان libsignal غير متاح)." },
+    { name: "تصنيف التعلم الآلي (ruBERT)", tech: "ONNX Runtime / INT8 / ~28 MB", desc: "تُستخدم شبكة عصبية خفيفة ruBERT (ONNX INT8، ~28 م.ب) لتحليل النصوص والبيانات الوصفية على الجهاز. تُنشر تحديثات النماذج وقواعد البيانات مع تحديث التطبيق؛ ولا يلزم الإنترنت للاستخدام اليومي، بل فقط لتثبيت إصدارات جديدة." },
+    { name: "التعرف على الكلام (ASR) — خارطة طريق (تقييم الخيارات)", tech: "ASR — خارطة طريق (Vosk / W2V BERT / بدائل)", desc: "التعرف على الكلام على الجهاز — في خارطة الطريق. يتم تقييم Vosk (STT، ~45 م.ب) والبدائل (W2V BERT وغيرها). يعتمد الاختيار على الجودة والحجم والأداء. ليس بعد في MVP." },
+    { name: "التحليل الدلالي للمحتوى — قيد التطوير (Roadmap)", tech: "DeGenome (18 عنصرًا أساسيًا) — Roadmap", desc: "التحليل الدلالي لمحتوى المحادثة: كشف العبارات المفتاحية المحفزة ومؤشرات الضغط النفسي ومطالب التصرف العاجل. المرحلة التالية من تطور TrustNode." },
+    { name: "التحقق من السمعة (PCD) — قيد التطوير (Roadmap)", tech: "PCD Identity Profiles — Roadmap", desc: "يطابق أسلوب حديث المتصل مع ملفات الهوية المؤسسية (PCD). قيد التطوير (Roadmap)." },
+    { name: "فحص قائمة الأرقام السوداء — قيد التطوير (Roadmap)", tech: "Local Blacklist DB — Roadmap", desc: "فحص محلي سريع للرقم مقابل قاعدة أرقام مشبوهة وقوائم سوداء. قيد التطوير (Roadmap)." },
+    { name: "الحكم النهائي · ECHO (قيد التطوير)", tech: "Threshold Calibration / PostProc / LegitContextRule / ECHO", desc: "يُنتج الحكم النهائي عبر خط أنابيب متعدد المراحل: معايرة العتبة تُرجّح درجات الطبقات، وتقوم PostProc بتصفية الإيجابيات الكاذبة، وتتحقق LegitContextRule من سياق المكالمة الشرعي، ويضيف بروتوكول ECHO كواشف سلوكية لأنماط التلاعب. عند التهديد — تحذير بملء الشاشة." }
   ],
   pt: [
-    { name: "Heurísticas rápidas (HeuristicsLayer)", tech: "Regex & Signature Maps", desc: "Um filtro instantâneo e leve para fluxos de dados recebidos. Bloqueia redes de spam conhecidas, links suspeitos e assinaturas de scripts fraudulentos sem consumir bateria." },
-    { name: "Classificação neuronal (BertPhantomClassifier)", tech: "ONNX Runtime / 28.4 MB Local Model", desc: "Uma rede neural rubert-tiny2 compactada que analisa a semântica da chamada ou texto da mensagem em tempo real. Detecta manipulação oculta, cenários de encenação ('conta segura', 'parente em apuros')." },
-    { name: "Engenharia social (Social Eng. Layer) — conforme pedido de patente", tech: "DeGenome · em desenvolvimento", desc: "Roadmap: identificará táticas de manipulação usando a taxonomia DeGenome no futuro." },
-    { name: "Análise comportamental (Behavioral Layer) — conforme pedido de patente", tech: "Context-Aware State Machine · em desenvolvimento", desc: "Roadmap: monitorará a dinâmica da interação futuramente." },
-    { name: "Verificação de reputação (Reputation Layer) — conforme pedido de patente", tech: "PCD Identity Profiles · em desenvolvimento", desc: "Roadmap: comparará características do chamador com perfis PCD no futuro." },
-    { name: "Consenso PHANTOM (Consensus Agent) — conforme pedido de patente", tech: "Consensus Voting Engine · em desenvolvimento", desc: "Roadmap: o mecanismo JudgeAgent ponderará avaliações futuramente." },
-    { name: "Memoria imune (Immune Memory) — conforme pedido de patente", tech: "Adaptive Incident Shield · em desenvolvimento", desc: "Roadmap: memória isolada de ataques que adaptará perfis futuramente." }
+    { name: "Análise acústica (no dispositivo, experimental)", tech: "Recursos acústicos no dispositivo (RMS / ZCR / Silence / Energy) · experimental", desc: "Os recursos acústicos são calculados no dispositivo em tempo real (RMS, ZCR, pausas, energia). Não é um bloqueio nem um espectrômetro no navegador — os recursos são usados como sinal adicional. A lógica é experimental e roda no dispositivo via acoustic-features (ou diretamente se libsignal não estiver disponível)." },
+    { name: "Classificação ML (ruBERT)", tech: "ONNX Runtime / INT8 / ~28 MB", desc: "Usa-se a rede neural leve ruBERT (ONNX INT8, ~28 MB) para analisar texto e metadados no dispositivo. As atualizações de modelos e bancos de dados chegam com a atualização do app; não é preciso internet no uso diário, apenas para instalar novas versões." },
+    { name: "Reconhecimento de fala (ASR) — Roadmap (avaliando opções)", tech: "ASR — Roadmap (Vosk / W2V BERT / alternativas)", desc: "Reconhecimento de fala no dispositivo — no roadmap. Avaliando Vosk (STT, ~45 MB) e alternativas (W2V BERT, etc.). A escolha depende de qualidade, tamanho e desempenho. Ainda não está no MVP." },
+    { name: "Análise semântica do conteúdo — Em desenvolvimento (Roadmap)", tech: "DeGenome (18 primitivas) — Roadmap", desc: "Análise semântica do conteúdo da conversa: detecção de frases-chave disparadoras, sinais de pressão psicológica e exigências de ações urgentes. A próxima etapa da evolução do TrustNode." },
+    { name: "Verificação de reputação (PCD) — Em desenvolvimento (Roadmap)", tech: "PCD Identity Profiles — Roadmap", desc: "Compara o estilo de fala do interlocutor com perfis de identidade corporativa (PCD). Em desenvolvimento (Roadmap)." },
+    { name: "Checagem de números em lista negra — Em desenvolvimento (Roadmap)", tech: "Local Blacklist DB — Roadmap", desc: "Verificação local rápida do número contra um banco de números suspeitos e listas negras. Em desenvolvimento (Roadmap)." },
+    { name: "Veredicto final · ECHO (em desenvolvimento)", tech: "Threshold Calibration / PostProc / LegitContextRule / ECHO", desc: "O veredito final é produzido por um pipeline de várias etapas: a calibração de limiares pondera as pontuações das camadas, o PostProc filtra falsos positivos, a LegitContextRule valida o contexto legítimo da chamada e o protocolo ECHO adiciona detectores comportamentais de padrões manipulativos. Em caso de ameaça — aviso em tela cheia." }
   ],
   fr: [
-    { name: "Heuristiques rapides (HeuristicsLayer)", tech: "Regex & Signature Maps", desc: "Un filtre instantané et léger pour les flux de données entrants. Bloque les réseaux de spam connus, les liens suspects et les scripts frauduleux sans consommer de bourse." },
-    { name: "Classification neuronale (BertPhantomClassifier)", tech: "ONNX Runtime / 28.4 MB Local Model", desc: "Un réseau de neurones compressé rubert-tiny2 analysant la sémantique de l'appel ou du message en temps réel. Détecte les manipulations cachées et scénarios de rôles (« compte sécurisé »)." },
-    { name: "Ingénierie sociale (Social Eng. Layer) — selon la demande de brevet", tech: "DeGenome · en développement", desc: "Feuille de route : identifiera les tactiques de manipulation via DeGenome à l'avenir." },
-    { name: "Analyse comportementale (Behavioral Layer) — selon la demande de brevet", tech: "Context-Aware State Machine · en développement", desc: "Feuille de route : suivra la dynamique des interactions à l'avenir." },
-    { name: "Vérification de réputation (Reputation Layer) — selon la demande de brevet", tech: "PCD Identity Profiles · en développement", desc: "Feuille de route : vérifiera les traits de l'appelant via PCD à l'avenir." },
-    { name: "Résolution par consensus (Consensus Agent) — selon la demande de brevet", tech: "Consensus Voting Engine · en développement", desc: "Feuille de route : le moteur JudgeAgent agrégera les marqueurs de risque à l'avenir." },
-    { name: "Mémoire immunitaire (Immune Memory) — selon la demande de brevet", tech: "Adaptive Incident Shield · en développement", desc: "Feuille de route : répertoire local qui adaptera les profils à l'avenir." }
+    { name: "Analyse acoustique (sur l'appareil, expérimental)", tech: "Caractéristiques acoustiques sur l'appareil (RMS / ZCR / Silence / Energy) · expérimental", desc: "Les caractéristiques acoustiques sont calculées sur l'appareil en temps réel (RMS, ZCR, pauses, énergie). Ce n'est ni un blocage ni un spectromètre dans le navigateur — ces caractéristiques servent de signal supplémentaire. La logique est expérimentale et s'exécute sur l'appareil via acoustic-features (ou directement si libsignal est indisponible)." },
+    { name: "Classification ML (ruBERT)", tech: "ONNX Runtime / INT8 / ~28 MB", desc: "Un réseau neuronal léger ruBERT (ONNX INT8, ~28 Mo) analyse texte et métadonnées sur l'appareil. Les mises à jour de modèles et de bases sont livrées avec l'application ; internet n'est pas requis au quotidien, seulement pour installer de nouvelles versions." },
+    { name: "Reconnaissance vocale (ASR) — Roadmap (évaluation des options)", tech: "ASR — Roadmap (Vosk / W2V BERT / alternatives)", desc: "Reconnaissance vocale sur l'appareil — dans le feuille de route. Évaluation de Vosk (STT, ~45 Mo) et d'alternatives (W2V BERT, etc.). Le choix dépend de la qualité, de la taille et des performances. Pas encore en MVP." },
+    { name: "Analyse sémantique du contenu — En développement (Roadmap)", tech: "DeGenome (18 primitives) — Roadmap", desc: "Analyse sémantique du contenu de la conversation : détection de phrases-clés déclencheurs, signes de pression psychologique et exigences d'actions urgentes. Prochaine étape de l'évolution de TrustNode." },
+    { name: "Vérification de réputation (PCD) — En développement (Roadmap)", tech: "PCD Identity Profiles — Roadmap", desc: "Compare la façon de parler de l'appelant aux profils d'identité d'entreprise (PCD). En développement (Roadmap)." },
+    { name: "Contrôle de numéros en liste noire — En développement (Roadmap)", tech: "Local Blacklist DB — Roadmap", desc: "Vérification locale rapide du numéro contre une base de numéros suspects et des listes noires. En développement (Roadmap)." },
+    { name: "Verdict final · ECHO (en développement)", tech: "Threshold Calibration / PostProc / LegitContextRule / ECHO", desc: "Le verdict final est produit par un pipeline multi-étapes : la calibration des seuils pondère les scores des couches, PostProc filtre les faux positifs, LegitContextRule valide le contexte légitime de l'appel et le protocole ECHO ajoute des détecteurs comportementaux de schémas manipulateurs. En cas de menace — alerte plein écran." }
   ],
   de: [
-    { name: "Schnelle Heuristiken (HeuristicsLayer)", tech: "Regex & Signature Maps", desc: "Ein sofortiger, leichtgewichtiger Filter für eingehende Datenströme. Blockiert bekannte Spam-Netzwerke, Phishing-Links und bösartige Automatisierungsmuster ohne Akkubelastung." },
-    { name: "Neuronale Klassifikation (BertPhantomClassifier)", tech: "ONNX Runtime / 28.4 MB Local Model", desc: "Ein komprimiertes rubert-tiny2 neuronales Netz, das Anrufe und Texte in Echtzeit analysiert. Erkennt versteckte Gesprächsskripte, Manipulationen und Rollen wie „sicheres Konto“." },
-    { name: "Social Engineering (Social Eng. Layer) — laut Patentanmeldung", tech: "DeGenome · in Entwicklung", desc: "Roadmap: wird künftig Manipulationstaktiken mittels DeGenome identifizieren." },
-    { name: "Verhaltensanalyse (Behavioral Layer) — laut Patentanmeldung", tech: "Context-Aware State Machine · in Entwicklung", desc: "Roadmap: wird künftig Live-Interaktionen verfolgen." },
-    { name: "Reputationsüberprüfung (Reputation Layer) — laut Patentanmeldung", tech: "PCD Identity Profiles · in Entwicklung", desc: "Roadmap: wird künftig Anrufermerkmale mit PCD-Profilen abgleichen." },
-    { name: "Konsens-Entscheidung (Consensus Agent) — laut Patentanmeldung", tech: "Consensus Voting Engine · in Entwicklung", desc: "Roadmap: die JudgeAgent-Engine wird künftig Risikomarker aggregieren." },
-    { name: "Immungedächtnis (Immune Memory) — laut Patentanmeldung", tech: "Adaptive Incident Shield · in Entwicklung", desc: "Roadmap: lokaler Angriffsspeicher wird künftig Filter anpassen." }
+    { name: "Akustische Analyse (auf dem Gerät, experimentell)", tech: "Akustische Merkmale auf dem Gerät (RMS / ZCR / Silence / Energy) · experimentell", desc: "Akustische Merkmale werden auf dem Gerät in Echtzeit berechnet (RMS, ZCR, Pausen, Energie). Dies ist keine Sperre und kein Spektrometer im Browser — die Merkmale dienen als zusätzliches Signal. Die Logik ist experimentell und läuft auf dem Gerät über acoustic-features (oder direkt, wenn libsignal nicht verfügbar ist)." },
+    { name: "ML-Klassifikation (ruBERT)", tech: "ONNX Runtime / INT8 / ~28 MB", desc: "Ein leichtgewichtiges neuronales Netz ruBERT (ONNX INT8, ~28 MB) analysiert Text und Metadaten auf dem Gerät. Modell- und Datenbank-Updates kommen mit dem App-Update; Internet ist im Alltag nicht nötig, nur zum Installieren neuer Versionen." },
+    { name: "Spracherkennung (ASR) — Roadmap (Optionen werden bewertet)", tech: "ASR — Roadmap (Vosk / W2V BERT / Alternativen)", desc: "Geräteseitige Spracherkennung — in der Roadmap. Vosk (STT, ~45 MB) und Alternativen (W2V BERT usw.) werden bewertet. Die Wahl hängt von Qualität, Größe und Leistung ab. Noch nicht im MVP." },
+    { name: "Semantische Inhaltsanalyse — In Entwicklung (Roadmap)", tech: "DeGenome (18 Primitive) — Roadmap", desc: "Semantische Analyse des Gesprächsinhalts: Erkennung von Schlüssel-Triggerphrasen, Anzeichen psychologischen Drucks und Forderungen nach sofortigem Handeln. Die nächste Stufe der TrustNode-Evolution." },
+    { name: "Reputationsprüfung (PCD) — In Entwicklung (Roadmap)", tech: "PCD Identity Profiles — Roadmap", desc: "Gleicht den Sprechstil des Anrufers mit Unternehmensidentitätsprofilen (PCD) ab. In Entwicklung (Roadmap)." },
+    { name: "Nummern-Blacklist-Abgleich — In Entwicklung (Roadmap)", tech: "Local Blacklist DB — Roadmap", desc: "Schneller lokaler Abgleich der Nummer gegen eine Datenbank verdächtiger Nummern und Blacklists. In Entwicklung (Roadmap)." },
+    { name: "Endgültiger Befund · ECHO (in Entwicklung)", tech: "Threshold Calibration / PostProc / LegitContextRule / ECHO", desc: "Das endgültige Urteil erzeugt eine mehrstufige Pipeline: die Schwellenwertkalibrierung gewichtet die Stufen-Scores, PostProc filtert Fehlalarme, LegitContextRule prüft den legitimen Gesprächskontext und das ECHO-Protokoll fügt Verhaltensdetektoren für manipulative Muster hinzu. Bei Bedrohung — Vollbildwarnung." }
   ],
   ja: [
-    { name: "高速ヒューリスティック (HeuristicsLayer)", tech: "Regex & Signature Maps", desc: "受信データストリームに対する即時・軽量フィルター。バッテリーを消費せず、既知のスパムネットワーク、フィッシングリンク、悪意ある自動化パターンを遮断します。" },
-    { name: "ニューラル分類 (BertPhantomClassifier)", tech: "ONNX Runtime / 28.4 MB Local Model", desc: "リアルタイムで通話音声やテキストを解析する圧縮版 rubert-tiny2 ニューラルネットワーク。隠された誘導手口や、「安全な口座」といった役割を検出します。" },
-    { name: "ソーシャルエンジニアリング (Social Eng. Layer) — 特許出願ロードマップ", tech: "DeGenome・開発中", desc: "ロードマップ：将来的に DeGenome 分類法で操作手口を特定予定。" },
-    { name: "行動監査 (Behavioral Layer) — 特許出願ロードマップ", tech: "Context-Aware State Machine・開発中", desc: "ロードマップ：将来的にリアルタイム操作を追跡予定。" },
-    { name: "評判検証 (Reputation Layer) — 特許出願ロードマップ", tech: "PCD Identity Profiles・開発中", desc: "ロードマップ：将来的に PCD プロファイルと照合予定。" },
-    { name: "合意形成 (Consensus Agent) — 特許出願ロードマップ", tech: "Consensus Voting Engine・開発中", desc: "ロードマップ：JudgeAgent が将来的にリスクを集計予定。" },
-    { name: "免疫記憶 (Immune Memory) — 特許出願ロードマップ", tech: "Adaptive Incident Shield・開発中", desc: "ロードマップ：将来的にローカル攻撃リポジトリでフィルター調整予定。" }
+    { name: "音響解析（端末上、実験的）", tech: "端末上の音響特徴 (RMS / ZCR / Silence / Energy) · experimental", desc: "音響特徴は端末上でリアルタイムに計算されます（RMS、ZCR、間、エネルギー）。これはブロックでもブラウザのスペクトロメーターでもありません — 特徴は追加のシグナルとして使用されます。ロジックは実験的で、acoustic-features を介して端末上で動作します（libsignal が利用できない場合は直接計算）。" },
+    { name: "ML分類（ruBERT）", tech: "ONNX Runtime / INT8 / ~28 MB", desc: "軽量ニューラルネットワーク ruBERT（ONNX INT8、約29MB）を端末上でテキスト・メタデータ分析に使用します。モデルとデータベースの更新はアプリ更新に同梱され、日常利用にインターネットは不要です（新バージョンのインストール時のみ必要）。" },
+    { name: "音声認識（ASR）— ロードマップ（選択肢の評価中）", tech: "ASR — ロードマップ (Vosk / W2V BERT / 代替案)", desc: "端末上での音声認識 — ロードマップに掲載。Vosk (STT, ~45 MB) と代替案 (W2V BERT など) を評価中。選択は品質・サイズ・性能に依存。まだ MVP ではありません。" },
+    { name: "会話内容の意味解析 — 開発中（Roadmap）", tech: "DeGenome (18プリミティブ) — Roadmap", desc: "会話内容の意味解析：重要なトリガーフレーズ、心理的圧迫の兆候、緊急対応の要求を検出します。TrustNode進化の次のステージ。" },
+    { name: "評判検証（PCD）— 開発中（Roadmap）", tech: "PCD Identity Profiles — Roadmap", desc: "発信者の話し方を企業アイデンティティプロファイル（PCD）と照合します。開発中（Roadmap）。" },
+    { name: "番号ブラックリスト照合 — 開発中（Roadmap）", tech: "Local Blacklist DB — Roadmap", desc: "番号を疑わしい番号データベースやブラックリストと高速に照合します。開発中（Roadmap）。" },
+    { name: "最終判定 · ECHO（開発中）", tech: "Threshold Calibration / PostProc / LegitContextRule / ECHO", desc: "最終判定は多段パイプラインによって生成されます。しきい値キャリブレーションが各レイヤーのスコアを重み付けし、PostProc が誤検知をフィルタリングし、LegitContextRule が正当な通話コンテキストを検証し、ECHO プロトコルが操作的な会話パターンの行動検出器を追加します。脅威時—全画面警告。" }
   ],
   tr: [
-    { name: "Hızlı Sezgisel Analiz (HeuristicsLayer)", tech: "Regex & Signature Maps", desc: "Gelen veri akışları için anında, hafif bir filtre. Pil gücünü tüketmeden bilinen spam ağlarını, kimlik avı bağlantılarını ve kötü amaçlı otomasyon kalıplarını engeller." },
-    { name: "Sinirsel Sınıflandırma (BertPhantomClassifier)", tech: "ONNX Runtime / 28.4 MB Local Model", desc: "Yerel gerçek zamanlı multimodal analiz (metin, ses, ekran davranışı ve ağ trafiği). Cihaz içi rubert-tiny2 sinir ağı, mutabakat oylama algoritmalarından ayrı olarak kesinlikle çevrimdışı çalışır." },
-    { name: "Sosyal Mühendislik (Social Eng. Layer) — patent başvurusuna göre", tech: "DeGenome · geliştirme aşamasında", desc: "Yol haritası: gelecekte DeGenome ile manipülasyon taktiklerini tanımlayacak." },
-    { name: "Davranışsal Denetim (Behavioral Layer) — patent başvurusuna göre", tech: "Context-Aware State Machine · geliştirme aşamasında", desc: "Yol haritası: gelecekte canlı etkileşimleri izleyecek." },
-    { name: "İtibar Doğrulama (Reputation Layer) — patent başvurusuna göre", tech: "PCD Identity Profiles · geliştirme aşamasında", desc: "Yol haritası: gelecekte PCD profilleriyle çapraz kontrol yapacak." },
-    { name: "Mutabakat Kararı (Consensus Agent) — patent başvurusuna göre", tech: "Consensus Voting Engine · geliştirme aşamasında", desc: "Yol haritası: JudgeAgent gelecekte risk belirteçlerini toplayacak." },
-    { name: "Bağışıklık Belleği (Immune Memory) — patent başvurusuna göre", tech: "Adaptive Incident Shield · geliştirme aşamasında", desc: "Yol haritası: gelecekte yerel saldırı deposu filtreleri ayarlayacak." }
+    { name: "Akustik Analiz (cihazda, deneysel)", tech: "Cihazda akustik özellikler (RMS / ZCR / Silence / Energy) · deneysel", desc: "Akustik özellikler cihazda gerçek zamanlı olarak hesaplanır (RMS, ZCR, duraklamalar, enerji). Bu bir engelleme değil ve tarayıcıda spektrometre değil — özellikler ek sinyal olarak kullanılır. Mantık deneyseldir ve acoustic-features üzerinden cihazda çalışır (libsignal yoksa doğrudan)." },
+    { name: "ML Sınıflandırma (ruBERT)", tech: "ONNX Runtime / INT8 / ~28 MB", desc: "Metin ve meta verileri cihaz üzerinde analiz etmek için hafif bir ruBERT sinir ağı (ONNX INT8, ~28 MB) kullanılır. Model ve veritabanı güncellemeleri uygulama güncellemesiyle gelir; günlük kullanımda internet gerekmez, yalnızca yeni sürüm kurulumunda gerekir." },
+    { name: "Konuşma Tanıma (ASR) — Yol Haritası (seçenekler değerlendiriliyor)", tech: "ASR — Yol Haritası (Vosk / W2V BERT / alternatifler)", desc: "Cihaz üzerinde konuşma tanıması — yol haritasında. Vosk (STT, ~45 MB) ve alternatifler (W2V BERT vb.) değerlendiriliyor. Seçim kaliteye, boyuta ve performansa bağlı. Henüz MVP'de değil." },
+    { name: "İçerik Semantik Analizi — Geliştiriliyor (Roadmap)", tech: "DeGenome (18 Primitives) — Roadmap", desc: "Konuşma içeriğinin semantik analizi: anahtar tetikleyici ifadelerin, psikolojik baskı belirtilerinin ve acil eylem taleplerinin tespiti. TrustNode evriminin bir sonraki aşaması." },
+    { name: "İtibar Doğrulama (PCD) — Geliştiriliyor (Roadmap)", tech: "PCD Identity Profiles — Roadmap", desc: "Arayanın konuşma tarzını kurumsal kimlik profilleriyle (PCD) karşılaştırır. Geliştiriliyor (Roadmap)." },
+    { name: "Numara Kara Liste Kontrolü — Geliştiriliyor (Roadmap)", tech: "Local Blacklist DB — Roadmap", desc: "Numaranın şüpheli numaralar veritabanına ve kara listelere karşı hızlı yerel kontrolü. Geliştiriliyor (Roadmap)." },
+    { name: "Nihai Karar · ECHO (geliştiriliyor)", tech: "Threshold Calibration / PostProc / LegitContextRule / ECHO", desc: "Nihai karar çok aşamalı bir hat ile üretilir: eşik kalibrasyonu katman puanlarını ağırlıklandırır, PostProc yanlış pozitifleri filtreler, LegitContextRule kuralı aramanın meşru bağlamını doğrular ve ECHO protokolü manipülatif kalıplar için davranışsal dedektörler ekler. Tehditte — tam ekran uyarı." }
   ]
 };
 
@@ -117,29 +117,29 @@ export const btnSimplified: Partial<Record<LanguageCode, string>> = {
 };
 
 export const btnAdvanced: Partial<Record<LanguageCode, string>> = {
-  ru: "Архитектура PHANTOM 2.0 (по заявке на патент, roadmap, 7 слоёв)",
-  en: "PHANTOM 2.0 Patent-Pending Architecture (Roadmap, 7 Layers)",
-  es: "Arquitectura PHANTOM 2.0 (según solicitud de patente, roadmap, 7 capas)",
-  zh: "PHANTOM 2.0 专利申请架构（路线图，7层）",
-  hi: "PHANTOM 2.0 पेटेंट आवेदन आर्किटेक्चर (रोडमैप, 7 परतें)",
-  ar: "بنية PHANTOM 2.0 قيد تسجيل براءة اختراع (خارطة طريق، 7 طبقات)",
-  pt: "Arquitetura PHANTOM 2.0 (conforme pedido de patente, roadmap, 7 camadas)",
-  fr: "Architecture PHANTOM 2.0 (demande de brevet, feuille de route, 7 couches)",
-  de: "Patentangemeldete PHANTOM 2.0 Architektur (Roadmap, 7 Schichten)",
-  ja: "特許出願中 PHANTOM 2.0 アーキテクチャ（ロードマップ、7レイヤー）",
-  tr: "Patent Başvurusu PHANTOM 2.0 Mimarisi (Yol Haritası, 7 Katman)"
+  ru: "TrustNode 2.0 (7 слоев)",
+  en: "TrustNode 2.0 (7 Layers)",
+  es: "TrustNode 2.0 (7 capas)",
+  zh: "TrustNode 2.0（7层）",
+  hi: "TrustNode 2.0 (7 परतें)",
+  ar: "TrustNode 2.0 (7 طبقات)",
+  pt: "TrustNode 2.0 (7 camadas)",
+  fr: "TrustNode 2.0 (7 couches)",
+  de: "TrustNode 2.0 (7 Schichten)",
+  ja: "TrustNode 2.0（7レイヤー）",
+  tr: "TrustNode 2.0 (7 Katman)"
 };
 
 export const pipelineHeader: Partial<Record<LanguageCode, string>> = {
-  ru: "Архитектура PHANTOM 2.0 (по заявке на патент) — план развития",
-  en: "Patent-Pending PHANTOM 2.0 Architecture — Development Roadmap",
-  es: "Arquitectura PHANTOM 2.0 (según solicitud de patente) — hoja de ruta",
-  zh: "PHANTOM 2.0 专利申请架构 — 发展路线图",
-  hi: "पेटेंट आवेदन PHANTOM 2.0 आर्किटेक्चर — विकास रोडमैप",
-  ar: "بنية PHANTOM 2.0 (طلب براءة اختراع) — خارطة الطريق",
-  pt: "Arquitetura PHANTOM 2.0 (conforme pedido de patente) — plano de desenvolvimento",
-  fr: "Architecture PHANTOM 2.0 (demande de brevet) — feuille de route",
-  de: "Patentangemeldete PHANTOM 2.0 Architektur — Entwicklungs-Roadmap",
-  ja: "特許出願中 PHANTOM 2.0 アーキテクチャ — 開発ロードマップ",
-  tr: "Patent Başvurusu PHANTOM 2.0 Mimarisi — Yol Haritası"
+  ru: "Полные слои TrustNode 2.0",
+  en: "Official TrustNode 2.0 Pipeline",
+  es: "Canalización oficial TrustNode 2.0",
+  zh: "官方 TrustNode 2.0 流程",
+  hi: "आधिकारिक TrustNode 2.0 पाइपलाइन",
+  ar: "مخطط حماية TrustNode 2.0 الرسمي",
+  pt: "Camadas oficiais do TrustNode 2.0",
+  fr: "Pipeline officiel TrustNode 2.0",
+  de: "Offizielle TrustNode 2.0 Pipeline",
+  ja: "公式 TrustNode 2.0 パイプライン",
+  tr: "Resmi TrustNode 2.0 Hattı"
 };

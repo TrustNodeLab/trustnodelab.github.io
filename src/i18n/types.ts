@@ -1,4 +1,4 @@
-export interface MobileCard {
+﻿export interface MobileCard {
   badge: string;
   title: string;
   desc: string;
@@ -7,6 +7,10 @@ export interface MobileCard {
 export interface ProblemItem {
   title: string;
   desc: string;
+  stat: string;
+  statLabel: string;
+  statSource: string;
+  shotLabels: [string, string];
 }
 
 export interface LayerItem {
@@ -58,13 +62,20 @@ export interface LegalContactSection {
 
 export interface PageNames {
   home: string;
+  features: string;
+  research: string;
+  "privacy-architecture": string;
   "how-it-works": string;
   tech: string;
   about: string;
-  "early-access": string;
+  download: string;
   "comparison": string;
   "not-found": string;
-  roadmap: string;
+  roadmap?: string;
+  privacy?: string;
+  terms?: string;
+  news?: string;
+  sections?: string;
 }
 
 export interface Translations {
@@ -79,6 +90,16 @@ export interface Translations {
     tagline: string;
     footerTagline: string;
   };
+  header: {
+    rustore: string;
+    radar: string;
+    ecoOn: string;
+    ecoOff: string;
+    seniorOn: string;
+    seniorOff: string;
+    lang: string;
+    nav: string;
+  };
   hero: {
     badge: string;
     titleSub: string;
@@ -87,14 +108,27 @@ export interface Translations {
     enterDome: string;
   };
   mobileCards: MobileCard[];
+  simpleMobileCards?: MobileCard[];
   mobileTabLabels: string[];
   replayIntro: string;
+  backTop: string;
+  skipToContent: string;
+  langChanged: string;
   problem: {
     badge: string;
     titleLine1: string;
     titleHighlight: string;
     subtitle: string;
+    oldLabel: string;
+    newLabel: string;
     items: ProblemItem[];
+    simple?: {
+      subtitle?: string;
+      items?: Array<{ title: string; desc: string }>;
+    };
+    full?: {
+      subtitle?: string;
+    };
   };
   how: {
     badge: string;
@@ -108,6 +142,27 @@ export interface Translations {
     btnAdvanced: string;
     pipelineHeader: string;
     usp: UspItem[];
+    simple?: {
+      subtitle?: string;
+    };
+    full?: {
+      subtitle?: string;
+    };
+  };
+  science: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    body: string;
+    accentA: string;
+    accentB: string;
+    visualBadge: string;
+    visualHint: string;
+    legitLabel: string;
+    anomalyLabel: string;
+    scoreLabel: string;
+    safeTag: string;
+    fraudTag: string;
   };
   realDev: {
     title: string;
@@ -169,16 +224,32 @@ export interface Translations {
     complianceLabel: string;
     complianceText: string;
     features: Array<{ title: string; desc: string }>;
+    simple?: {
+      subtitle?: string;
+      features?: Array<{ title: string; desc: string }>;
+    };
+    full?: {
+      subtitle?: string;
+    };
   };
   kira: {
     title: string;
     subtitle: string;
     badge: string;
     features: Array<{ title: string; desc: string }>;
+    simple?: {
+      subtitle?: string;
+      features?: Array<{ title: string; desc: string }>;
+    };
+    full?: {
+      subtitle?: string;
+    };
   };
   explore: {
     title: string;
     subtitle: string;
+    hint: string;
+    hintTap: string;
     card1Title: string;
     card1Badge: string;
     card1Desc: string;
@@ -195,6 +266,20 @@ export interface Translations {
     card4Badge: string;
     card4Desc: string;
     card4Btn: string;
+    simple?: {
+      subtitle?: string;
+      card1Title?: string;
+      card1Desc?: string;
+      card2Title?: string;
+      card2Desc?: string;
+      card3Title?: string;
+      card3Desc?: string;
+      card4Title?: string;
+      card4Desc?: string;
+    };
+    full?: {
+      subtitle?: string;
+    };
   };
   trust: {
     badge: string;
@@ -202,34 +287,12 @@ export interface Translations {
     titleHighlight: string;
     subtitle: string;
     stats: StatItem[];
-  };
-  waitlist: {
-    badge: string;
-    titleLine1: string;
-    titleHighlight: string;
-    pricingLabel: string;
-    pricingLine1: string;
-    pricingHighlight: string;
-    pricingLine2: string;
-    description: string;
-    socials: SocialItem[];
-    disclaimer1: string;
-    disclaimer2: string;
-    console: {
-      title: string;
-      subtitle: string;
-      inputLabel: string;
-      inputPlaceholder: string;
-      osLabel: string;
-      cpuLabel: string;
-      btnSubmit: string;
-      btnGenerating: string;
-      copyBtn: string;
-      copied: string;
-      ticketTitle: string;
-      ticketLabel: string;
-      envAnalysis: string;
-      errContactRequired: string;
+    simple?: {
+      subtitle?: string;
+      stats?: StatItem[];
+    };
+    full?: {
+      subtitle?: string;
     };
   };
   footer: {
@@ -237,6 +300,7 @@ export interface Translations {
     privacyLink: string;
     termsLink: string;
     version: string;
+    githubOrg: string;
   };
   cookie: {
     badgeLabel: string;
@@ -261,6 +325,8 @@ export interface Translations {
       s4: LegalSimpleSection;
       s5: LegalSimpleSection;
       s6: LegalContactSection;
+      s7: LegalContactSection;
+      date: string;
     };
     terms: {
       s1: LegalSimpleSection;
@@ -280,23 +346,17 @@ export interface Translations {
     title: string;
     subtitle: string;
     badge: string;
-    pkgPriorityTitle: string;
-    pkgPriorityDesc: string;
-    pkgStandardTitle: string;
-    pkgStandardDesc: string;
-    pkgBasicTitle: string;
-    pkgBasicDesc: string;
-    pricePriority: string;
-    priceStandard: string;
-    priceBasic: string;
-    checkboxText: string;
-    btnGetTicket: string;
-    btnGenerating: string;
-    ticketReadyTitle: string;
-    ticketReadyInstruction: string;
-    btnGoToPayment: string;
-    paymentDisclaimer: string;
-    selectedPackageLabel: string;
+    back: string;
+    rustoreBtn: string;
+    githubBtn: string;
+    feature1Title: string;
+    feature1Desc: string;
+    feature2Title: string;
+    feature2Desc: string;
+    feature3Title: string;
+    feature3Desc: string;
+    note: string;
+
   };
   comparisonPage: {
     title: string;
@@ -314,9 +374,9 @@ export interface Translations {
       visualAnalysis: string;
       socialEngDetect: string;
       behavioralRasp: string;
-      familyDefense: string;
-      beaconSystem: string;
       offlineOnDevice: string;
+      unifiedScore: string;
+      scamCategorization: string;
       pricing: string;
     };
     status: {
@@ -334,4 +394,64 @@ export interface Translations {
     disclaimer: string;
     telegramBtn: string;
   };
+  roadmapPage: {
+    title: string;
+    subtitle: string;
+    badge: string;
+    readyMvp: string;
+    underDevelopment: string;
+    conceptualSpec: string;
+    tn1Desc: string;
+    packageLabel: string;
+    coreEngineLabel: string;
+    statusLabel: string;
+    fullyReady: string;
+    sourceGithub: string;
+    tn3Desc: string;
+    deadlineLabel: string;
+    september2026: string;
+    phaseLabel: string;
+    architecturePhase: string;
+    kiraDesc: string;
+    designPhase: string;
+    coreComponentLabel: string;
+    integrationLabel: string;
+    ramAddon: string;
+    disclosureTitle: string;
+    disclosureDesc: string;
+    reportTelegram: string;
+    reportVk: string;
+    reportGithub: string;
+    milestonesTitle: string;
+    milestones: Array<{ date: string; title: string; desc: string }>;
+    allProjectsGithub: string;
+  };
+  damageCalc: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    callsLabel: string;
+    amountLabel: string;
+    resultTitle: string;
+    savedLabel: string;
+    disclaimer: string;
+  };
+  faq: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    items: Array<{ q: string; a: string }>;
+  };
+  news: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    emptyTitle: string;
+    emptyDesc: string;
+    readIn: string;
+    showMore: string;
+    showLess: string;
+  };
 }
+
+

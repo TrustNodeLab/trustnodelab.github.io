@@ -1,123 +1,204 @@
 import React from "react";
 import { SiTelegram, SiVk, SiTiktok, SiGithub } from "react-icons/si";
-import MiniLogo from "./MiniLogo";
+import { Radar } from "lucide-react";
 import { useTranslation } from "../i18n/LanguageContext";
+import { useNavigation } from "../navigation/NavigationContext";
+import { usePersonalItems } from "../lib/personalRoute";
+import { DownloadCTA } from "./Navigation";
+import { PRODUCT_RADAR_URL } from "./Header";
 
 const SiTelegramIcon = SiTelegram as React.ComponentType<any>;
 const SiVkIcon = SiVk as React.ComponentType<any>;
 const SiTiktokIcon = SiTiktok as React.ComponentType<any>;
 const SiGithubIcon = SiGithub as React.ComponentType<any>;
 
-// Verified signature for use in App.tsx
-interface FooterProps {
-  onOpenPrivacy: () => void;
-  onOpenTerms: () => void;
-}
-
-const Footer = React.memo(function Footer({ onOpenPrivacy, onOpenTerms }: FooterProps) {
+const Footer = React.memo(function Footer() {
   const { t, language } = useTranslation();
+  const { navigateTo } = useNavigation();
   const currentYear = new Date().getFullYear();
   const copyright = t.footer.copyright.replace("{year}", String(currentYear));
+  const sitemapHeading = {
+    ru: "Основная навигация",
+    en: "Sitemap",
+    es: "Mapa del sitio",
+    zh: "网站地图",
+    tr: "Site Haritası",
+    hi: "साइट मैप",
+    ar: "خريطة الموقع",
+    pt: "Mapa do site",
+    fr: "Plan du site",
+    de: "Sitemap",
+    ja: "サイトマップ",
+  }[language] || "Sitemap";
+  const socialLinks = [
+    { href: "https://t.me/TrustNode_team", label: "Telegram", Icon: SiTelegramIcon },
+    { href: "https://vk.com/trustnode", label: "VK", Icon: SiVkIcon },
+    { href: "https://github.com/TrustNodeLab", label: "GitHub", Icon: SiGithubIcon },
+    { href: "https://www.tiktok.com/@trusrnode?_r=1&_t=ZS-97fr5YVyPCs", label: "TikTok", Icon: SiTiktokIcon },
+  ] as const;
+
+  const storeLinks = [
+    { href: PRODUCT_RADAR_URL, label: t.header.radar, Icon: <Radar className="w-4 h-4" />, external: true },
+  ];
+
+  const socialButtonClass =
+    "font-mono text-sm text-gray-400 hover:text-[#3B82F6] hover:border-[#3B82F6]/40 transition duration-300 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0A0A0B]/80 border border-[#3C404A]/50 min-h-11";
 
   return (
     <footer 
-      className="relative w-full py-12 sm:py-16 px-4 border-t border-[#1F2937]/20 bg-[#0A0A0B] z-10 overflow-hidden" 
+      className="relative w-full py-12 sm:py-16 px-4 bg-[#0A0A0B] z-10 overflow-hidden" 
       style={{ paddingBottom: "max(3rem, env(safe-area-inset-bottom))" }}
       id="footer"
     >
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
-        
-        {/* Left: Brand Identity */}
-        <div className="flex items-center gap-3">
-          {/* Static mini version of our shield logo */}
-          <div className="w-8 h-10 flex items-center justify-center bg-[#111827]/30 rounded-lg border border-[#2E7DFF]/10">
-            <MiniLogo />
+      <div className="max-w-6xl mx-auto grid gap-x-8 gap-y-6 footer-grid">
+
+        {/* Brand Identity — centered, full-width first row */}
+        <div className="footer-area-brand flex flex-col items-center gap-1 text-center">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-14 flex items-center justify-center">
+              <img
+                src={`${import.meta.env.BASE_URL}frame1.svg`}
+                alt="TrustNode"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <span className="font-display font-medium text-xl text-[#F5F5F0] tracking-tighter">
+              Trust<span className="text-[#3B82F6]">Node</span>
+            </span>
           </div>
-          
-          <div className="flex flex-col">
-            <span className="font-display font-bold text-base text-[#F5F5F0] tracking-tight">
-              Trust<span className="text-[#2E7DFF]">Node</span>
-            </span>
-            <span className="font-mono text-[9px] text-gray-400 uppercase tracking-widest">
-              {t.brand.footerTagline}
-            </span>
+          <span className="font-mono text-xs text-gray-400 uppercase tracking-widest">
+            {t.brand.footerTagline}
+          </span>
+        </div>
+
+        <div className="mb-6"><DownloadCTA size="lg" /></div>
+
+      {/* Sitemap nav — left column */}
+        <div className="footer-area-sitemap">
+          <h3 className="font-mono text-[10px] text-[#3B82F6] uppercase tracking-[0.18em] mb-3">
+            {sitemapHeading}
+          </h3>
+          <nav className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 items-start">
+            {usePersonalItems().map((id) => (
+              <button
+                key={id}
+                onClick={() => navigateTo(id)}
+                className="text-left font-sans text-sm text-gray-400 hover:text-[#3B82F6] transition-colors cursor-pointer leading-6"
+              >
+                {t.pageNames[id]}
+              </button>
+            ))}
+            <button
+              onClick={() => navigateTo("download", "faq")}
+              className="text-left font-sans text-sm text-gray-400 hover:text-[#3B82F6] transition-colors cursor-pointer leading-6"
+            >
+              {t.faq.title}
+            </button>
+          </nav>
+        </div>
+
+        {/* Social buttons — right column, unified rectangle (rows 1 + 2) */}
+        <div className="footer-area-social flex flex-col gap-3 footer-btn-rect lg:justify-end">
+          <div className="footer-btn-row">
+            {socialLinks.slice(0, 2).map(({ href, label, Icon }) => (
+              <a 
+                key={label}
+                href={href}
+                target="_blank" 
+                rel="noopener noreferrer"
+                aria-label={label}
+                title={label}
+                className={socialButtonClass}
+              >
+                <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-[#0A0A0B]/60 border border-[#3B82F6]/30 text-[#3B82F6] shrink-0">
+                  <Icon className="w-4 h-4" />
+                </span>
+                <span className="whitespace-nowrap">{label === "VK" ? "VKontakte" : label}</span>
+              </a>
+            ))}
+          </div>
+          <div className="footer-btn-row">
+            {socialLinks.slice(2, 4).map(({ href, label, Icon }) => (
+              <a 
+                key={label}
+                href={href}
+                target="_blank" 
+                rel="noopener noreferrer"
+                aria-label={label}
+                title={label}
+                className={socialButtonClass}
+              >
+                <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-[#0A0A0B]/60 border border-[#3B82F6]/30 text-[#3B82F6] shrink-0">
+                  <Icon className="w-4 h-4" />
+                </span>
+                <span className="whitespace-nowrap">{label === "VK" ? "VKontakte" : label}</span>
+              </a>
+            ))}
           </div>
         </div>
 
-        {/* Center: Copyright & Legal Compliance (FZ-152) */}
-        <div className="text-center md:text-left flex flex-col items-center md:items-start gap-1 max-w-full px-2">
+        {/* Legal / copyright block — bottom left */}
+        <div className="text-center md:text-left flex flex-col items-center md:items-start gap-1 max-w-full footer-area-legal">
           <p className="font-sans text-xs text-gray-400 max-w-full break-words">
             {copyright}
           </p>
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-1.5 max-w-full">
             <button 
-              onClick={onOpenPrivacy} 
-              className="font-sans text-[10px] sm:text-xs text-gray-400 hover:text-[#2E7DFF] hover:underline cursor-pointer transition-colors break-words text-center md:text-left"
+              onClick={() => navigateTo("privacy")} 
+              className="font-sans text-xs sm:text-sm text-gray-400 hover:text-[#3B82F6] hover:underline cursor-pointer transition-colors break-words text-center md:text-left"
             >
               {t.footer.privacyLink}
             </button>
             <span className="text-gray-700 text-xs hidden sm:inline select-none">|</span>
             <button 
-              onClick={onOpenTerms} 
-              className="font-sans text-[10px] sm:text-xs text-gray-400 hover:text-[#2E7DFF] hover:underline cursor-pointer transition-colors break-words text-center md:text-left"
+              onClick={() => navigateTo("terms")} 
+              className="font-sans text-xs sm:text-sm text-gray-400 hover:text-[#3B82F6] hover:underline cursor-pointer transition-colors break-words text-center md:text-left"
             >
               {t.footer.termsLink}
             </button>
           </div>
-          <p className="font-mono text-[9px] text-gray-600 mt-2 uppercase tracking-widest max-w-full break-words whitespace-normal text-center md:text-left">
+          <p className="font-mono text-[11px] text-gray-500 mt-2 uppercase tracking-widest max-w-full break-words whitespace-normal text-center md:text-left">
             {t.footer.version}
           </p>
-          <p className="font-sans text-[9px] text-gray-600 mt-1 max-w-full break-words text-center md:text-left">
-            {t.footer.legalEntity}
+          <a
+            href="https://github.com/TrustNodeLab"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex items-center gap-1.5 font-mono text-[11px] text-gray-400 hover:text-[#3B82F6] transition-colors"
+          >
+            <SiGithubIcon className="w-3.5 h-3.5" />
+            {t.footer.githubOrg}
+          </a>
+          <p className="font-mono text-[11px] text-gray-500 mt-2">
+            Mikhail Pitolin &lt;mikhailpitolin@gmail.com&gt;
           </p>
-          <p className="font-sans text-[9px] text-gray-600 max-w-full break-words text-center md:text-left">
-            {t.footer.legalEntityContact}
-          </p>
-          <span className="inline-block mt-2 px-2 py-0.5 rounded border border-gray-800 font-mono text-[9px] text-gray-600">
-            16+
-          </span>
         </div>
 
-        {/* Right: Social / Tech Links */}
-        <div className="flex flex-wrap items-center justify-center md:justify-end gap-3">
-          <a 
-            href="https://t.me/TrustNode_team?direct" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="font-mono text-xs text-gray-400 hover:text-[#2E7DFF] hover:border-[#2E7DFF]/40 transition-all duration-300 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0F0F12]/80 border border-[#1F2937]/50"
-          >
-            <SiTelegramIcon className="w-3.5 h-3.5 text-[#2E7DFF]" />
-            <span>Telegram</span>
-          </a>
-          <a 
-            href="https://vk.com/trustnode" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="font-mono text-xs text-gray-400 hover:text-[#2E7DFF] hover:border-[#2E7DFF]/40 transition-all duration-300 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0F0F12]/80 border border-[#1F2937]/50"
-          >
-            <SiVkIcon className="w-3.5 h-3.5 text-[#2E7DFF]" />
-            <span>VKontakte</span>
-          </a>
-          <a 
-            href="https://www.tiktok.com/@trusrnode?_r=1&_t=ZS-97fr5YVyPCs" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="font-mono text-xs text-gray-400 hover:text-[#2E7DFF] hover:border-[#2E7DFF]/40 transition-all duration-300 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0F0F12]/80 border border-[#1F2937]/50"
-          >
-            <SiTiktokIcon className="w-3.5 h-3.5 text-[#2E7DFF]" />
-            <span>TikTok</span>
-          </a>
-          <a 
-            href="https://github.com/TrustNodeLab" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="font-mono text-xs text-gray-400 hover:text-[#2E7DFF] hover:border-[#2E7DFF]/40 transition-all duration-300 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0F0F12]/80 border border-[#1F2937]/50"
-          >
-            <SiGithubIcon className="w-3.5 h-3.5 text-[#2E7DFF]" />
-            <span>GitHub</span>
-          </a>
+        {/* Product Radar — standard-size button, centered under rows 1 + 2 */}
+        <div className="footer-area-store flex flex-wrap items-center justify-center gap-3 lg:-mt-3 lg:self-start">
+          {storeLinks.map(({ href, label, Icon }) => (
+            <a 
+              key={href}
+              href={href}
+              target="_blank" 
+              rel="noopener noreferrer"
+              aria-label={label}
+              title={label}
+              className={socialButtonClass}
+            >
+              <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-[#0A0A0B]/60 border border-[#3B82F6]/30 text-[#3B82F6] shrink-0">
+                {Icon || (
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                )}
+              </span>
+              <span className="whitespace-nowrap">{label}</span>
+            </a>
+          ))}
         </div>
-
       </div>
     </footer>
   );

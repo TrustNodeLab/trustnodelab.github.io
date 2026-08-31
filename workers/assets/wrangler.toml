@@ -1,0 +1,33 @@
+name = "trustnode-assets"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+account_id = "e11b6707f3cd0659a80973ae824ac905"
+
+# ---------------------------------------------------------------------------
+# TrustNode assets worker — news photos + ML model proxy.
+# Deploy: npx wrangler deploy
+# ---------------------------------------------------------------------------
+
+[vars]
+# Telegram channel used to resolve post ids -> current photo URLs.
+TELEGRAM_CHANNEL = "TrustNode_team"
+
+# MODEL_SOURCE: ruBERT ONNX model is served from the GitHub Release of
+# TrustNodeLab/trustnodelab.github.io (tag 1.2.0) — no R2 / no card needed.
+#   assets: rubert_fraud_merged_int8.onnx (28 MB) + vocab.txt
+# The worker proxies the file and Cloudflare edge-caches it (24 h).
+MODEL_ORIGIN = "https://github.com/TrustNodeLab/trustnodelab.github.io/releases/download/1.2.0"
+
+# Optional alternative (needs a card to activate R2 on the account):
+#   [[r2_buckets]]
+#   binding = "MODEL_BUCKET"
+#   bucket_name = "trustnode-models"
+#   Upload from workers/assets/ dir:
+#     npx wrangler r2 object put trustnode-models/models/rubert_fraud_merged_int8.onnx --file=model/rubert_fraud_merged_int8.onnx
+#     npx wrangler r2 object put trustnode-models/models/vocab.txt --file=model/vocab.txt
+# ---------------------------------------------------------------------------
+
+# Hourly warm-up: fills the /news redirect cache for all ids in news.json
+# (budget-limited to stay under the free-plan subrequest cap).
+[triggers]
+crons = ["0 * * * *"]

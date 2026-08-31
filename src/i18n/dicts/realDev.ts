@@ -43,17 +43,17 @@ export const badge: Record<LanguageCode, string> = {
 };
 
 export const devUi: Record<LanguageCode, Record<string, string>> = {
-  ru: { awards: "Награды и Наука", graph: "Карта Разработки", core: "Ядро Модели", recipient: "ЛАУРЕАТ / ИССЛЕДОВАТЕЛЬ", inst: "ИНСТИТУТ", event: "НАУЧНЫЙ КОНКУРС", nodes: "УЗЛОВ СВЯЗИ", conns: "АКТИВНЫХ СВЯЗЕЙ", specs: "ХАРАКТЕРИСТИКИ ЯДРА", baseArch: "Базовая Архитектура:", params: "Количество Параметров:", latency: "Задержка Инференса:", copied: "Скопировано!", copyName: "Имя файла", dlOnnx: "Только на устройстве" },
-  en: { awards: "Awards & Science", graph: "Obsidian Map", core: "ONNX Core Engine", recipient: "RECIPIENT", inst: "INSTITUTION", event: "SCIENTIFIC EVENT", nodes: "ACTIVE NODES", conns: "TOTAL CONNECTIONS", specs: "CORE MODEL SPECIFICATIONS", baseArch: "Base Architecture:", params: "Total Parameters:", latency: "Inference Latency:", copied: "Copied!", copyName: "Copy Name", dlOnnx: "On-Device Only" },
-  es: { awards: "Premios y Ciencia", graph: "Mapa de Desarrollo", core: "Motor ONNX", recipient: "RECEPTOR", inst: "INSTITUCIÓN", event: "EVENTO CIENTÍFICO", nodes: "NODOS ACTIVOS", conns: "CONEXIONES TOTALES", specs: "ESPECIFICACIONES DEL MODELO", baseArch: "Arquitectura Base:", params: "Parámetros Totales:", latency: "Latencia de Inferencia:", copied: "¡Copiado!", copyName: "Copiar Nombre", dlOnnx: "Solo en el Dispositivo" },
-  zh: { awards: "科研成果与奖项", graph: "研发图谱", core: "ONNX 核心引擎", recipient: "获奖人/研究员", inst: "研究机构", event: "学术比赛", nodes: "活跃节点", conns: "连接总数", specs: "核心模型规格", baseArch: "基础架构:", params: "参数总数:", latency: "推理延迟:", copied: "已复制!", copyName: "复制文件名", dlOnnx: "仅限设备端" },
-  tr: { awards: "Ödüller & Bilim", graph: "Geliştirme Haritası", core: "Model Çekirdeği", recipient: "ALICI / ARAŞTIRMACI", inst: "KURUM", event: "BİLİMSEL ETKİNLİK", nodes: "AKTİF DÜĞÜM", conns: "TOPLAM BAĞLANTI", specs: "ÇEKİRDEK MODEL ÖZELLİKLERİ", baseArch: "Temel Mimarisi:", params: "Toplam Parametre:", latency: "Çıkarım Gecikmesi:", copied: "Kopyalandı!", copyName: "Dosya Adı", dlOnnx: "Yalnızca Cihazda" },
-  hi: { awards: "पुरस्कार और विज्ञान", graph: "विकास मानचित्र", core: "ONNX कोर इंजन", recipient: "प्राप्तकर्ता", inst: "संस्थान", event: "वैज्ञानिक कार्यक्रम", nodes: "सक्रिय नोड्स", conns: "कुल कनेक्शन", specs: "कोर मॉडल विनिर्देश", baseArch: "मूल वास्तुकला:", params: "कुल पैरामीटर:", latency: "अनुमान विलंबता:", copied: "कॉपी किया गया!", copyName: "नाम कॉपी करें", dlOnnx: "केवल डिवाइस पर" },
-  ar: { awards: "الجوائز والعلوم", graph: "خريطة التطوير", core: "محرك ONNX الأساسي", recipient: "المتلقي / الباحث", inst: "المؤسسة", event: "الحدث العلمي", nodes: "العقد النشطة", conns: "إجمالي الاتصالات", specs: "مواصفات المحرك الأساسي", baseArch: "البنية الأساسية:", params: "إجمالي المعاملات:", latency: "زمن استجابة الاستدلال:", copied: "تم النسخ!", copyName: "نسخ اسم الملف", dlOnnx: "على الجهاز فقط" },
-  pt: { awards: "Prêmios e Ciência", graph: "Mapa de Desenvolvimento", core: "Motor ONNX", recipient: "RECEPTOR", inst: "INSTITUIÇÃO", event: "EVENTO CIENTÍFICO", nodes: "NÓS ATIVOS", conns: "CONEXÕES TOTAIS", specs: "ESPECIFICAÇÕES DO MODELO", baseArch: "Arquitetura Base:", params: "Total de Parâmetros:", latency: "Latência de Inferência:", copied: "Copiado!", copyName: "Copiar Nome", dlOnnx: "Somente no Dispositivo" },
-  fr: { awards: "Prix et Science", graph: "Carte de Développement", core: "Moteur ONNX", recipient: "LAURÉAT", inst: "INSTITUTION", event: "ÉVÉNEMENT SCIENTIFIQUE", nodes: "NŒUDS ACTIFS", conns: "CONNEXIONS TOTALES", specs: "SPÉCIFICATIONS DU MODÈLE", baseArch: "Architecture de Base:", params: "Paramètres Totaux:", latency: "Latence d'Inférence:", copied: "Copié!", copyName: "Copier le Nom", dlOnnx: "Sur l'Appareil Uniquement" },
-  de: { awards: "Auszeichnungen & Wissenschaft", graph: "Entwicklungs-Map", core: "ONNX-Kernmotor", recipient: "EMPFÄNGER", inst: "INSTITUTION", event: "WISSENSCHAFTLICHES EVENT", nodes: "AKTIVE KNOTEN", conns: "GESAMTVERBINDUNGEN", specs: "KERNMODELL-SPEZIFIKATIONEN", baseArch: "Basis-Architektur:", params: "Gesamtparameter:", latency: "Inferenz-Latenz:", copied: "Kopiert!", copyName: "Name kopieren", dlOnnx: "Nur auf dem Gerät" },
-  ja: { awards: "受賞と科学", graph: "開発マップ", core: "ONNXコアエンジン", recipient: "受賞者・研究者", inst: "所属機関", event: "科学コンテスト", nodes: "アクティブノード", conns: "総接続数", specs: "コアモデル仕様", baseArch: "基本アーキテクチャ:", params: "総パラメータ数:", latency: "推論レイテンシ:", copied: "コピー完了!", copyName: "ファイル名をコピー", dlOnnx: "デバイス内のみ" }
+  ru: { awards: "Награды и Наука", graph: "Карта Разработки", core: "Ядро Модели", recipient: "ЛАУРЕАТ / ИССЛЕДОВАТЕЛЬ", inst: "ИНСТИТУТ", event: "НАУЧНЫЙ КОНКУРС", nodes: "УЗЛОВ СВЯЗИ", conns: "АКТИВНЫХ СВЯЗЕЙ", specs: "ХАРАКТЕРИСТИКИ ЯДРА", baseArch: "Базовая Архитектура:", params: "Количество Параметров:", latency: "Задержка Инференса:", copied: "Скопировано!", copyName: "Имя файла", dlOnnx: "Скачать ONNX" },
+  en: { awards: "Awards & Science", graph: "Obsidian Map", core: "ONNX Core Engine", recipient: "RECIPIENT", inst: "INSTITUTION", event: "SCIENTIFIC EVENT", nodes: "ACTIVE NODES", conns: "TOTAL CONNECTIONS", specs: "CORE MODEL SPECIFICATIONS", baseArch: "Base Architecture:", params: "Total Parameters:", latency: "Inference Latency:", copied: "Copied!", copyName: "Copy Name", dlOnnx: "Download ONNX" },
+  es: { awards: "Premios y Ciencia", graph: "Mapa de Desarrollo", core: "Motor ONNX", recipient: "RECEPTOR", inst: "INSTITUCIÓN", event: "EVENTO CIENTÍFICO", nodes: "NODOS ACTIVOS", conns: "CONEXIONES TOTALES", specs: "ESPECIFICACIONES DEL MODELO", baseArch: "Arquitectura Base:", params: "Parámetros Totales:", latency: "Latencia de Inferencia:", copied: "¡Copiado!", copyName: "Copiar Nombre", dlOnnx: "Descargar ONNX" },
+  zh: { awards: "科研成果与奖项", graph: "研发图谱", core: "ONNX 核心引擎", recipient: "获奖人/研究员", inst: "研究机构", event: "学术比赛", nodes: "活跃节点", conns: "连接总数", specs: "核心模型规格", baseArch: "基础架构:", params: "参数总数:", latency: "推理延迟:", copied: "已复制!", copyName: "复制文件名", dlOnnx: "下载 ONNX" },
+  tr: { awards: "Ödüller & Bilim", graph: "Geliştirme Haritası", core: "Model Çekirdeği", recipient: "ALICI / ARAŞTIRMACI", inst: "KURUM", event: "BİLİMSEL ETKİNLİK", nodes: "AKTİF DÜĞÜM", conns: "TOPLAM BAĞLANTI", specs: "ÇEKİRDEK MODEL ÖZELLİKLERİ", baseArch: "Temel Mimarisi:", params: "Toplam Parametre:", latency: "Çıkarım Gecikmesi:", copied: "Kopyalandı!", copyName: "Dosya Adı", dlOnnx: "ONNX İndir" },
+  hi: { awards: "पुरस्कार और विज्ञान", graph: "विकास मानचित्र", core: "ONNX कोर इंजन", recipient: "प्राप्तकर्ता", inst: "संस्थान", event: "वैज्ञानिक कार्यक्रम", nodes: "सक्रिय नोड्स", conns: "कुल कनेक्शन", specs: "कोर मॉडल विनिर्देश", baseArch: "मूल वास्तुकला:", params: "कुल पैरामीटर:", latency: "अनुमान विलंबता:", copied: "कॉपी किया गया!", copyName: "नाम कॉपी करें", dlOnnx: "ONNX डाउनलोड करें" },
+  ar: { awards: "الجوائز والعلوم", graph: "خريطة التطوير", core: "محرك ONNX الأساسي", recipient: "المتلقي / الباحث", inst: "المؤسسة", event: "الحدث العلمي", nodes: "العقد النشطة", conns: "إجمالي الاتصالات", specs: "مواصفات المحرك الأساسي", baseArch: "البنية الأساسية:", params: "إجمالي المعاملات:", latency: "زمن استجابة الاستدلال:", copied: "تم النسخ!", copyName: "نسخ اسم الملف", dlOnnx: "تنزيل ONNX" },
+  pt: { awards: "Prêmios e Ciência", graph: "Mapa de Desenvolvimento", core: "Motor ONNX", recipient: "RECEPTOR", inst: "INSTITUIÇÃO", event: "EVENTO CIENTÍFICO", nodes: "NÓS ATIVOS", conns: "CONEXÕES TOTAIS", specs: "ESPECIFICAÇÕES DO MODELO", baseArch: "Arquitetura Base:", params: "Total de Parâmetros:", latency: "Latência de Inferência:", copied: "Copiado!", copyName: "Copiar Nome", dlOnnx: "Baixar ONNX" },
+  fr: { awards: "Prix et Science", graph: "Carte de Développement", core: "Moteur ONNX", recipient: "LAURÉAT", inst: "INSTITUTION", event: "ÉVÉNEMENT SCIENTIFIQUE", nodes: "NŒUDS ACTIFS", conns: "CONNEXIONS TOTALES", specs: "SPÉCIFICATIONS DU MODÈLE", baseArch: "Architecture de Base:", params: "Paramètres Totaux:", latency: "Latence d'Inférence:", copied: "Copié!", copyName: "Copier le Nom", dlOnnx: "Télécharger ONNX" },
+  de: { awards: "Auszeichnungen & Wissenschaft", graph: "Entwicklungs-Map", core: "ONNX-Kernmotor", recipient: "EMPFÄNGER", inst: "INSTITUTION", event: "WISSENSCHAFTLICHES EVENT", nodes: "AKTIVE KNOTEN", conns: "GESAMTVERBINDUNGEN", specs: "KERNMODELL-SPEZIFIKATIONEN", baseArch: "Basis-Architektur:", params: "Gesamtparameter:", latency: "Inferenz-Latenz:", copied: "Kopiert!", copyName: "Name kopieren", dlOnnx: "ONNX herunterladen" },
+  ja: { awards: "受賞と科学", graph: "開発マップ", core: "ONNXコアエンジン", recipient: "受賞者・研究者", inst: "所属機関", event: "科学コンテスト", nodes: "アクティブノード", conns: "総接続数", specs: "コアモデル仕様", baseArch: "基本アーキテクチャ:", params: "総パラメータ数:", latency: "推論レイテンシ:", copied: "コピー完了!", copyName: "ファイル名をコピー", dlOnnx: "ONNXをダウンロード" }
 };
 
 export const awardDetails: Record<LanguageCode, { title: string, issuer: string, institution: string, recipient: string, event: string, desc: string, badge: string }> = {
@@ -252,90 +252,90 @@ export const graphDetails: Record<LanguageCode, { title: string, subtitle: strin
 export const onnxDetails: Record<LanguageCode, { title: string, filename: string, size: string, format: string, desc: string, badge: string }> = {
   ru: {
     title: "Реальная нейросетевая модель",
-    filename: "rubert_fraud_int8.onnx",
-    size: "28.0 MB",
+    filename: "rubert_fraud_4m_v4_int8.onnx",
+    size: "28.4 MB",
     format: "ONNX Runtime (INT8 quantized)",
-    desc: "В корне проекта интегрирован реальный бинарный слепок сжатой языковой модели rubert-tiny2, квантованной в целочисленный формат INT8. Модель оптимизирована для сверхбыстрого инференса на CPU мобильных устройств и полностью работает в локальном RAM.",
+    desc: "В корне проекта интегрирован реальный бинарный слепок сжатой языковой модели ruBERT, квантованной в целочисленный формат INT8. Модель оптимизирована для сверхбыстрого инференса на CPU мобильных устройств и полностью работает в локальном RAM.",
     badge: "ЛОКАЛЬНЫЙ ИНФЕРЕНС"
   },
   en: {
     title: "Production Neural Network Model",
-    filename: "rubert_fraud_int8.onnx",
-    size: "28.0 MB",
+    filename: "rubert_fraud_4m_v4_int8.onnx",
+    size: "28.4 MB",
     format: "ONNX Runtime (INT8 quantized)",
-    desc: "A real binary weights file of the highly optimized rubert-tiny2 language model quantized to the INT8 integer format is integrated in the project root. The model is fine-tuned for ultra-fast CPU inference on mobile devices and executes 100% locally in RAM.",
+    desc: "A real binary weights file of the highly optimized ruBERT language model quantized to the INT8 integer format is integrated in the project root. The model is fine-tuned for ultra-fast CPU inference on mobile devices and executes 100% locally in RAM.",
     badge: "LOCAL INFERENCE"
   },
   tr: {
     title: "Üretim Yapay Sinir Ağı Modeli",
-    filename: "rubert_fraud_int8.onnx",
-    size: "28.0 MB",
+    filename: "rubert_fraud_4m_v4_int8.onnx",
+    size: "28.4 MB",
     format: "ONNX Runtime (INT8 kuantize)",
-    desc: "Proje kökünde, INT8 tam sayı formatına kuantize edilmiş son derece optimize edilmiş rubert-tiny2 dil modelinin gerçek bir ikili ağırlık dosyası entegre edilmiştir. Model, mobil cihazlarda ultra hızlı CPU çıkarımı için ince ayarlanmıştır ve %100 yerel olarak RAM üzerinde yürütülür.",
+    desc: "Proje kökünde, INT8 tam sayı formatına kuantize edilmiş son derece optimize edilmiş ruBERT dil modelinin gerçek bir ikili ağırlık dosyası entegre edilmiştir. Model, mobil cihazlarda ultra hızlı CPU çıkarımı için ince ayarlanmıştır ve %100 yerel olarak RAM üzerinde yürütülür.",
     badge: "YEREL ÇIKARIM"
   },
   es: {
     title: "Modelo de Red Neuronal de Producción",
-    filename: "rubert_fraud_int8.onnx",
-    size: "28.0 MB",
+    filename: "rubert_fraud_4m_v4_int8.onnx",
+    size: "28.4 MB",
     format: "ONNX Runtime (cuantizado en INT8)",
-    desc: "Se integra en la raíz del proyecto un archivo de pesos binarios reales del modelo de lenguaje rubert-tiny2 altamente optimizado y cuantizado al formato entero INT8. El modelo está ajustado para una inferencia ultra rápida en CPU en dispositivos móviles y se ejecuta 100% localmente en RAM.",
+    desc: "Se integra en la raíz del proyecto un archivo de pesos binarios reales del modelo de lenguaje ruBERT altamente optimizado y cuantizado al formato entero INT8. El modelo está ajustado para una inferencia ultra rápida en CPU en dispositivos móviles y se ejecuta 100% localmente en RAM.",
     badge: "INFERENCIA LOCAL"
   },
   zh: {
     title: "生产级神经网络模型",
-    filename: "rubert_fraud_int8.onnx",
-    size: "28.0 MB",
+    filename: "rubert_fraud_4m_v4_int8.onnx",
+    size: "28.4 MB",
     format: "ONNX Runtime (INT8 量化)",
-    desc: "项目根目录中集成了一个高度优化的 rubert-tiny2 语言模型的真实二进制权重文件，该文件已量化为 INT8 整数格式。该模型针对移动设备上的超快速 CPU 推理进行了微调，并在内存中 100% 本地执行。",
+    desc: "项目根目录中集成了一个高度优化的 ruBERT 语言模型的真实二进制权重文件，该文件已量化为 INT8 整数格式。该模型针对移动设备上的超快速 CPU 推理进行了微调，并在内存中 100% 本地执行。",
     badge: "本地推理"
   },
   hi: {
     title: "उत्पादन न्यूरल नेटवर्क मॉडल",
-    filename: "rubert_fraud_int8.onnx",
-    size: "28.0 MB",
+    filename: "rubert_fraud_4m_v4_int8.onnx",
+    size: "28.4 MB",
     format: "ONNX रनटाइम (INT8 क्वांटाइज़्ड)",
-    desc: "परियोजना के रूट में अत्यधिक अनुकूलित rubert-tiny2 भाषा मॉडल का एक वास्तविक बाइनरी वेट फ़ाइल एकीकृत है जो INT8 पूर्णांक प्रारूप में क्वांटाइज़्ड है। मॉडल को मोबाइल उपकरणों पर अल्ट्रा-फास्ट सीपीयू अनुमान के लिए फाइन-ट्यून किया गया है और यह रैम में 100% स्थानीय रूप से निष्पादित होता है।",
+    desc: "परियोजना के रूट में अत्यधिक अनुकूलित ruBERT भाषा मॉडल का एक वास्तविक बाइनरी वेट फ़ाइल एकीकृत है जो INT8 पूर्णांक प्रारूप में क्वांटाइज़्ड है। मॉडल को मोबाइल उपकरणों पर अल्ट्रा-फास्ट सीपीयू अनुमान के लिए फाइन-ट्यून किया गया है और यह रैम में 100% स्थानीय रूप से निष्पादित होता है।",
     badge: "स्थानीय अनुमान"
   },
   ar: {
     title: "نموذج الشبكة العصبية للإنتاج",
-    filename: "rubert_fraud_int8.onnx",
-    size: "28.0 ميغابايت",
+    filename: "rubert_fraud_4m_v4_int8.onnx",
+    size: "28.4 ميكابايت",
     format: "ONNX Runtime (INT8 كمي)",
-    desc: "تم دمج ملف أوزان ثنائي حقيقي لنموذج اللغة rubert-tiny2 المحسن للغاية والمكمم إلى تنسيق 정수 INT8 في جذر المشروع. تم ضبط النموذج بدقة لزمن استجابة فائق السرعة على وحدة المعالجة المركزية (CPU) للأجهزة المحمولة ويعمل محليًا بنسبة 100% في ذاكرة الوصول العشوائي.",
+    desc: "تم دمج ملف أوزان ثنائي حقيقي لنموذج اللغة ruBERT المحسن للغاية والمكمم إلى تنسيق 정수 INT8 في جذر المشروع. تم ضبط النموذج بدقة لزمن استجابة فائق السرعة على وحدة المعالجة المركزية (CPU) للأجهزة المحمولة ويعمل محليًا بنسبة 100% في ذاكرة الوصول العشوائي.",
     badge: "استدلال محلي"
   },
   pt: {
     title: "Modelo de Rede Neural de Produção",
-    filename: "rubert_fraud_int8.onnx",
-    size: "28.0 MB",
+    filename: "rubert_fraud_4m_v4_int8.onnx",
+    size: "28.4 MB",
     format: "ONNX Runtime (quantizado em INT8)",
-    desc: "Um arquivo real de pesos binários do modelo de linguagem rubert-tiny2 altamente otimizado, quantizado para o formato inteiro INT8, está integrado na raiz do projeto. O modelo é ajustado para inferência ultra-rápida em CPU de dispositivos móveis e executa 100% localmente na memória RAM.",
+    desc: "Um arquivo real de pesos binários do modelo de linguagem ruBERT altamente otimizado, quantizado para o formato inteiro INT8, está integrado na raiz do projeto. O modelo é ajustado para inferência ultra-rápida em CPU de dispositivos móveis e executa 100% localmente na memória RAM.",
     badge: "INFERÊNCIA LOCAL"
   },
   fr: {
     title: "Modèle de Réseau Neuronal de Production",
-    filename: "rubert_fraud_int8.onnx",
-    size: "28.0 Mo",
+    filename: "rubert_fraud_4m_v4_int8.onnx",
+    size: "28.4 Mo",
     format: "ONNX Runtime (quantifié en INT8)",
-    desc: "Un véritable fichier de poids binaires du modèle de langage hautement optimisé rubert-tiny2, quantifié au format entier INT8, est intégré à la racine du projet. Le modèle est affiné pour une inférence CPU ultra-rapide sur les appareils mobiles et s'exécute à 100 % localement dans la RAM.",
+    desc: "Un véritable fichier de poids binaires du modèle de langage hautement optimisé ruBERT, quantifié au format entier INT8, est intégré à la racine du projet. Le modèle est affiné pour une inférence CPU ultra-rapide sur les appareils mobiles et s'exécute à 100 % localement dans la RAM.",
     badge: "INFERENCE LOCALE"
   },
   de: {
     title: "Produktions-Neuronales Netzwerk-Modell",
-    filename: "rubert_fraud_int8.onnx",
-    size: "28.0 MB",
+    filename: "rubert_fraud_4m_v4_int8.onnx",
+    size: "28.4 MB",
     format: "ONNX-Runtime (INT8 quantisiert)",
-    desc: "Eine echte binäre Gewichtsdatei des hochoptimierten rubert-tiny2-Sprachmodells, das in das ganzzahlige INT8-Format quantisiert wurde, ist im Projekt-Root integriert. Das Modell is für ultraschnelle CPU-Inferenz auf Mobilgeräten feingetunt und wird zu 100 % lokal im RAM ausgeführt.",
+    desc: "Eine echte binäre Gewichtsdatei des hochoptimierten ruBERT-Sprachmodells, das in das ganzzahlige INT8-Format quantisiert wurde, ist im Projekt-Root integriert. Das Modell is für ultraschnelle CPU-Inferenz auf Mobilgeräten feingetunt und wird zu 100 % lokal im RAM ausgeführt.",
     badge: "LOKALE INFERENZ"
   },
   ja: {
     title: "プロダクション仕様ニューラルネットワークモデル",
-    filename: "rubert_fraud_int8.onnx",
-    size: "28.0 MB",
+    filename: "rubert_fraud_4m_v4_int8.onnx",
+    size: "28.4 MB",
     format: "ONNX Runtime (INT8 量子化済)",
-    desc: "INT8 整数形式に量子化された、高度に最適化された rubert-tiny2 言語モデルの実バイナリウェイトファイルがプロジェクトルートに統合されています。このモデルはモバイルデバイスの CPU 上での超高速推論のために微調整されており、RAM 上で100%ローカルに実行されます。",
+    desc: "INT8 整数形式に量子化された、高度に最適化された ruBERT 言語モデルの実バイナリウェイトファイルがプロジェクトルートに統合されています。このモデルはモバイルデバイスの CPU 上での超高速推論のために微調整されており、RAM 上で100%ローカルに実行されます。",
     badge: "ローカル推論"
   }
 };

@@ -4,62 +4,241 @@ import { useTranslation } from "../i18n/LanguageContext";
 import { useNavigation } from "../navigation/NavigationContext";
 import { LanguageCode } from "../i18n/languages";
 import { motion } from "motion/react";
+import ScanCard from "./ScanCard";
+
+import { useDepth } from "../context/DepthContext";
+
+
+
+const SIMPLE_ROADMAP_BY_LANG: Partial<Record<LanguageCode, string>> = {
+  ru: "TrustNode уже работает. Следующее поколение функций — в разработке.",
+  en: "TrustNode is already working. Next-generation features are in development.",
+  es: "TrustNode ya está funcionando. Las funciones de próxima generación están en desarrollo.",
+  zh: "TrustNode 已在运行。下一代功能正在开发中。",
+  tr: "TrustNode zaten çalışıyor. Yeni nesil özellikler geliştirme aşamasında.",
+  hi: "TrustNode पहले से काम कर रहा है। अगली पीढ़ी की सुविधाएँ विकास में हैं।",
+  ar: "TrustNode يعمل بالفعل. الميزات من الجيل التالي في مرحلة التطوير.",
+  pt: "TrustNode já está funcionando. Recursos de próxima geração estão em desenvolvimento.",
+  fr: "TrustNode fonctionne déjà. Les fonctionnalités de nouvelle génération sont en cours de développement.",
+  de: "TrustNode funktioniert bereits. Funktionen der nächsten Generation sind in Entwicklung.",
+  ja: "TrustNodeはすでに動作中です。次世代機能は開発中です。",
+};
+
+/* ── Simplified feature names for comparison table (no jargon) ──────────── */
+const SIMPLE_FEATURES_BY_LANG: Partial<Record<LanguageCode, Record<string, string>>> = {
+  ru: {
+    textAnalysis: "Анализ сообщений",
+    voiceAnalysis: "Анализ голоса в реальном времени",
+    visualAnalysis: "Проверка скриншотов и ссылок",
+    socialEngDetect: "Опознание давления и обмана",
+    behavioralRasp: "Защита от взлома приложения",
+    offlineOnDevice: "Работа без интернета",
+    unifiedScore: "Единая оценка опасности",
+    scamCategorization: "Определение типа мошенничества",
+    pricing: "Стоимость",
+  },
+  en: {
+    textAnalysis: "Message analysis",
+    voiceAnalysis: "Live voice analysis",
+    visualAnalysis: "Screenshot & link checks",
+    socialEngDetect: "Detects pressure and manipulation",
+    behavioralRasp: "Protects the app from hacking",
+    offlineOnDevice: "Works without internet",
+    unifiedSingleScore: "Single danger score",
+    unifiedScore: "Single danger score",
+    scamCategorization: "Identifies the type of scam",
+    pricing: "Cost",
+  },
+  es: {
+    textAnalysis: "Análisis de mensajes",
+    voiceAnalysis: "Análisis de voz en vivo",
+    visualAnalysis: "Verificación de capturas y enlaces",
+    socialEngDetect: "Detecta presión y manipulación",
+    behavioralRasp: "Protege la app de hackeos",
+    offlineOnDevice: "Funciona sin internet",
+    unifiedScore: "Puntuación única de peligro",
+    scamCategorization: "Identifica el tipo de estafa",
+    pricing: "Costo",
+  },
+  zh: {
+    textAnalysis: "消息分析",
+    voiceAnalysis: "实时语音分析",
+    visualAnalysis: "截图和链接检查",
+    socialEngDetect: "检测施压和欺骗",
+    behavioralRasp: "防止应用被入侵",
+    offlineOnDevice: "无需联网即可工作",
+    unifiedScore: "统一危险评分",
+    scamCategorization: "识别骗局类型",
+    pricing: "费用",
+  },
+  tr: {
+    textAnalysis: "Mesaj analizi",
+    voiceAnalysis: "Canlı ses analizi",
+    visualAnalysis: "Ekran görüntüsü ve bağlantı kontrolü",
+    socialEngDetect: "Baskı ve manipülasyonu algılar",
+    behavioralRasp: "Uygulamayı hacklemeye karşı korur",
+    offlineOnDevice: "İnternet olmadan çalışır",
+    unifiedScore: "Tek tehlike puanı",
+    scamCategorization: "Dolandırıcılık türünü belirler",
+    pricing: "Maliyet",
+  },
+  hi: {
+    textAnalysis: "संदेश विश्लेषण",
+    voiceAnalysis: "लाइव आवाज़ विश्लेषण",
+    visualAnalysis: "स्क्रीनशॉट और लिंक जाँच",
+    socialEngDetect: "दबाव और धोखे की पहचान",
+    behavioralRasp: "ऐप को हैक होने से बचाता है",
+    offlineOnDevice: "बिना इंटरनेट के काम करता है",
+    unifiedScore: "एकल खतरा स्कोर",
+    scamCategorization: "धोखाधड़ी का प्रकार पहचानता है",
+    pricing: "लागत",
+  },
+  ar: {
+    textAnalysis: "تحليل الرسائل",
+    voiceAnalysis: "تحليل الصوت المباشر",
+    visualAnalysis: "فحص لقطات الشاشة والروابط",
+    socialEngDetect: "كشف الضغط والتنكيد",
+    behavioralRasp: "حماية التطبيق من الاختراق",
+    offlineOnDevice: "يعمل بدون إنترنت",
+    unifiedScore: "تقييم خطر موحد",
+    scamCategorization: "تحديد نوع الاحتيال",
+    pricing: "التكلفة",
+  },
+  pt: {
+    textAnalysis: "Análise de mensagens",
+    voiceAnalysis: "Análise de voz ao vivo",
+    visualAnalysis: "Verificação de capturas e links",
+    socialEngDetect: "Detecta pressão e manipulação",
+    behavioralRasp: "Protege o app de invasões",
+    offlineOnDevice: "Funciona sem internet",
+    unifiedScore: "Pontuação única de perigo",
+    scamCategorization: "Identifica o tipo de golpe",
+    pricing: "Custo",
+  },
+  fr: {
+    textAnalysis: "Analyse de messages",
+    voiceAnalysis: "Analyse vocale en direct",
+    visualAnalysis: "Vérification des captures et liens",
+    socialEngDetect: "Détecte la pression et la manipulation",
+    behavioralRasp: "Protège l'app contre le piratage",
+    offlineOnDevice: "Fonctionne sans internet",
+    unifiedScore: "Score de danger unique",
+    scamCategorization: "Identifie le type d'arnaque",
+    pricing: "Coût",
+  },
+  de: {
+    textAnalysis: "Nachrichtenanalyse",
+    voiceAnalysis: "Echtzeit-Sprachanalyse",
+    visualAnalysis: "Screenshot- & Link-Prüfung",
+    socialEngDetect: "Erkennt Druck und Manipulation",
+    behavioralRasp: "Schützt die App vor Hackerangriffen",
+    offlineOnDevice: "Funktioniert ohne Internet",
+    unifiedScore: "Einheitlicher Gefahrenscore",
+    scamCategorization: "Erkennt die Betrugsart",
+    pricing: "Kosten",
+  },
+  ja: {
+    textAnalysis: "メッセージ分析",
+    voiceAnalysis: "リアルタイム音声分析",
+    visualAnalysis: "スクリーンショットとリンクの確認",
+    socialEngDetect: "プレッシャーと詐欺を検出",
+    behavioralRasp: "アプリのハッキングを防止",
+    offlineOnDevice: "インターネット不要で動作",
+    unifiedScore: "統一危険スコア",
+    scamCategorization: "詐欺の種類を特定",
+    pricing: "費用",
+  },
+};
+
 
 const LOCAL_COMP_DICT: Record<LanguageCode, Record<string, string>> = {
   ru: {
     backToMain: "Назад на Главную",
     targetIndicator: "🎯 целевой ориентир",
-    roadmapInfo: "TrustNode TN1 (ядро защиты — эвристики + rubert-tiny2 + RASP) полностью готов и доступен для установки. Функции, отмеченные как «в разработке», — плановые модули (TN3, KIRA), которые появятся в следующих версиях."
+    roadmapInfo: "TrustNode (TN1) — фактически готовый MVP мобильного приложения. Новые модули (TN3) находятся в активном бэклоге разработки.",
+    presetRf: "Сравнить с лидером РФ-рынка",
+    presetNiche: "Сравнить с нишевыми AI-детекторами",
+    kasperskyBadge: "⚡ RU-лидер"
   },
   en: {
     backToMain: "Back to Main",
     targetIndicator: "🎯 target indicator",
-    roadmapInfo: "TrustNode TN1 (core protection — heuristics + rubert-tiny2 + RASP) is fully ready and available for installation. Features marked as 'in development' are planned modules (TN3, KIRA) coming in future releases."
+    roadmapInfo: "TrustNode (TN1) is a ready mobile application MVP. Next-gen modules (TN3) are in active roadmap development.",
+    presetRf: "Compare with RU market leader",
+    presetNiche: "Compare with niche AI detectors",
+    kasperskyBadge: "⚡ RU leader"
   },
   es: {
     backToMain: "Volver al Inicio",
     targetIndicator: "🎯 indicador objetivo",
-    roadmapInfo: "TrustNode TN1 (núcleo de protección — heurísticas + rubert-tiny2 + RASP) está completamente listo y disponible para instalación. Las funciones marcadas como 'en desarrollo' son módulos planificados (TN3, KIRA) que llegarán en futuras versiones."
+    roadmapInfo: "TrustNode (TN1) es un MVP de aplicación móvil listo. Los módulos de próxima generación (TN3) se encuentran en desarrollo activo.",
+    presetRf: "Comparar con líder del mercado RU",
+    presetNiche: "Comparar con detectores IA especializados",
+    kasperskyBadge: "⚡ Líder RU"
   },
   zh: {
     backToMain: "返回主页",
     targetIndicator: "🎯 核心规划指标",
-    roadmapInfo: "TrustNode 目前处于架构设计与原型开发阶段。所有标记为「开发中」的功能均为规划路线图中的计划功能，尚未在最终产品中实现。比较基于声明的架构目标，而非最终商业产品。"
+    roadmapInfo: "TrustNode (TN1) 移动应用 MVP 已就绪。下一代防护罩（TN3）正处于活跃开发计划中。",
+    presetRf: "与俄罗斯市场领导者对比",
+    presetNiche: "与小众AI检测器对比",
+    kasperskyBadge: "⚡ 俄市场领导者"
   },
   tr: {
     backToMain: "Ana Sayfaya Dön",
     targetIndicator: "🎯 hedef gösterge",
-    roadmapInfo: "TrustNode mimari tasarım ve prototip aşamasında bir projedir. 'Geliştirilme aşamasında' olarak işaretlenen tüm özellikler planlanmıştır (yol haritası) ve henüz uygulanmamıştır. Karşılaştırma, beyan edilen mimari hedeflere dayanmaktadır."
+    roadmapInfo: "TrustNode (TN1) mobil uygulama MVP'si hazır durumdadır. Yeni nesil modüller (TN3) aktif geliştirme planındadır.",
+    presetRf: "RU pazar lideriyle karşılaştır",
+    presetNiche: "Niş AI dedektörleriyle karşılaştır",
+    kasperskyBadge: "⚡ RU lideri"
   },
   hi: {
     backToMain: "मुख्य पृष्ठ पर वापस",
     targetIndicator: "🎯 लक्षित संकेतक",
-    roadmapInfo: "TrustNode एक प्रोजेक्ट है जो आर्किटेक्चरल डिज़ाइन और प्रोटोटाइपिंग चरण में है। 'विकास में' के रूप में चिह्नित सभी सुविधाएँ नियोजित (रोडमैप) हैं और अभी तक अंतिम उत्पाद में लागू नहीं हुई हैं। तुलना घोषित आर्किटेक्चरल लक्ष्यों पर आधारित है।"
+    roadmapInfo: "TrustNode (TN1) एक तैयार मोबाइल एप्लीकेशन MVP है। अगली पीढ़ी के मॉड्यूल (TN3) सक्रिय विकास रोडमैप में हैं।",
+    presetRf: "RU बाज़ार नेता से तुलना करें",
+    presetNiche: "विशिष्ट AI डिटेक्टर से तुलना करें",
+    kasperskyBadge: "⚡ RU नेता"
   },
   ar: {
     backToMain: "العودة للرئيسية",
     targetIndicator: "🎯 المؤشر المستهدف",
-    roadmapInfo: "تراست نود هو مشروع في مرحلة التصميم المعماري والنمذجة الأولية. جميع الميزات الموسومة بـ'قيد التطوير' هي ميزات مخطط لها (خريطة طريق) ولم تُنفذ بعد في المنتج النهائي. تستند المقارنة إلى الأهداف المعمارية المعلنة."
+    roadmapInfo: "تطبيق TrustNode (TN1) جاهز كإصدار MVP. الوحدات النقدية التالية (TN3) في مرحلة التطوير النشط حالياً.",
+    presetRf: "مقارنة مع سوق RU الرائد",
+    presetNiche: "مقارنة مع كاشفات AI المتخصصة",
+    kasperskyBadge: "⚡ رائد RU"
   },
   pt: {
     backToMain: "Voltar para Principal",
     targetIndicator: "🎯 indicador-alvo",
-    roadmapInfo: "TrustNode é um projeto em fase de projeto arquitetônico e prototipagem. Todos os recursos marcados como 'em desenvolvimento' são planejados (roadmap) e ainda não implementados em um produto final. A comparação é baseada nas metas arquitetônicas declaradas."
+    roadmapInfo: "O TrustNode (TN1) é um MVP de aplicativo móvel pronto. Os novos módulos (TN3) estão em desenvolvimento ativo.",
+    presetRf: "Comparar com líder do mercado RU",
+    presetNiche: "Comparar com detectores IA especializados",
+    kasperskyBadge: "⚡ Líder RU"
   },
   fr: {
     backToMain: "Retour à l'Accueil",
     targetIndicator: "🎯 indicateur cible",
-    roadmapInfo: "TrustNode est un projet en phase de conception architecturale et de prototypage. Toutes les fonctionnalités marquées 'en développement' sont planifiées (feuille de route) et pas encore implémentées. La comparaison est basée sur les objectifs architecturaux annoncés."
+    roadmapInfo: "TrustNode (TN1) est un MVP d'application mobile opérationnel. Les modules de nouvelle génération (TN3) sont en cours de développement.",
+    presetRf: "Comparer avec le leader du marché RU",
+    presetNiche: "Comparer avec les détecteurs IA spécialisés",
+    kasperskyBadge: "⚡ Leader RU"
   },
   de: {
     backToMain: "Zurück zur Hauptseite",
     targetIndicator: "🎯 Zielindikator",
-    roadmapInfo: "TrustNode befindet sich in der Phase der Architekturkonzeption und Prototypenerstellung. Alle als 'in Entwicklung' markierten Funktionen sind geplant (Roadmap) und noch nicht in einem fertigen Produkt umgesetzt. Der Vergleich basiert auf erklärten Architekturzielen."
+    roadmapInfo: "TrustNode (TN1) ist ein fertiges mobiles MVP. Die Module der nächsten Generation (TN3) befinden sich in der aktiven Entwicklung.",
+    presetRf: "Mit RU-Marktführer vergleichen",
+    presetNiche: "Mit Nischen-AI-Detektoren vergleichen",
+    kasperskyBadge: "⚡ RU-Führer"
   },
   ja: {
     backToMain: "メインに戻る",
     targetIndicator: "🎯 開発目標指標",
-    roadmapInfo: "TrustNodeはアーキテクチャ設計およびプロトタイピング段階のプロジェクトです。「開発中」とマークされた機能はロードマップ上の計画であり、最終製品には未実装です。比較は宣言されたアーキテクチャ目標に基づいています。"
+    roadmapInfo: "TrustNode (TN1) は実用可能なモバイルアプリMVPです。次世代モジュール（TN3）はロードマップに従い、現在活発に開発中です。",
+    presetRf: "RU市場リーダーと比較",
+    presetNiche: "ニッチAI検出器と比較",
+    kasperskyBadge: "⚡ RUリーダー"
   }
 };
 
@@ -75,7 +254,8 @@ const COMPETITORS = [
   { id: "yandex", name: "Яндекс Определитель", priceRu: "Бесплатно", priceEn: "Free" },
   { id: "mcafee", name: "McAfee Security", priceRu: "от ~2490₽/год", priceEn: "from ~$39.99/yr" },
   { id: "lookout", name: "Lookout Safety", priceRu: "от ~1890₽/год", priceEn: "from ~$29.99/yr" },
-  { id: "getcontact", name: "Getcontact", priceRu: "от ~1490₽/год", priceEn: "from ~$19.99/yr" }
+  { id: "getcontact", name: "Getcontact", priceRu: "от ~1490₽/год", priceEn: "from ~$19.99/yr" },
+  { id: "phishbowl", name: "Phishbowl", priceRu: "Бесплатно / Pro-подписка", priceEn: "Free / Pro subscription" }
 ];
 
 const SELECT_LABELS: Record<LanguageCode, string> = {
@@ -166,7 +346,7 @@ const MODE_LABELS: Record<string, { label: string; multi: string; single: string
 
 const COMPARISON_DATA = [
   {
-    key: "textAnalysis",
+      key: "textAnalysis",
     trustNode: "yes",
     kaspersky: "yes",
     norton: "yes",
@@ -179,27 +359,29 @@ const COMPARISON_DATA = [
     yandex: "yes",
     mcafee: "yes",
     lookout: "yes",
-    getcontact: "yes"
+    getcontact: "yes",
+    phishbowl: "yes"
   },
   {
-    key: "voiceAnalysis",
+      key: "voiceAnalysis",
     trustNode: "inDev",
-    kaspersky: "no",
-    norton: "no",
-    bitdefender: "no",
-    googleSpam: "no",
-    truecaller: "no",
-    malwarebytes: "no",
-    adguard: "no",
-    avast: "no",
-    yandex: "no",
-    mcafee: "no",
-    lookout: "no",
-    getcontact: "no"
+    kaspersky: "inDev",
+    norton: "inDev",
+    bitdefender: "inDev",
+    googleSpam: "inDev",
+    truecaller: "inDev",
+    malwarebytes: "inDev",
+    adguard: "inDev",
+    avast: "inDev",
+    yandex: "inDev",
+    mcafee: "inDev",
+    lookout: "inDev",
+    getcontact: "inDev",
+    phishbowl: "inDev"
   },
   {
-    key: "visualAnalysis",
-    trustNode: "inDev",
+      key: "visualAnalysis",
+    trustNode: "yes",
     kaspersky: "yes",
     norton: "yes",
     bitdefender: "yes",
@@ -211,26 +393,28 @@ const COMPARISON_DATA = [
     yandex: "no",
     mcafee: "yes",
     lookout: "yes",
-    getcontact: "no"
+    getcontact: "no",
+    phishbowl: "no"
   },
   {
-    key: "socialEngDetect",
+      key: "socialEngDetect",
     trustNode: "yes",
-    kaspersky: "no",
-    norton: "no",
-    bitdefender: "no",
-    googleSpam: "no",
-    truecaller: "no",
-    malwarebytes: "no",
-    adguard: "no",
-    avast: "no",
-    yandex: "no",
-    mcafee: "no",
-    lookout: "no",
-    getcontact: "no"
+    kaspersky: "inDev",
+    norton: "inDev",
+    bitdefender: "inDev",
+    googleSpam: "inDev",
+    truecaller: "inDev",
+    malwarebytes: "inDev",
+    adguard: "inDev",
+    avast: "inDev",
+    yandex: "inDev",
+    mcafee: "inDev",
+    lookout: "inDev",
+    getcontact: "inDev",
+    phishbowl: "inDev"
   },
   {
-    key: "behavioralRasp",
+      key: "behavioralRasp",
     trustNode: "yes",
     kaspersky: "yes",
     norton: "yes",
@@ -243,42 +427,11 @@ const COMPARISON_DATA = [
     yandex: "no",
     mcafee: "yes",
     lookout: "yes",
-    getcontact: "no"
+    getcontact: "no",
+    phishbowl: "no"
   },
   {
-    key: "familyDefense",
-    trustNode: "inDev",
-    kaspersky: "yes",
-    norton: "yes",
-    bitdefender: "no",
-    googleSpam: "no",
-    truecaller: "no",
-    malwarebytes: "no",
-    adguard: "no",
-    avast: "yes",
-    yandex: "no",
-    mcafee: "yes",
-    lookout: "yes",
-    getcontact: "no"
-  },
-  {
-    key: "beaconSystem",
-    trustNode: "inDev",
-    kaspersky: "no",
-    norton: "no",
-    bitdefender: "no",
-    googleSpam: "no",
-    truecaller: "no",
-    malwarebytes: "no",
-    adguard: "no",
-    avast: "no",
-    yandex: "no",
-    mcafee: "no",
-    lookout: "no",
-    getcontact: "no"
-  },
-  {
-    key: "offlineOnDevice",
+      key: "offlineOnDevice",
     trustNode: "yes",
     kaspersky: "no",
     norton: "no",
@@ -291,16 +444,57 @@ const COMPARISON_DATA = [
     yandex: "no",
     mcafee: "no",
     lookout: "no",
-    getcontact: "no"
+    getcontact: "no",
+    phishbowl: "no"
+  },
+  {
+    key: "unifiedScore",
+    trustNode: "target",
+    kaspersky: "no",
+    norton: "no",
+    bitdefender: "no",
+    googleSpam: "no",
+    truecaller: "no",
+    malwarebytes: "no",
+    adguard: "no",
+    avast: "no",
+    yandex: "no",
+    mcafee: "no",
+    lookout: "no",
+    getcontact: "no",
+    phishbowl: "no"
+  },
+  {
+    key: "scamCategorization",
+    trustNode: "target",
+    kaspersky: "no",
+    norton: "no",
+    bitdefender: "no",
+    googleSpam: "no",
+    truecaller: "no",
+    malwarebytes: "yes",
+    adguard: "no",
+    avast: "no",
+    yandex: "no",
+    mcafee: "no",
+    lookout: "no",
+    getcontact: "no",
+    phishbowl: "yes"
   }
 ];
 
 export default function ComparisonSection() {
   const { t, language } = useTranslation();
+
   const { navigateTo } = useNavigation();
 
+  const { isSimple } = useDepth();
   const cp = t.comparisonPage;
   const localComp = LOCAL_COMP_DICT[language] || LOCAL_COMP_DICT.en;
+  const simpleFeatures = isSimple ? (SIMPLE_FEATURES_BY_LANG[language] || SIMPLE_FEATURES_BY_LANG.en || {}) : null;
+
+
+
 
   const [comparisonMode, setComparisonMode] = React.useState<"multi" | "single">("multi");
   const [selectedCompIds, setSelectedCompIds] = React.useState<string[]>([
@@ -344,34 +538,58 @@ export default function ComparisonSection() {
   const renderCellStatus = (statusValue: string) => {
     if (statusValue === "yes") {
       return (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[10px] sm:text-xs">
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          <span>{cp.status.yes}</span>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.6 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 22 }}
+        >
+          <div className="inline-flex items-center gap-1.5 text-emerald-400 font-mono text-[10px] sm:text-xs">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>{cp.status.yes}</span>
+          </div>
+        </motion.div>
       );
     }
     if (statusValue === "no") {
       return (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 font-mono text-[10px] sm:text-xs">
-          <XCircle className="w-3.5 h-3.5" />
-          <span>{cp.status.no}</span>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.6 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 22 }}
+        >
+          <div className="inline-flex items-center gap-1.5 text-rose-400 font-mono text-[10px] sm:text-xs">
+            <XCircle className="w-3.5 h-3.5" />
+            <span>{cp.status.no}</span>
+          </div>
+        </motion.div>
       );
     }
     if (statusValue === "inDev") {
       return (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono text-[10px] sm:text-xs">
-          <HelpCircle className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: "3s" }} />
-          <span>{cp.status.inDev}</span>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.6 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 22 }}
+        >
+          <div className="inline-flex items-center gap-1.5 text-amber-400 font-mono text-[10px] sm:text-xs">
+            <HelpCircle className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: "3s" }} />
+            <span>{cp.status.inDev}</span>
+          </div>
+        </motion.div>
       );
     }
     if (statusValue === "target") {
       return (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[10px] sm:text-xs">
-          <HelpCircle className="w-3.5 h-3.5 text-blue-400" />
-          <span>{localComp.targetIndicator}</span>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.6 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 22 }}
+        >
+          <div className="inline-flex items-center gap-1.5 text-blue-400 font-mono text-[10px] sm:text-xs target-pulse">
+            <HelpCircle className="w-3.5 h-3.5 text-blue-400" />
+            <span>{localComp.targetIndicator}</span>
+          </div>
+        </motion.div>
       );
     }
 
@@ -379,33 +597,31 @@ export default function ComparisonSection() {
   };
 
   return (
-    <div className="relative w-full min-h-screen pt-8 pb-16 px-4 flex flex-col items-center justify-start bg-[#050507] overflow-hidden select-none" id="comparison-root">
+    <div className="relative w-full min-h-screen pt-8 pb-16 px-4 flex flex-col items-center justify-start bg-[#0A0A0B] overflow-hidden select-none" id="comparison-root">
       {/* Dynamic ambient layout grids */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(18,24,38,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(18,24,38,0.02)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(46,125,255,0.04)_0%,transparent_70%)] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(46,125,255,0.03)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.04)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.03)_0%,transparent_70%)] pointer-events-none" />
 
       <div className="w-full max-w-6xl mx-auto flex flex-col relative z-10">
         
         {/* Go back header */}
         <button 
-          onClick={() => navigateTo("home")}
-          className="self-start mb-8 font-mono text-xs text-gray-500 hover:text-[#2E7DFF] flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/[0.04] bg-white/[0.02] transition-colors cursor-pointer"
+          onClick={() => navigateTo("sections")}
+          className="self-start mb-8 font-mono text-xs text-gray-500 hover:text-[#3B82F6] flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.04] bg-white/[0.02] transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>{localComp.backToMain}</span>
         </button>
 
         {/* Badge */}
-        <div className="inline-flex self-center items-center gap-2 px-3 py-1 bg-[#101F3B]/40 border border-[#2E7DFF]/20 rounded-full mb-4">
-          <Sparkles className="w-3 h-3 text-[#2E7DFF]" />
-          <span className="font-mono text-[9px] font-bold tracking-[0.18em] text-[#2E7DFF] uppercase">
-            {cp.badge}
-          </span>
+        <div className="inline-flex self-center items-center gap-2 font-mono text-xs font-bold tracking-[0.18em] text-[#3B82F6] uppercase mb-4">
+          <Sparkles className="w-3 h-3 text-[#3B82F6]" />
+          <span>{cp.badge}</span>
         </div>
 
         {/* Title */}
-        <h1 className="font-display font-black text-3xl sm:text-5xl text-[#F5F5F0] text-center tracking-tight mb-4 filter drop-shadow-[0_0_15px_rgba(46,125,255,0.15)]">
+        <h1 className="font-display font-medium text-3xl sm:text-5xl text-[#F5F5F0] text-center tracking-tighter mb-4 filter drop-shadow-glow-sm">
           {cp.title}
         </h1>
         <p className="font-sans text-sm sm:text-base text-gray-500 text-center max-w-2xl mx-auto mb-6 leading-relaxed">
@@ -416,12 +632,14 @@ export default function ComparisonSection() {
         <div className="max-w-3xl mx-auto mb-8 px-4 py-2.5 rounded-xl border border-blue-500/10 bg-blue-500/[0.02] text-center flex items-center justify-center gap-2">
           <HelpCircle className="w-4 h-4 text-blue-400 shrink-0 animate-pulse" />
           <span className="font-sans text-xs text-blue-300 font-medium leading-relaxed">
-            {localComp.roadmapInfo}
+            {isSimple
+              ? (SIMPLE_ROADMAP_BY_LANG[language] ?? localComp.roadmapInfo)
+              : localComp.roadmapInfo}
           </span>
         </div>
 
         {/* Interactive Selector badges */}
-        <div className="w-full mb-8 p-6 border border-[#1F2937]/20 bg-[#070709]/50 rounded-2xl">
+        <ScanCard accent="59,130,246" borderColor="border-[#3C404A]/20" cardClassName="bg-[#12141A]" padding="p-6 mb-8" className="w-full" scanDisabled>
           {/* Mode Switcher */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6 pb-5 border-b border-white/[0.04]">
             <span className="font-mono text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider font-bold">
@@ -430,9 +648,10 @@ export default function ComparisonSection() {
             <div className="flex bg-white/[0.02] border border-white/[0.06] p-1 rounded-xl">
               <button
                 onClick={() => handleModeChange("multi")}
-                className={`px-3 py-1.5 rounded-lg font-sans text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                aria-pressed={comparisonMode === "multi"}
+                className={`px-3 py-1.5 rounded-xl font-sans text-xs font-semibold transition duration-300 cursor-pointer ${
                   comparisonMode === "multi"
-                    ? "bg-[#2E7DFF] text-white shadow-[0_2px_8px_rgba(46,125,255,0.3)]"
+                    ? "bg-[#3B82F6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.3)]"
                     : "text-gray-400 hover:text-gray-200"
                 }`}
               >
@@ -440,9 +659,10 @@ export default function ComparisonSection() {
               </button>
               <button
                 onClick={() => handleModeChange("single")}
-                className={`px-3 py-1.5 rounded-lg font-sans text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                aria-pressed={comparisonMode === "single"}
+                className={`px-3 py-1.5 rounded-xl font-sans text-xs font-semibold transition duration-300 cursor-pointer ${
                   comparisonMode === "single"
-                    ? "bg-[#2E7DFF] text-white shadow-[0_2px_8px_rgba(46,125,255,0.3)]"
+                    ? "bg-[#3B82F6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.3)]"
                     : "text-gray-400 hover:text-gray-200"
                 }`}
               >
@@ -456,6 +676,22 @@ export default function ComparisonSection() {
               ? (SELECT_LABELS_SINGLE[language] || SELECT_LABELS_SINGLE.en)
               : (SELECT_LABELS[language] || SELECT_LABELS.en)}
           </h4>
+
+          {/* Quick Preset Buttons */}
+          <div className="flex flex-wrap justify-center gap-2 mb-4">
+            <button
+              onClick={() => { setComparisonMode("single"); setSelectedCompIds(["kaspersky"]); }}
+              className="px-3 py-1.5 rounded-xl font-sans text-xs font-semibold border border-dashed border-amber-500/30 bg-amber-500/5 text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/50 transition duration-300 cursor-pointer"
+            >
+              {localComp.presetRf}
+            </button>
+            <button
+              onClick={() => { setComparisonMode("single"); setSelectedCompIds(["phishbowl"]); }}
+              className="px-3 py-1.5 rounded-xl font-sans text-xs font-semibold border border-dashed border-violet-500/30 bg-violet-500/5 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 transition duration-300 cursor-pointer"
+            >
+              {localComp.presetNiche}
+            </button>
+          </div>
           <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto">
             {COMPETITORS.map(comp => {
               const active = selectedCompIds.includes(comp.id);
@@ -463,40 +699,47 @@ export default function ComparisonSection() {
                 <button
                   key={comp.id}
                   onClick={() => toggleCompetitor(comp.id)}
-                  className={`px-3 py-1.5 rounded-xl font-sans text-xs font-semibold border transition-all duration-200 cursor-pointer ${
+                  aria-pressed={active}
+                  className={`px-3 py-1.5 rounded-xl font-sans text-xs font-semibold border transition duration-300 cursor-pointer ${
                     active
-                      ? "bg-[#2E7DFF]/15 border-[#2E7DFF] text-white shadow-[0_0_10px_rgba(46,125,255,0.2)]"
+                      ? "bg-[#3B82F6]/15 border-[#3B82F6] text-white shadow-glow-md"
                       : "bg-white/[0.02] border-white/[0.06] text-gray-400 hover:border-white/[0.15] hover:text-gray-200"
                   }`}
                 >
                   {comp.name}
+                  {comp.id === "kaspersky" && (
+                    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      {localComp.kasperskyBadge}
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
-        </div>
+        </ScanCard>
 
         {/* Table Container card */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="w-full p-4 sm:p-6 border border-[#1F2937]/30 bg-[#070709]/75 backdrop-blur-md rounded-3xl overflow-hidden mb-8"
-        >
-          <div className="w-full overflow-x-auto rounded-2xl border border-white/[0.04] bg-[#030406]/50">
+        <ScanCard accent="59,130,246" borderColor="border-[#3C404A]/30" cardClassName="bg-[#12141A] backdrop-blur-md overflow-hidden mb-8" padding="p-4 sm:p-6" className="w-full" scanDisabled>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="w-full"
+          >
+          <div className="w-full overflow-x-auto rounded-xl border border-white/[0.04] bg-[#0A0A0B]/50">
             <table className="w-full min-w-[900px] border-collapse text-left">
               <thead>
                 <tr className="border-b border-white/[0.06] bg-white/[0.01]">
-                  <th className="p-4 sm:p-5 font-mono text-[10px] sm:text-xs font-extrabold text-gray-500 uppercase tracking-wider w-[24%]">
+                  <th className="p-4 sm:p-5 font-mono text-xs sm:text-sm font-extrabold text-gray-500 uppercase tracking-wider w-[24%]">
                     {cp.thFeature}
                   </th>
-                  <th className="p-4 sm:p-5 font-display font-black text-xs sm:text-sm text-[#2E7DFF] uppercase tracking-wider w-[19%] bg-[#2E7DFF]/5">
+                  <th className="p-4 sm:p-5 font-display font-medium text-xs sm:text-sm text-[#3B82F6] uppercase tracking-wider w-[19%] bg-[#3B82F6]/5">
                     {cp.thTrustNode}
                   </th>
                   {selectedCompIds.map(compId => {
                     const comp = COMPETITORS.find(c => c.id === compId);
                     return (
-                      <th key={compId} className="p-4 sm:p-5 font-display font-bold text-xs sm:text-sm text-gray-300 uppercase tracking-wider w-[14%]">
+                      <th key={compId} className="p-4 sm:p-5 font-display font-medium text-xs sm:text-sm text-gray-300 uppercase tracking-wider w-[14%]">
                         {comp?.name || compId}
                       </th>
                     );
@@ -505,7 +748,7 @@ export default function ComparisonSection() {
               </thead>
               <tbody>
                 {COMPARISON_DATA.map((row, index) => {
-                  const featureName = cp.features[row.key as keyof typeof cp.features] || row.key;
+                  const featureName = simpleFeatures?.[row.key] || cp.features[row.key as keyof typeof cp.features] || row.key;
                   return (
                     <tr 
                       key={row.key} 
@@ -519,7 +762,7 @@ export default function ComparisonSection() {
                       </td>
 
                       {/* TrustNode */}
-                      <td className="p-4 sm:p-5 bg-[#2E7DFF]/[0.02] border-x border-[#2E7DFF]/10 font-sans">
+                      <td className="p-4 sm:p-5 bg-[#3B82F6]/[0.02] border-x border-[#3B82F6]/10 font-sans">
                         {renderCellStatus(row.trustNode)}
                       </td>
 
@@ -536,10 +779,10 @@ export default function ComparisonSection() {
                 {/* Pricing Row */}
                 <tr className="transition-colors hover:bg-white/[0.01]">
                   <td className="p-4 sm:p-5 font-sans text-xs sm:text-sm font-medium text-gray-300">
-                    {cp.features.pricing}
+                    {simpleFeatures?.pricing || cp.features.pricing}
                   </td>
-                  <td className="p-4 sm:p-5 bg-[#2E7DFF]/[0.02] border-x border-[#2E7DFF]/10 font-sans">
-                    <span className="text-gray-400 font-sans text-xs">{cp.pricingValues.trustNode}</span>
+                  <td className="p-4 sm:p-5 bg-[#3B82F6]/[0.02] border-x border-[#3B82F6]/10 font-sans">
+                    <span className="text-[#3B82F6] font-sans text-xs font-semibold">{cp.pricingValues.trustNode}</span>
                   </td>
                   {selectedCompIds.map(compId => (
                     <td key={compId} className="p-4 sm:p-5 font-sans">
@@ -550,23 +793,24 @@ export default function ComparisonSection() {
               </tbody>
             </table>
           </div>
-        </motion.div>
+          </motion.div>
+        </ScanCard>
 
         {/* Disclaimer section */}
-        <div className="max-w-2xl mx-auto flex flex-col items-center text-center p-6 sm:p-8 rounded-3xl border border-[#1F2937]/30 bg-[#070709]/75 backdrop-blur-md">
+        <ScanCard accent="59,130,246" borderColor="border-[#3C404A]/30" cardClassName="bg-[#12141A] backdrop-blur-md" padding="p-6 sm:p-8" className="max-w-2xl mx-auto items-center text-center" scanDisabled>
           <p className="font-sans text-xs text-gray-500 leading-relaxed mb-6">
             {cp.disclaimer}
           </p>
           <a
-            href="https://t.me/TrustNode_team?direct"
+            href="https://t.me/TrustNode_team"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#2E7DFF] text-white font-sans text-xs font-bold hover:bg-[#2E7DFF]/90 transition-all cursor-pointer shadow-[0_0_15px_rgba(46,125,255,0.2)] hover:shadow-[0_0_20px_rgba(46,125,255,0.35)]"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#3B82F6] text-white font-sans text-xs font-bold hover:bg-[#3B82F6]/90 transition cursor-pointer shadow-glow-md hover:shadow-glow-lg"
           >
             <Send className="w-4 h-4" />
             <span>{cp.telegramBtn}</span>
           </a>
-        </div>
+        </ScanCard>
 
       </div>
     </div>

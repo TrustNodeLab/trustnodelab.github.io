@@ -1,104 +1,198 @@
-import { LanguageCode } from "../languages";
-
-export const title: Partial<Record<LanguageCode, string>> = {
-  ru: "Голосовой ассистент KIRA",
-  en: "KIRA Voice Assistant",
-  es: "Asistente de Voz KIRA",
-  zh: "KIRA 语音助手",
-  hi: "कीра (KIRA) वॉयс असिस्टेंट",
-  ar: "المساعد الصوتي KIRA",
-  pt: "Assistente de Voz KIRA",
-  fr: "Assistant Vocal KIRA",
-  de: "KIRA Sprachassistent",
-  ja: "音声アシスタント KIRA",
-  tr: "KIRA Sesli Asistan"
+export const title: Record<string, string> = {
+  "ru": "Помощник TrustNode",
+  "en": "TrustNode Assistant",
+  "es": "Asistente de TrustNode",
+  "zh": "TrustNode 助手",
+  "tr": "TrustNode Asistanı",
+  "hi": "TrustNode सहायक",
+  "ar": "مساعد TrustNode",
+  "pt": "Assistente do TrustNode",
+  "fr": "Assistant TrustNode",
+  "de": "TrustNode-Assistent",
+  "ja": "TrustNode アシスタント"
 };
 
-export const subtitle: Partial<Record<LanguageCode, string>> = {
-  ru: "Интеллектуальный речевой контур в разработке — по плану будет работать прямо в оперативной памяти телефона",
-  en: "An intelligent, speech-capable companion in development — planned to run fully within your local RAM",
-  es: "Un bucle de voz inteligente en desarrollo — planeado para ejecutarse directamente en la memoria RAM de su teléfono",
-  zh: "开发中的智能语音分析回路 — 计划直接在手机运行内存中运行",
-  hi: "एक बुद्धिमान भाषण-सक्षम साथी जो विकासाधीन है — योजना है कि यह पूरी तरह से स्थानीय रैम के भीतर चलेगा",
-  ar: "دائرة كلامية ذكية قيد التطوير — من المخطط أن تعمل مباشرة في ذاكرة الوصول العشوائي (RAM) لهاتفك",
-  pt: "Um circuito de fala inteligente em desenvolvimento — com plano de operar diretamente na memória RAM do celular",
-  fr: "Un circuit de parole intelligent en développement — prévu pour fonctionner entièrement dans la mémoire RAM locale du smartphone",
-  de: "Ein intelligenter, sprachfähiger Begleiter in Entwicklung — geplant, vollständig im lokalen RAM zu laufen",
-  ja: "開発中のインテリジェントな音声認識回路 — スマートフォンの RAM 上で完全に動作する予定です",
-  tr: "Geliştirme aşamasında akıllı, konuşma yeteneğine sahip bir yardımcı — tamamen yerel RAM içinde çalışması planlanıyor"
+export const subtitle: Record<string, string> = {
+  "ru": "Офлайн-помощник с базой знаний по схемам мошенничества, работающий прямо на устройстве",
+  "en": "An offline assistant with a knowledge base of fraud schemes, running fully on your device",
+  "es": "Un asistente sin conexión con una base de conocimiento sobre esquemas de fraude que funciona en el dispositivo",
+  "zh": "内置防诈骗知识库的离线助手，完全在设备上运行",
+  "tr": "Cihazda çalışan, dolandırıcılık şemaları bilgi tabanına sahip çevrimdışı asistan",
+  "hi": "धोखाधड़ी योजनाओं के ज्ञान आधार वाला ऑफ़लाइन सहायक, पूरी तरह आपके डिवाइस पर चलता है",
+  "ar": "مساعد بدون اتصال بقاعدة معرفة بأساليب الاحتيال، يعمل بالكامل على جهازك",
+  "pt": "Um assistente offline com uma base de conhecimento sobre esquemas de fraude, rodando no dispositivo",
+  "fr": "Un assistant hors ligne avec une base de connaissances sur les schémas de fraude, fonctionnant sur l'appareil",
+  "de": "Ein Offline-Assistent mit einer Wissensbasis über Betrugsmaschen, direkt auf dem Gerät",
+  "ja": "詐欺の手口に関するナレッジベースを備えたオフラインアシスタント、端末上で動作"
 };
 
-// Complete zh typo in translation
-subtitle.zh = "直接在手机运行内存中运行的智能语音分析回路";
-
-export const badge: Partial<Record<LanguageCode, string>> = {
-  ru: "ПРОГРАММНЫЙ ПЛАН: KIRA",
-  en: "PROJECT TIMELINE: KIRA",
-  es: "CRONOGRAMA DEL PROYECTO: KIRA",
-  zh: "项目规划：KIRA",
-  hi: "परियोजना समयरेखा: KIRA",
-  ar: "خطة البرنامج: KIRA",
-  pt: "PLANO DO PROJETO: KIRA",
-  fr: "CALENDRIER DU PROJET : KIRA",
-  de: "PROJEKTZEITPLAN: KIRA",
-  ja: "プロジェクト計画：KIRA",
-  tr: "PROJE ZAMAN ÇİZELGESİ: KIRA"
+export const badge: Record<string, string> = {
+  "ru": "ВСТРОЕННЫЙ ПОМОЩНИК",
+  "en": "BUILT-IN ASSISTANT",
+  "es": "ASISTENTE INTEGRADO",
+  "zh": "内置助手",
+  "tr": "YERLEŞİK ASİSTAN",
+  "hi": "इनबिल्ट सहायक",
+  "ar": "المساعد المدمج",
+  "pt": "ASSISTENTE INTEGRADO",
+  "fr": "ASSISTANT INTÉGRÉ",
+  "de": "INTEGRIERTER ASSISTENT",
+  "ja": "内蔵アシスタント"
 };
 
-export const features: Partial<Record<LanguageCode, Array<{ title: string; desc: string }>>> = {
-  ru: [
-    { title: "Локальный Интент-Классификатор — согласно плану", desc: "Roadmap: дообученная надстройка над основной rubert-tiny2 будет распознавать 15-20 специализированных интентов безопасности, добавляя к модели всего ~200 КБ весов." },
-    { title: "Работа на 100% Офлайн — согласно плану", desc: "Roadmap: без обращений к облачным LLM — вся семантическая структура и шаблоны ответов будут упакованы в приложение, работая без сети в режиме сверхнизкой задержки." },
-    { title: "Синтетический Датасет Коллаборации", desc: "Обучающие диалоги мошеннических схем уже генерируются в облаке Google Colab с помощью Llama 3.1 и Qwen2.5 — эта часть работы ведётся уже сейчас." }
+export const features: Record<string, Array<{ title: string; desc: string }>> = {
+  "ru": [
+    {
+      "title": "База знаний о схемах мошенничества",
+      "desc": "Локальная база знаний о схемах мошенничества: помощник объясняет, как работает та или иная схема, и что делать в конкретной ситуации."
+    },
+    {
+      "title": "Работа на 100% Офлайн",
+      "desc": "Никаких обращений к облачным LLM. Вся семантическая структура и шаблоны ответов упакованы в приложение, работая без сети в режиме сверхнизкой задержки."
+    },
+    {
+      "title": "Объясняет вердикты и даёт советы",
+      "desc": "Расшифровывает, почему сообщение или звонок помечены как опасные, и подсказывает безопасный порядок действий простым языком."
+    }
   ],
-  en: [
-    { title: "Local Intent Classifier — per roadmap", desc: "Roadmap: a fine-tuned add-on on top of rubert-tiny2 will resolve 15-20 specific security intents, adding only ~200 KB." },
-    { title: "100% Offline Execution — per roadmap", desc: "Roadmap: without external LLM API calls, response templates will run fully offline with microsecond latency." },
-    { title: "Advanced Training Datasets", desc: "Synthetic dialogues of social-engineering schemes are already generated in Google Colab using Llama 3.1 and Qwen2.5 — this part of the work is underway." }
+  "en": [
+    {
+      "title": "Knowledge Base of Fraud Schemes",
+      "desc": "A local knowledge base about fraud schemes: the assistant explains how each scheme works and what to do in a specific situation."
+    },
+    {
+      "title": "100% Offline Execution",
+      "desc": "No expensive, slow external LLM API calls. Fully offline response templates and semantic structure keep execution latency down to microseconds."
+    },
+    {
+      "title": "Explains Verdicts & Gives Advice",
+      "desc": "Explains why a message or call was flagged as dangerous and suggests a safe course of action in plain language."
+    }
   ],
-  es: [
-    { title: "Clasificador de Intenciones Local — según roadmap", desc: "Roadmap: una extensión sobre rubert-tiny2 reconocerá 15-20 intenciones de seguridad, añadiendo solo ~200 KB." },
-    { title: "Ejecución 100% Fuera de Línea — según roadmap", desc: "Roadmap: sin conexiones a LLM en la nube, las plantillas funcionarán sin conexión con latencia ultra baja." },
-    { title: "Conjunto de Datos Sintéticos", desc: "Los diálogos sintéticos ya se generan en Google Colab con Llama 3.1 y Qwen2.5 — esta parte está en curso." }
+  "es": [
+    {
+      "title": "Base de conocimiento sobre esquemas de fraude",
+      "desc": "Base de conocimiento local sobre esquemas de fraude: el asistente explica cómo funciona cada esquema y qué hacer en cada situación."
+    },
+    {
+      "title": "Ejecución 100% sin conexión",
+      "desc": "Sin llamadas a LLM en la nube. Toda la estructura semántica y las plantillas de respuesta están empaquetadas en la aplicación y funcionan sin red con latencia ultra baja."
+    },
+    {
+      "title": "Explica veredictos y da consejos",
+      "desc": "Explica por qué un mensaje o llamada fue marcado como peligroso y sugiere el procedimiento seguro en lenguaje sencillo."
+    }
   ],
-  zh: [
-    { title: "本地意图分类器 — 路线图", desc: "路线图：基于 rubert-tiny2 的微调组件未来将识别 15-20 个安全意图，仅增加约 200 KB。" },
-    { title: "100% 离线执行 — 路线图", desc: "路线图：未来将无需云端 API，离线运行并保持低延迟。" },
-    { title: "先进训练数据集", desc: "欺诈计划的合成对话已在 Google Colab 中使用 Llama 3.1 和 Qwen2.5 生成 — 这部分工作正在进行。" }
+  "zh": [
+    {
+      "title": "防诈骗知识库",
+      "desc": "关于诈骗手法的本地知识库：助手会解释每种骗术的运作方式，以及在具体情况下该怎么做。"
+    },
+    {
+      "title": "100% 离线运行",
+      "desc": "不调用云端大模型。所有语义结构与应答模板都打包在应用中，离线以超低延迟运行。"
+    },
+    {
+      "title": "解读判定并给出建议",
+      "desc": "说明消息或来电为何被标记为危险，并用通俗语言建议安全的处理步骤。"
+    }
   ],
-  hi: [
-    { title: "स्थानीय इरादा वर्गीकारक — रोडमैप", desc: "रोडमैप: rubert-tiny2 पर आधारित ऐड-ऑन भविष्य में 15-20 सुरक्षा इरादों को हल करेगा, केवल ~200 KB जोड़कर।" },
-    { title: "100% ऑफ़लाइन निष्पादन — रोडमैप", desc: "रोडमैप: बाहरी LLM API के बिना भविष्य में पूरी तरह ऑफ़लाइन काम करेगा।" },
-    { title: "उन्नत प्रशिक्षण डेटासेट", desc: "धोखाधड़ी योजनाओं के संवाद पहले से ही Google Colab में तैयार किए जा रहे हैं — यह भाग जारी है।" }
+  "tr": [
+    {
+      "title": "Dolandırıcılık Şemaları Bilgi Tabanı",
+      "desc": "Dolandırıcılık şemaları hakkında yerel bilgi tabanı: asistan her şemanın nasıl çalıştığını ve belirli bir durumda ne yapılması gerektiğini açıklar."
+    },
+    {
+      "title": "%100 Çevrimdışı Çalışma",
+      "desc": "Bulut tabanlı LLM çağrıları yok. Tüm anlamsal yapı ve yanıt şablonları uygulamaya gömülüdür, ağ olmadan ultra düşük gecikmeyle çalışır."
+    },
+    {
+      "title": "Kararları açıklar ve tavsiye verir",
+      "desc": "Bir mesajın veya aramanın neden tehlikeli işaretlendiğini açıklar ve güvenli adımları basit bir dille önerir."
+    }
   ],
-  ar: [
-    { title: "مصنف النوايا المحلي — خارطة طريق", desc: "خارطة الطريق: إضافة فوق rubert-tiny2 ستتعرف مستقبلاً على 15-20 نية أمنية، بإضافة ~200 كيلوبايت فقط." },
-    { title: "تشغيل أوفلاين بنسبة 100% — خارطة طريق", desc: "خارطة الطريق: دون اتصالات سحابية، ستعمل القوالب أوفلاين بالكامل مستقبلاً." },
-    { title: "مجموعات البيانات التدريبية المتقدمة", desc: "يتم بالفعل إنشاء حوارات تركيبية في Google Colab — هذا الجزء جارٍ حاليًا." }
+  "hi": [
+    {
+      "title": "धोखाधड़ी योजनाओं का ज्ञान आधार",
+      "desc": "धोखाधड़ी योजनाओं के बारे में स्थानीय ज्ञान आधार: सहायक समझाता है कि हर योजना कैसे काम करती है और किसी स्थिति में क्या करना चाहिए।"
+    },
+    {
+      "title": "100% ऑफ़लाइन निष्पादन",
+      "desc": "कोई क्लाउड LLM कॉल नहीं। पूरा सिमेंटिक ढांचा और उत्तर टेम्पलेट ऐप में शामिल हैं, बिना नेटवर्क अल्ट्रा-लो लेटेंसी में चलते हैं।"
+    },
+    {
+      "title": "फ़ैसले समझाता है और सलाह देता है",
+      "desc": "बताता है कि संदेश या कॉल खतरनाक क्यों चिह्नित हुआ और सरल भाषा में सुरक्षित कदम सुझाता है।"
+    }
   ],
-  pt: [
-    { title: "Classificador de Intenção Local — roadmap", desc: "Roadmap: extensão sobre rubert-tiny2 reconhecerá 15-20 intenções, adicionando apenas ~200 KB." },
-    { title: "Execução 100% Off-line — roadmap", desc: "Roadmap: sem chamadas em nuvem, funcionará totalmente off-line com baixa latência." },
-    { title: "Dataset de Treinamento Avançado", desc: "Diálogos sintéticos já são gerados no Google Colab — essa parte já está em andamento." }
+  "ar": [
+    {
+      "title": "قاعدة معرفة بأساليب الاحتيال",
+      "desc": "قاعدة معرفة محلية عن أساليب الاحتيال: يشرح المساعد كيف يعمل كل أسلوب وماذا تفعل في كل حالة."
+    },
+    {
+      "title": "تشغيل أوفلاين بنسبة 100%",
+      "desc": "لا استدعاءات لنماذج LLM السحابية. الهيكل الدلالي وقوالب الردود مدمجة في التطبيق وتعمل دون شبكة بزمن استجابة منخفض جداً."
+    },
+    {
+      "title": "يشرح الأحكام ويقدم النصائح",
+      "desc": "يوضح لماذا تم وضع علامة خطر على رسالة أو مكالمة، ويقترح الخطوات الآمنة بلغة بسيطة."
+    }
   ],
-  fr: [
-    { title: "Classificateur d'Intents Local — feuille de route", desc: "Feuille de route : un module sur rubert-tiny2 résoudra 15-20 intentions, pour ~200 Ko seulement." },
-    { title: "Exécution 100 % hors ligne — feuille de route", desc: "Feuille de route : sans appel API externe, fonctionnement hors ligne à venir." },
-    { title: "Jeux de données d'entraînement avancés", desc: "Les dialogues synthétiques sont déjà générés dans Google Colab — cette partie est en cours." }
+  "pt": [
+    {
+      "title": "Base de conhecimento sobre esquemas de fraude",
+      "desc": "Uma base de conhecimento local sobre esquemas de fraude: o assistente explica como cada esquema funciona e o que fazer em cada situação."
+    },
+    {
+      "title": "Execução 100% off-line",
+      "desc": "Sem chamadas a LLMs na nuvem. Toda a estrutura semântica e os modelos de resposta estão embutidos no aplicativo e funcionam sem rede com latência ultrabaixa."
+    },
+    {
+      "title": "Explica veredictos e dá conselhos",
+      "desc": "Explica por que uma mensagem ou chamada foi marcada como perigosa e sugere ações seguras em linguagem simples."
+    }
   ],
-  de: [
-    { title: "Lokaler Intent-Klassifikator — Roadmap", desc: "Roadmap: ein Add-On auf rubert-tiny2 wird künftig 15-20 Intents erkennen, nur ~200 KB." },
-    { title: "100% Offline-Ausführung — Roadmap", desc: "Roadmap: künftig ohne externe API vollständig offline." },
-    { title: "Fortschrittliche Trainingsdaten", desc: "Synthetische Dialoge werden bereits in Google Colab generiert — dieser Teil läuft bereits." }
+  "fr": [
+    {
+      "title": "Base de connaissances sur les schémas de fraude",
+      "desc": "Une base locale sur les schémas de fraude : l'assistant explique comment chaque schéma fonctionne et quoi faire dans chaque situation."
+    },
+    {
+      "title": "Exécution 100 % hors ligne",
+      "desc": "Aucun appel aux LLM du cloud. Toute la structure sémantique et les modèles de réponse sont intégrés à l'application et fonctionnent hors ligne avec une latence ultra-faible."
+    },
+    {
+      "title": "Explique les verdicts et conseille",
+      "desc": "Explique pourquoi un message ou un appel a été signalé comme dangereux et propose la marche à suivre en langage simple."
+    }
   ],
-  ja: [
-    { title: "ローカル意図分類器 — ロードマップ", desc: "ロードマップ：rubert-tiny2 ベースの追加レイヤーが将来15〜20個の意図を識別予定（約200 KB追加）。" },
-    { title: "100% オフライン動作 — ロードマップ", desc: "ロードマップ：将来的にクラウド不要で完全オフライン動作予定。" },
-    { title: "高度な合成データセット", desc: "詐欺対話データセットはすでに Google Colab で生成中 — この部分は現在進行中です。" }
+  "de": [
+    {
+      "title": "Wissensbasis über Betrugsmaschen",
+      "desc": "Eine lokale Wissensbasis über Betrugsmaschen: Der Assistent erklärt, wie jede Masche funktioniert und was im konkreten Fall zu tun ist."
+    },
+    {
+      "title": "100 % Offline-Ausführung",
+      "desc": "Keine Aufrufe cloudbasierter LLMs. Die gesamte semantische Struktur und die Antwortvorlagen sind in der App enthalten und laufen ohne Netz mit ultraniegriger Latenz."
+    },
+    {
+      "title": "Erklärt Urteile und gibt Ratschläge",
+      "desc": "Erklärt, warum eine Nachricht oder ein Anruf als gefährlich eingestuft wurde, und nennt sichere nächste Schritte in einfacher Sprache."
+    }
   ],
-  tr: [
-    { title: "Yerel Niyet Sınıflandırıcı — yol haritası", desc: "Yol haritası: rubert-tiny2 üzerine eklenti gelecekte 15-20 niyeti çözecek, yalnızca ~200 KB ile." },
-    { title: "%100 Çevrimdışı Çalışma — yol haritası", desc: "Yol haritası: harici API olmadan gelecekte tam çevrimdışı çalışacak." },
-    { title: "Gelişmiş Eğitim Veri Kümesi", desc: "Sentetik diyaloglar zaten Google Colab'de üretiliyor — bu kısım halihazırda devam ediyor." }
+  "ja": [
+    {
+      "title": "詐欺の手口ナレッジベース",
+      "desc": "詐欺手法に関するローカル知識ベース：アシスタントが各手法の仕組みと具体的な対処法を説明します。"
+    },
+    {
+      "title": "100% オフライン動作",
+      "desc": "クラウドLLMへの問い合わせは一切なし。意味構造と応答テンプレートはすべてアプリに同梱され、ネットワークなしで超低遅延で動作します。"
+    },
+    {
+      "title": "判定を解説しアドバイスを提供",
+      "desc": "メッセージや通話が危険と判定された理由を説明し、安全な対応を平易な言葉で提案します。"
+    }
   ]
 };

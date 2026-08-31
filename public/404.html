@@ -1,13 +1,31 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>TrustNode</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrustNode — Page Not Found</title>
   <script>
-    sessionStorage.setItem('redirect', location.href);
-    var base = location.pathname.indexOf('/TrustNode-site/') >= 0 ? '/TrustNode-site/' : '/';
-    location.replace(base);
+    (function(){
+      var p = window.location.pathname;
+      var q = window.location.search;
+      sessionStorage.setItem("redirect", p + q);
+      /* Detect language prefix from the URL (e.g. /en/research → /en/).
+         If present, redirect to /{lang}/ so the SPA keeps the language.
+         Otherwise fall back to /. */
+      var m = p.match(/^\/([a-z]{2})(?:\/|$)/);
+      window.location.replace(m ? "/" + m[1] + "/" : "/");
+    })();
   </script>
+  <style>
+    body { margin: 0; padding: 0; background: #0A0A0B; color: #F5F5F0; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 2rem; }
+    h1 { font-size: 4rem; font-weight: 800; margin-bottom: 0.5rem; background: linear-gradient(135deg, #3B82F6, #6EE7B7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    p { color: #9CA3AF; font-size: 1.125rem; max-width: 28rem; line-height: 1.6; }
+    a { display: inline-block; margin-top: 2rem; padding: 0.75rem 2rem; background: #3B82F6; color: white; text-decoration: none; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; transition: background 0.2s; }
+    a:hover { background: #2563EB; }
+  </style>
 </head>
-<body></body>
+<body>
+  <h1>Redirecting...</h1>
+  <p>If you are not redirected automatically, <a href="/">click here</a>.</p>
+</body>
 </html>

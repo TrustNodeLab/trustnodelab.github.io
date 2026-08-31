@@ -26,6 +26,11 @@ export const LANGUAGES: LanguageMeta[] = [
 
 export const DEFAULT_LANGUAGE: LanguageCode = "ru";
 
+/** Type-narrow a runtime string to LanguageCode if it matches a known code. */
+export function isLanguageCode(value: string): value is LanguageCode {
+  return LANGUAGES.some((l) => l.code === value);
+}
+
 export function detectBrowserLanguage(): LanguageCode {
   if (typeof navigator === "undefined") return DEFAULT_LANGUAGE;
   const candidates = navigator.languages && navigator.languages.length > 0

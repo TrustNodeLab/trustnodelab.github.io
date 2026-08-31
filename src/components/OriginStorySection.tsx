@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useRef } from "react";
 import { GraduationCap, Award, Compass, Heart, Code2 } from "lucide-react";
+import { motion, useScroll, useTransform, useInView } from "motion/react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { LanguageCode } from "../i18n/languages";
+import { useEcoMode } from "../context/EcoModeContext";
+import SectionBadge from "./SectionBadge";
+import ScanCard from "./ScanCard";
 
 const TITLE_BY_LANG: Partial<Record<LanguageCode, string>> = {
   ru: "История проекта",
@@ -13,22 +17,20 @@ const TITLE_BY_LANG: Partial<Record<LanguageCode, string>> = {
   pt: "História do Projeto",
   fr: "Histoire du Projet",
   de: "Projektgeschichte",
-  ja: "プロジェクトの歩み",
-  tr: "Proje Tarihi"
+  ja: "プロジェクトの歩み"
 };
 
 const SUBTITLE_BY_LANG: Partial<Record<LanguageCode, string>> = {
-  ru: "От дипломных исследований студента-кибербезопасника до заявок на патент ФИПС и федерального признания",
-  en: "From a cybersec student's research project to patent applications and nationwide recognition",
-  es: "Desde las investigaciones de tesis de un estudiante de ciberseguridad hasta solicitudes de patentes y reconocimiento federal",
-  zh: "从网络安全专业学生的毕业设计，到提交专利申请与联邦级科技竞赛认可的演进历程",
-  hi: "एक साइबर सुरक्षा छात्र के शोध पत्र से लेकर पेटेंट आवेदन और राष्ट्रीय स्तर पर मान्यता प्राप्त करने तक का सफर",
-  ar: "من الأبحاث الأكاديمية لطالب في الأمن السيبراني إلى طلبات براءات الاختراع والاعتراف الاتحادي",
-  pt: "Das pesquisas de conclusão de curso de um estudante de segurança cibernética a pedidos de patente e reconhecimento federal",
-  fr: "Des recherches universitaires d'un étudiant en cybersécurité aux demandes de brevet et à la reconnaissance nationale",
-  de: "Von den Abschlussarbeiten eines Cybersicherheitsstudenten bis hin zu Patentanmeldungen und nationaler Anerkennung",
-  ja: "一人のサイバーセキュリティ学生の卒業研究から始まり、特許出願や全国的な認定に至るまでの軌跡",
-  tr: "Bir siber güvenlik öğrencisinin araştırma projesinden patent başvurusuna ve ülke çapında tanınırlığa uzanan yolculuk"
+  ru: "От дипломных исследований студента-кибербезопасника до федерального признания",
+  en: "From a cybersec student's research project to nationwide recognition",
+  es: "Desde las investigaciones de tesis de un estudiante de ciberseguridad hasta el reconocimiento federal",
+  zh: "从网络安全专业学生的毕业设计，到联邦级科技竞赛认可的演进历程",
+  hi: "एक साइबर सुरक्षा छात्र के शोध पत्र से लेकर राष्ट्रीय स्तर पर मान्यता प्राप्त करने तक का सफर",
+  ar: "من الأبحاث الأكاديمية لطالب في الأمن السيبراني إلى الاعتراف الاتحادي",
+  pt: "Das pesquisas de conclusão de curso de um estudante de segurança cibernética ao reconhecimento federal",
+  fr: "Des recherches universitaires d'un étudiant en cybersécurité à la reconnaissance nationale",
+  de: "Von den Abschlussarbeiten eines Cybersicherheitsstudenten bis zur nationalen Anerkennung",
+  ja: "一人のサイバーセキュリティ学生の卒業研究から始まり、全国的な認定に至るまでの軌跡"
 };
 
 const BADGE_BY_LANG: Partial<Record<LanguageCode, string>> = {
@@ -41,8 +43,7 @@ const BADGE_BY_LANG: Partial<Record<LanguageCode, string>> = {
   pt: "HISTÓRIA E EQUIPE",
   fr: "HISTOIRE ET ÉQUIPE",
   de: "GESCHICHTE UND TEAM",
-  ja: "歩みと開発体制",
-  tr: "TARİHÇE VE EKİP"
+  ja: "歩みと開発体制"
 };
 
 const TIMELINE_BY_LANG: Partial<Record<LanguageCode, Array<{ badge: string; title: string; desc: string }>>> = {
@@ -60,7 +61,7 @@ const TIMELINE_BY_LANG: Partial<Record<LanguageCode, Array<{ badge: string; titl
     {
       badge: "МОСКВА // СЕНТЯБРЬ 2026",
       title: "Выход на федеральный финал",
-      desc: "По результатам триумфальной победы проект был успешно представлен на федеральном суперфинале научно-исследовательских работ в Москве в сентябре 2026 года для демонстрации эффективности мобильного купола защиты."
+      desc: "После успеха на региональном уровне проект был отобран для презентации на престижном региональном научно-исследовательском финале НИР в Москве в сентябре 2026 года, где будут продемонстрированы его возможности в сфере защиты от мошенничества."
     },
     {
       badge: "АРХИТЕКТОР + AI-ПОДРЯДЧИКИ",
@@ -81,13 +82,13 @@ const TIMELINE_BY_LANG: Partial<Record<LanguageCode, Array<{ badge: string; titl
     },
     {
       badge: "FEDERAL SUPERFINAL",
-      title: "National Superfinal Moscow",
-      desc: "Following the regional triumph, the project was selected for presentation at the prestigious federal scientific research superfinal in Moscow in September 2026 to demonstrate its real-time defense capabilities."
+      title: "National Superfinal Moscow (Upcoming)",
+      desc: "Following the regional triumph, the project has been selected for presentation at the prestigious federal scientific research superfinal in Moscow in September 2026 to demonstrate its real-time defense capabilities."
     },
     {
       badge: "AI-DRIVEN WORKFLOW",
       title: "Architect + AI Agents paradigm",
-      desc: "The security architecture and patent-pending TrustNode algorithms are developed under the 'Architect + AI Agents' framework, leveraging specialized AI code generators to accelerate production and deployment."
+      desc: "The security architecture and TrustNode algorithms are developed under the 'Architect + AI Agents' framework, leveraging specialized AI code generators to accelerate production and deployment."
     }
   ],
   es: [
@@ -175,7 +176,7 @@ const TIMELINE_BY_LANG: Partial<Record<LanguageCode, Array<{ badge: string; titl
     {
       badge: "المهندس المعماري + وكلاء الذكاء الاصطناعي",
       title: "عصر جديد: تطوير المستقبل",
-      desc: "تم تصميم المشروع بواسطة مطور مستقل باستخدام منهجية 'المهندس المعماري + وكلاء الذكاء الاصطناعي'. صمم المؤلف بنية الأمن وخوارزميات براءات الاختراع بنفسه، وتم تفويض كتابة الأكواد (Kotlin/C++) لوكلاء الذكاء الاصطناعي."
+      desc: "تم تصميم المشروع بواسطة مطور مستقل باستخدام منهجية 'المهندس المعماري + وكلاء الذكاء الاصطناعي'. صمم المؤلف بنية الأمن والخوارزميات بنفسه، وتم تفويض كتابة الأكواد (Kotlin/C++) لوكلاء الذكاء الاصطناعي."
     }
   ],
   pt: [
@@ -241,7 +242,7 @@ const TIMELINE_BY_LANG: Partial<Record<LanguageCode, Array<{ badge: string; titl
     {
       badge: "ARCHITEKT + KI-AGENTEN",
       title: "Entwicklungsparadigma der Zukunft",
-      desc: "Erstellt von einem Solo-Entwickler nach der Methode 'Architekt + KI-Agenten'. Die Sicherheitsarchitektur und die zum Patent angemeldeten Algorithmen stammen vom Autor, während die Codierung (Kotlin/C++) an KI-Agenten delegiert wurde."
+      desc: "Erstellt von einem Solo-Entwickler nach der Methode 'Architekt + KI-Agenten'. Die Sicherheitsarchitektur und Algorithmen stammen vom Autor, während die Codierung (Kotlin/C++) an KI-Agenten delegiert wurde."
     }
   ],
   ja: [
@@ -263,20 +264,74 @@ const TIMELINE_BY_LANG: Partial<Record<LanguageCode, Array<{ badge: string; titl
     {
       badge: "アーキテクト ＋ AI エージェント",
       title: "新マイルストーン：未来の開発体制",
-      desc: "本プロジェクトは、ソロ開発者が「アーキテクト＋AIエージェント」体制で設計。セキュリティ構造と特許アルゴリズムは著者が構築し、コードの実装（Kotlin/C++）をAIエージェントに委託しました。"
+      desc: "本プロジェクトは、ソロ開発者が「アーキテクト＋AIエージェント」体制で設計。セキュリティ構造とアルゴリズムは著者が構築し、コードの実装（Kotlin/C++）をAIエージェントに委託しました。"
     }
   ]
 };
 
 const TIMELINE_ICONS = [
-  <GraduationCap className="w-5 h-5 text-[#2E7DFF]" />,
-  <Award className="w-5 h-5 text-[#2E7DFF]" />,
-  <Compass className="w-5 h-5 text-[#2E7DFF]" />,
-  <Code2 className="w-5 h-5 text-[#2E7DFF]" />
+  <GraduationCap className="w-5 h-5 text-[#3B82F6]" />,
+  <Award className="w-5 h-5 text-[#3B82F6]" />,
+  <Compass className="w-5 h-5 text-[#3B82F6]" />,
+  <Code2 className="w-5 h-5 text-[#3B82F6]" />
 ];
+
+interface TimelineCardProps {
+  item: { icon: React.ReactNode; badge: string; title: string; desc: string };
+  index: number;
+  ecoMode: boolean;
+}
+
+const TimelineCard: React.FC<TimelineCardProps> = ({ item, index, ecoMode }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-120px 0px" });
+  return (
+    <motion.div
+      ref={ref}
+      className="relative group"
+      initial={false}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      {/* Top Accent line — runs exactly along the very top edge of the card
+          (top: -1px) so the card's rounded corner never clips it. It lives on
+          the wrapper (no overflow-hidden) and slides under the corner dot. */}
+      <div className="absolute -top-px left-0 right-0 h-[1.5px] bg-gradient-to-r from-[#3B82F6]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+      {/* Milestone dot pinned exactly in the top-left corner of the selected
+          card (outside the top-left edge), never touching the icon, the accent
+          line or the rounded border; hidden on all others until hovered */}
+      {!ecoMode && (
+        <div className="absolute -top-1 -left-1 z-10 w-2.5 h-2.5 rounded-full border border-[#3B82F6] bg-[#3B82F6] opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-glow-md pointer-events-none" />
+      )}
+      <ScanCard className="h-full justify-between">
+      <div>
+        {/* Header Row */}
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div className={`w-10 h-10 rounded-xl bg-[#12141A] flex items-center justify-center border transition-colors duration-300 ${inView ? "border-[#3B82F6]/50 text-[#3B82F6]" : "border-[#3B82F6]/10"}`}>
+            {item.icon}
+          </div>
+          <span className="font-mono text-[10px] sm:text-xs tracking-widest text-[#6FB1FF] uppercase font-bold bg-[#3B82F6]/10 px-3 py-1.5 rounded-xl border border-[#3B82F6]/30">
+            {item.badge}
+          </span>
+        </div>
+
+        <h3 className="font-display font-medium text-lg sm:text-xl text-[#F5F5F0] mb-3 group-hover:text-[#3B82F6] transition duration-300">
+          {item.title}
+        </h3>
+      </div>
+
+      <p className="font-sans text-xs sm:text-sm text-gray-400 leading-relaxed border-t border-[#3C404A]/30 pt-4 mt-2">
+        {item.desc}
+      </p>
+      </ScanCard>
+    </motion.div>
+  );
+}
 
 const OriginStorySection = React.memo(function OriginStorySection() {
   const { t } = useTranslation();
+  const { ecoMode } = useEcoMode();
+  const timelineRef = useRef<HTMLDivElement>(null);
 
   const title = t.origin.title;
   const subtitle = t.origin.subtitle;
@@ -290,26 +345,33 @@ const OriginStorySection = React.memo(function OriginStorySection() {
     desc: item.desc,
   }));
 
+  const { scrollYProgress } = useScroll({
+    target: timelineRef,
+    offset: ["start 0.8", "end 0.6"],
+  });
+  // Progress of the timeline wire from 0 (hidden) to 1 (fully drawn)
+  const lineProgress = useTransform(scrollYProgress, [0, 1], [0, 1]);
+
   return (
     <section 
-      className="relative w-full pt-8 pb-16 sm:pt-10 sm:pb-20 px-4 border-t border-[#1F2937]/30 bg-[#0A0A0B]" 
+      className="relative w-full pt-8 pb-16 sm:pt-10 sm:pb-20 px-4 bg-[#0A0A0B]" 
       id="origin-story"
     >
       {/* Background radial lights */}
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(46,125,255,0.015)_0%,rgba(0,0,0,0)_70%)] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.015)_0%,rgba(0,0,0,0)_70%)] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto relative z-10">
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-20">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#111827] border border-[#2E7DFF]/20 mb-6">
-            <Heart className="w-3.5 h-3.5 text-red-500 animate-pulse" />
-            <span className="font-mono text-[10px] sm:text-xs font-semibold tracking-wider text-[#2E7DFF] uppercase">
-              {badgeText}
-            </span>
-          </div>
+          <SectionBadge
+            variant="slash"
+            icon={<Heart className={`w-3.5 h-3.5 text-red-500 ${ecoMode ? "" : "animate-pulse"}`} />}
+            label={badgeText}
+            className="mb-6"
+          />
           
-          <h2 className="font-display font-bold text-3xl sm:text-5xl text-[#F5F5F0] tracking-tight mb-6">
+          <h2 className="font-display font-medium text-3xl sm:text-5xl text-[#F5F5F0] tracking-tighter mb-6">
             {title}
           </h2>
           
@@ -318,36 +380,39 @@ const OriginStorySection = React.memo(function OriginStorySection() {
           </p>
         </div>
 
-        {/* Timeline Grid - Compact clean modern bento layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
-          {timelineItems.map((item, index) => (
-            <div 
-              key={index}
-              className="p-6 sm:p-8 rounded-2xl bg-[#0B0C0E]/80 border border-white/[0.03] hover:border-[#2E7DFF]/30 hover:shadow-[0_0_20px_rgba(46,125,255,0.05)] transition-all duration-500 relative group flex flex-col justify-between overflow-hidden"
+        {/* Timeline - chronological wire line with milestone dots */}
+        <div ref={timelineRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto relative">
+          {/* Central drawn connector line (desktop: vertical center; mobile: left rail) */}
+          {!ecoMode && (
+            <svg
+              className="pointer-events-none absolute left-6 md:left-1/2 top-0 md:-translate-x-1/2 h-full w-[2px] overflow-visible"
+              width="2"
+              viewBox="0 0 2 1000"
+              preserveAspectRatio="none"
             >
-              {/* Top Accent line */}
-              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-[#2E7DFF]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div>
-                {/* Header Row */}
-                <div className="flex items-center justify-between gap-4 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-[#111622] flex items-center justify-center border border-[#2E7DFF]/10">
-                    {item.icon}
-                  </div>
-                  <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-[#2E7DFF] uppercase font-bold bg-[#2E7DFF]/5 px-2.5 py-1 rounded-md border border-[#2E7DFF]/10">
-                    {item.badge}
-                  </span>
-                </div>
+              <defs>
+                <linearGradient id="timeline-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.9" />
+                </linearGradient>
+              </defs>
+              <motion.line
+                x1="1" y1="0" x2="1" y2="1000"
+                stroke="url(#timeline-grad)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                style={{ pathLength: lineProgress }}
+              />
+            </svg>
+          )}
 
-                <h3 className="font-display font-bold text-lg sm:text-xl text-[#F5F5F0] mb-3 group-hover:text-[#2E7DFF] transition-all duration-300">
-                  {item.title}
-                </h3>
-              </div>
-
-              <p className="font-sans text-xs sm:text-sm text-gray-400 leading-relaxed border-t border-[#1F2937]/30 pt-4 mt-2">
-                {item.desc}
-              </p>
-            </div>
+          {timelineItems.map((item, index) => (
+            <TimelineCard
+              key={index}
+              index={index}
+              item={item}
+              ecoMode={ecoMode}
+            />
           ))}
         </div>
 

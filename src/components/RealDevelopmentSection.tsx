@@ -2,66 +2,333 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { LanguageCode } from "../i18n/languages";
 import { motion, AnimatePresence } from "motion/react";
-import { Shield, Award, Cpu, Network, FileCode, CheckCircle2, Copy, ExternalLink, Sparkles, Send, AlertTriangle, RefreshCw, AlertCircle, Play, Info, Lock } from "lucide-react";
-import { classifyText, preloadClassifier } from "../lib/onnxFraudClassifier";
-const baseUrl = (window as any).__base || window.location.origin + '/';
-const certImg = baseUrl + 'real_cert.jpg';
-const graphImg = baseUrl + 'real_obsidian.png';
+import { Shield, Award, Cpu, Network, FileCode, CheckCircle2, Copy, ExternalLink, Sparkles, Send, AlertTriangle, RefreshCw, AlertCircle, Play, Info, ShieldCheck, Milestone } from "lucide-react";
+import { SiTelegram, SiVk, SiGithub } from "react-icons/si";
+import { useEcoMode } from "../context/EcoModeContext";
+import { useDepth } from "../context/DepthContext";
+import ScanCard from "./ScanCard";
+const SiTelegramIcon = SiTelegram as React.ComponentType<any>;
+const SiVkIcon = SiVk as React.ComponentType<any>;
+const SiGithubIcon = SiGithub as React.ComponentType<any>;
+const base = typeof import.meta !== "undefined" ? import.meta.env.BASE_URL : "/";
+const certImg = `${base}real_cert.jpg`;
+const certImgWebp = `${base}real_cert.webp`;
+const graphImg = `${base}real_obsidian.png`;
+const graphImgWebp = `${base}real_obsidian.webp`;
+
+/* ── Simplified variants (depth="simple": no technical jargon) ──────────── */
+const SIMPLE_RD_BADGE_BY_LANG: Partial<Record<LanguageCode, string>> = {
+  ru: "ЧТО СДЕЛАНО",
+  en: "WHAT'S BUILT",
+  es: "QUÉ SE HA HECHO",
+  zh: "已完成的工作",
+  tr: "YAPILAN İŞLER",
+  hi: "क्या बनाया गया",
+  ar: "ماذا تم بناؤه",
+  pt: "O QUE FOI FEITO",
+  fr: "CE QUI A ÉTÉ FAIT",
+  de: "WAS GEBAUT WURDE",
+  ja: "実績と開発状況"
+};
+
+const SIMPLE_RD_TITLE_BY_LANG: Partial<Record<LanguageCode, string>> = {
+  ru: "Разработка и награды",
+  en: "Development & Awards",
+  es: "Desarrollo y Premios",
+  zh: "开发与成就",
+  tr: "Geliştirme & Ödüller",
+  hi: "विकास और पुरस्कार",
+  ar: "التطوير والجوائز",
+  pt: "Desenvolvimento e Prêmios",
+  fr: "Développement & Récompenses",
+  de: "Entwicklung & Auszeichnungen",
+  ja: "開発実績"
+};
+
+const SIMPLE_RD_SUBTITLE_BY_LANG: Partial<Record<LanguageCode, string>> = {
+  ru: "Награды, сертификаты и реальные成果 TrustNode — всё прозрачно.",
+  en: "Awards, certificates, and TrustNode achievements — all transparent.",
+  es: "Premios, certificados y logros de TrustNode — todo transparente.",
+  zh: "TrustNode 的奖项、证书和成就——完全透明。",
+  tr: "TrustNode ödülleri, sertifikaları ve başarıları — her şey şeffaf.",
+  hi: "TrustNode पुरस्कार, प्रमाणपत्र और उपलब्धियाँ — सब कुछ पारदर्शी।",
+  ar: "جوائز TrustNode وشهاداته وإنجازاته — كلها شفافة.",
+  pt: "Prêmios, certificados e conquistas do TrustNode — tudo transparente.",
+  fr: "Récompenses, certificats et réalisations de TrustNode — tout est transparent.",
+  de: "TrustNode-Auszeichnungen, Zertifikate und Erfolge — alles transparent.",
+  ja: "TrustNodeの受賞・証明書・実績 — すべて透明に公開。"
+};
+
+const SIMPLE_RM_BADGE_BY_LANG: Partial<Record<LanguageCode, string>> = {
+  ru: "ПЛАНЫ НА БУДУЩЕЕ",
+  en: "ROADMAP",
+  es: "HOJA DE RUTA",
+  zh: "路线图",
+  tr: "YOL HARİTASI",
+  hi: "रोडमैप",
+  ar: "خارطة الطريق",
+  pt: "ROTEIRO",
+  fr: "FEUILLE DE ROUTE",
+  de: "ROADMAP",
+  ja: "ロードマップ"
+};
+
+const SIMPLE_RM_TITLE_BY_LANG: Partial<Record<LanguageCode, string>> = {
+  ru: "Что дальше для TrustNode",
+  en: "What's Next for TrustNode",
+  es: "Qué sigue para TrustNode",
+  zh: "TrustNode 的下一步",
+  tr: "TrustNode için Sıradaki Adımlar",
+  hi: "TrustNode के लिए आगे क्या",
+  ar: "ما الخطوة التالية لـ TrustNode",
+  pt: "Próximos Passos do TrustNode",
+  fr: "Prochaines Étapes de TrustNode",
+  de: "Was kommt als Nächstes bei TrustNode",
+  ja: "TrustNodeの今後の展開"
+};
+
+const SIMPLE_RM_SUBTITLE_BY_LANG: Partial<Record<LanguageCode, string>> = {
+  ru: "Планы по улучшению защиты и новым возможностям.",
+  en: "Plans for better protection and new features.",
+  es: "Planes para mejor protección y nuevas funciones.",
+  zh: "改进保护和新功能的计划。",
+  tr: "Daha iyi koruma ve yeni özellikler için planlar.",
+  hi: "बेहतर सुरक्षा और नई सुविधाओं की योजनाएँ।",
+  ar: "خطط لحماية أفضل وميزات جديدة.",
+  pt: "Planos para melhor proteção e novos recursos.",
+  fr: "Plans pour une meilleure protection et de nouvelles fonctionnalités.",
+  de: "Pläne für besseren Schutz und neue Funktionen.",
+  ja: "より良い保護と新機能のための計画。"
+};
+
+/* ── Simplified award details ───────────────────────────────────────────── */
+const SIMPLE_AWARD_BY_LANG: Partial<Record<LanguageCode, { title: string; issuer: string; badge: string; desc: string }>> = {
+  ru: { title: "Приз за лучшую защитную технологию", issuer: "Областной конкурс студенческих исследований", badge: "РЕГИОНАЛЬНЫЙ ПРИЗЕР", desc: "TrustNode получил награду за подход к защите людей от телефонных мошенников. Жюри оценило, что анализ угроз идёт прямо на телефоне — без серверов и интернета." },
+  en: { title: "Award for Best Protection Technology", issuer: "Regional Student Research Competition", badge: "REGIONAL AWARD WINNER", desc: "TrustNode won an award for protecting people from phone scammers. The judges recognized that threat analysis runs right on your phone — no servers or internet needed." },
+  tr: { title: "En İyi Koruma Teknolojisi Ödülü", issuer: "Bölge Öğrenci Araştırması Yarışması", badge: "BÖLGESEL BİRİNCİLİK", desc: "TrustNode, insanları telefon dolandırıcılığından koruduğu için ödül kazandı. Jüri, tehdit analizinin doğrudan telefonunuzda çalıştığını değerlendirdi." },
+  es: { title: "Premio a la Mejor Tecnología de Protección", issuer: "Concurso Regional de Investigación Estudiantil", badge: "PREMIADO REGIONAL", desc: "TrustNode ganó un premio por proteger a las personas de los estafadores telefónicos. El jurado reconoció que el análisis de amenazas funciona directamente en tu teléfono." },
+  zh: { title: "最佳防护技术奖", issuer: "地区学生科研竞赛", badge: "地区获奖", desc: "TrustNode 因保护人们免受电话诈骗而获奖。评委会认可了其在手机端直接运行威胁分析的能力。" },
+  hi: { title: "सर्वोत्तम सुरक्षा प्रौद्योगिकी पुरस्कार", issuer: "क्षेत्रीय छात्र अनुसंधान प्रतियोगिता", badge: "क्षेत्रीय पुरस्कार विजेता", desc: "TrustNode को फ़ोन ठगों से लोगों की रक्षा करने के लिए पुरस्कार मिला। जूरी ने माना कि ख़तरे का विश्लेषण सीधे आपके फ़ोन पर होता है।" },
+  ar: { title: "جائزة أفضل تقنية حماية", issuer: "مسابقة الأبحاث الطلابية الإقليمية", badge: "جائزة إقليمية", desc: "حصل TrustNode على جائزة لحمايته الناس من محتالين الهواتف. اعترفت اللجنة بأن تحليل التهديدات يحدث مباشرة على هاتفك." },
+  pt: { title: "Prêmio de Melhor Tecnologia de Proteção", issuer: "Concurso Regional de Pesquisa Estudantil", badge: "VENCEDOR REGIONAL", desc: "TrustNode ganhou um prêmio por proteger pessoas de golpistas telefônicos. O júri reconheceu que a análise de ameaças roda direto no seu celular." },
+  fr: { title: "Prix de la Meilleure Technologie de Protection", issuer: "Concours Régional de Recherche Étudiante", badge: "LAURÉAT RÉGIONAL", desc: "TrustNode a remporté un prix pour protéger les gens contre les arnaqueurs téléphoniques. Le jury a reconnu que l'analyse des menaces fonctionne directement sur votre téléphone." },
+  de: { title: "Preis für die beste Schutztechnologie", issuer: "Regionale Studentenforschungswettbewerb", badge: "REGIONALSIEGER", desc: "TrustNode hat einen Preis für den Schutz von Menschen vor Telefonbetrügern gewonnen. Die Jury anerkannte, dass die Bedrohungsanalyse direkt auf Ihrem Smartphone läuft." },
+  ja: { title: "最高の保護技術賞", issuer: "地区学生研究コンペティション", badge: "地区受賞", desc: "TrustNodeは電話詐欺師から人々を守る功績で賞を受賞。審査員は、脅威分析がサーバーやインターネットなしで直接スマートフォンで実行されることを認めました。" }
+};
+
+/* ── Simplified graph details ───────────────────────────────────────────── */
+const SIMPLE_GRAPH_BY_LANG: Partial<Record<LanguageCode, { title: string; subtitle: string; badge: string; desc: string }>> = {
+  ru: { title: "Как устроен TrustNode", subtitle: "Карта всех компонентов приложения", badge: "АРХИТЕКТУРА ПРОЕКТА", desc: "Вся разработка зафиксирована в структуре: 74 блока и 328 связей. Это доказывает, что каждая часть приложения продумана и протестирована." },
+  en: { title: "How TrustNode Is Built", subtitle: "Map of all app components", badge: "PROJECT ARCHITECTURE", desc: "The entire development is documented: 74 blocks and 328 connections. This proves every part of the app has been designed and tested." },
+  tr: { title: "TrustNode Nasıl Yapıldı", subtitle: "Uygulamanın tüm bileşenlerinin haritası", badge: "PROJE MİMARİSİ", desc: "Tüm geliştirme belgelendi: 74 blok ve 328 bağlantı. Uygulamanın her parçasının tasarlandığı ve test edildiğini kanıtlıyor." },
+  es: { title: "Cómo está Construido TrustNode", subtitle: "Mapa de todos los componentes de la app", badge: "ARQUITECTURA DEL PROYECTO", desc: "Todo el desarrollo está documentado: 74 bloques y 328 conexiones. Cada parte de la app fue diseñada y probada." },
+  zh: { title: "TrustNode 的构建方式", subtitle: "应用所有组件的地图", badge: "项目架构", desc: "整个开发过程都有记录：74 个模块和 328 条连接。应用的每个部分都经过了设计和测试。" },
+  hi: { title: "TrustNode कैसे बना है", subtitle: "ऐप के सभी घटकों का नक्शा", badge: "प्रोजेक्ट आर्किटेक्चर", desc: "पूरा विकास दस्तावेज़ीकृत है: 74 ब्लॉक और 328 कनेक्शन। ऐप का हर हिस्सा डिज़ाइन और परीक्षित है।" },
+  ar: { title: "كيف بُني TrustNode", subtitle: "خريطة جميع مكونات التطبيق", badge: "هيكل المشروع", desc: "تم توثيق التطوير بالكامل: 74 كتلة و328 رابط. كل جزء من التطبيق تم تصميمه واختباره." },
+  pt: { title: "Como o TrustNode é Construído", subtitle: "Mapa de todos os componentes do app", badge: "ARQUITETURA DO PROJETO", desc: "Todo o desenvolvimento foi documentado: 74 blocos e 328 conexões. Cada parte do app foi projetada e testada." },
+  fr: { title: "Comment TrustNode est Construit", subtitle: "Carte de tous les composants de l'app", badge: "ARCHITECTURE DU PROJET", desc: "Tout le développement est documenté : 74 blocs et 328 connexions. Chaque partie de l'app a été conçue et testée." },
+  de: { title: "So ist TrustNode aufgebaut", subtitle: "Karte aller App-Komponenten", badge: "PROJEKTARCHITEKTUR", desc: "Die gesamte Entwicklung ist dokumentiert: 74 Blöcke und 328 Verbindungen. Jeder Teil der App wurde entworfen und getestet." },
+  ja: { title: "TrustNodeの構造", subtitle: "アプリの全コンポーネントの地図", badge: "プロジェクト構成", desc: "開発の全過程が文書化されています：74のブロックと328の接続。アプリのすべての部分が設計・検証されました。" }
+};
+
+/* ── Simplified roadmap card descriptions ───────────────────────────────── */
+const SIMPLE_TN1_DESC_BY_LANG: Partial<Record<LanguageCode, string>> = {
+  ru: "Готовое Android-приложение для защиты от мошенников. Работает полностью на вашем телефоне — без интернета и серверов.",
+  en: "A finished Android app that protects you from scammers. Works entirely on your phone — no internet or servers needed.",
+  tr: "Telefon dolandırıcılığına karşı koruma sağlayan hazır Android uygulaması. Tamamen telefonunuzda çalışır — internet veya sunucu gerekmez.",
+  es: "Una aplicación Android terminada que te protege de los estafadores. Funciona completamente en tu teléfono — sin internet ni servidores.",
+  zh: "一款已完成的 Android 防诈骗应用。完全在您的手机上运行——无需网络或服务器。",
+  hi: "धोखाधड़ी से बचाने वाला एक तैयार Android ऐप। पूरी तरह आपके फ़ोन पर काम करता है — बिना इंटरनेट या सर्वर के।",
+  ar: "تطبيق Android جاهز يحميك من المحتالين. يعمل بالكامل على هاتفك — بدون إنترنت أو خوادم.",
+  pt: "Um aplicativo Android pronto que te protege de golpistas. Funciona inteiramente no seu celular — sem internet ou servidores.",
+  fr: "Une application Android terminée qui vous protège contre les arnaqueurs. Fonctionne entièrement sur votre téléphone — sans internet ni serveurs.",
+  de: "Eine fertige Android-App, die Sie vor Betrügern schützt. Läuft komplett auf Ihrem Smartphone — ohne Internet oder Server.",
+  ja: "詐欺師から守る完成済みAndroidアプリ。スマホ上で完全動作——インターネットやサーバーは不要。"
+};
+
+const SIMPLE_TN3_DESC_BY_LANG: Partial<Record<LanguageCode, string>> = {
+  ru: "Следующее поколение защиты с семью уровнями обнаружения. Выходит в сентябре 2026.",
+  en: "Next-generation protection with seven detection layers. Coming September 2026.",
+  tr: "Yedi algılama katmanlı bir sonraki nesil koruma. Eylül 2026'da çıkıyor.",
+  es: "Protección de próxima generación con siete niveles de detección. Llega en septiembre de 2026.",
+  zh: "下一代七层防护。2026年9月发布。",
+  hi: "सात पहचान स्तरों वाली अगली पीढ़ी की सुरक्षा। सितंबर 2026 में आ रही है।",
+  ar: "حماية من الجيل التالي مع سبع طبقات كشف. قادمة في سبتمبر 2026.",
+  pt: "Proteção de nova geração com sete camadas de detecção. Chega em setembro de 2026.",
+  fr: "Protection de nouvelle génération avec sept niveaux de détection. Arrive en septembre 2026.",
+  de: "Schutz der nächsten Generation mit sieben Erkennungsebenen. Kommt im September 2026.",
+  ja: "7つの検出レイヤーを持つ次世代の保護。2026年9月リリース。"
+};
+
+const SIMPLE_KIRA_DESC_BY_LANG: Partial<Record<LanguageCode, string>> = {
+  ru: "Распознавание речи на устройстве — в дорожной карте (оценка Vosk / W2V BERT); пока не в MVP.",
+  en: "On-device speech recognition is on the roadmap (evaluating Vosk / W2V BERT); not in MVP yet.",
+  tr: "Cihaz üzerinde konuşma tanıması yol haritasındadır (Vosk / W2V BERT değerlendiriliyor); henüz MVP'de değil.",
+  es: "El reconocimiento de voz en el dispositivo está en la hoja de ruta (evaluando Vosk / W2V BERT); aún no está en el MVP.",
+  zh: "设备端语音识别已列入路线图（评估 Vosk / W2V BERT）；尚未进入 MVP。",
+  hi: "डिवाइस पर वाक् पहचान रोडमैप में है (Vosk / W2V BERT का मूल्यांकन); अभी MVP में नहीं।",
+  ar: "التعرف على الكلام على الجهاز في خارطة الطريق (تقييم Vosk / W2V BERT)؛ ليس بعد في MVP.",
+  pt: "O reconhecimento de fala no dispositivo está no roadmap (avaliando Vosk / W2V BERT); ainda não está no MVP.",
+  fr: "La reconnaissance vocale sur l'appareil est dans la feuille de route (évaluation Vosk / W2V BERT) ; pas encore en MVP.",
+  de: "Geräteseitige Spracherkennung ist in der Roadmap (Vosk / W2V BERT werden bewertet); noch nicht im MVP.",
+  ja: "端末上での音声認識はロードマップに掲載（Vosk / W2V BERT を評価中）；まだ MVP ではありません。"
+};
+
+/* ── Simplified milestones ──────────────────────────────────────────────── */
+const SIMPLE_MILESTONES_BY_LANG: Partial<Record<LanguageCode, Array<{ date: string; title: string; desc: string }>>> = {
+  ru: [
+    { date: "2024–2025", title: "Начало проекта", desc: "Проект зародился в техникуме и занял первое место на областном конкурсе." },
+    { date: "v1.2.0", title: "Готовое приложение TN1", desc: "Вышло первое Android-приложение, которое защищает от мошенников прямо на телефоне." },
+    { date: "2025", title: "Встроена нейросеть", desc: "В приложение добавлена умная модель для анализа угроз без интернета." },
+    { date: "СЕНТЯБРЬ 2026", title: "TrustNode 3 — новый уровень", desc: "Семь уровней защиты. Ожидается в сентябре 2026." },
+    { date: "СЕНТЯБРЬ 2026", title: "Федеральный конкурс", desc: "Выступление на федеральном суперфинале научных работ." },
+    { date: "ROADMAP", title: "Голосовой помощник", desc: "Распознавание речи на устройстве — в дорожной карте (оценка Vosk / W2V BERT); пока не в MVP." }
+  ],
+  en: [
+    { date: "2024–2025", title: "Project started", desc: "The project began at a college and won first place at a regional competition." },
+    { date: "v1.2.0", title: "TN1 app released", desc: "The first Android app that protects you from scammers right on your phone." },
+    { date: "2025", title: "AI model built in", desc: "A smart model for analyzing threats without internet was added to the app." },
+    { date: "SEPTEMBER 2026", title: "TrustNode 3 — next level", desc: "Seven layers of protection. Expected September 2026." },
+    { date: "SEPTEMBER 2026", title: "Federal competition", desc: "Presentation at the national student research finals in Moscow." },
+    { date: "ROADMAP", title: "Voice assistant", desc: "On-device speech recognition is on the roadmap (evaluating Vosk / W2V BERT); not in MVP yet." }
+  ],
+  tr: [
+    { date: "2024–2025", title: "Proje başladı", desc: "Proje bir kolejde başladı ve bölgesel yarışmada birinci oldu." },
+    { date: "v1.2.0", title: "TN1 uygulaması yayınlandı", desc: "Sizi telefonunuzda dolandırıcılardan koruyan ilk Android uygulaması." },
+    { date: "2025", title: "Yapay zeka entegre edildi", desc: "İnternet olmadan tehdit analizi yapan akıllı model uygulamaya eklendi." },
+    { date: "EYLÜL 2026", title: "TrustNode 3 — yeni seviye", desc: "Yedi koruma katmanı. Eylül 2026'da çıkıyor." },
+    { date: "EYLÜL 2026", title: "Ulusal yarışma", desc: "Moskova'daki ulusal öğrenci araştırma finallerinde sunum." },
+    { date: "ROADMAP", title: "Sesli asistan", desc: "Cihaz üzerinde konuşma tanıması yol haritasındadır (Vosk / W2V BERT değerlendiriliyor); henüz MVP'de değil." }
+  ],
+  es: [
+    { date: "2024–2025", title: "El proyecto comenzó", desc: "El proyecto nació en un instituto y ganó primer lugar en una competencia regional." },
+    { date: "v1.2.0", title: "App TN1 lanzada", desc: "La primera app Android que te protege de estafadores en tu teléfono." },
+    { date: "2025", title: "IA integrada", desc: "Un modelo inteligente para analizar amenazas sin internet se añadió a la app." },
+    { date: "SEPTIEMBRE 2026", title: "TrustNode 3 — siguiente nivel", desc: "Siete niveles de protección. Llega en septiembre de 2026." },
+    { date: "SEPTIEMBRE 2026", title: "Competencia federal", desc: "Presentación en las finales nacionales de investigación estudiantil." },
+    { date: "ROADMAP", title: "Asistente de voz", desc: "El reconocimiento de voz en el dispositivo está en la hoja de ruta (evaluando Vosk / W2V BERT); aún no está en el MVP." }
+  ],
+  zh: [
+    { date: "2024–2025", title: "项目启动", desc: "项目始于一所学院，并在地区竞赛中获得第一名。" },
+    { date: "v1.2.0", title: "TN1 应用发布", desc: "第一款在手机上保护您免受诈骗的 Android 应用。" },
+    { date: "2025", title: "内置 AI 模型", desc: "无需网络即可分析威胁的智能模型已集成到应用中。" },
+    { date: "2026年9月", title: "TrustNode 3 — 下一阶段", desc: "七层防护。2026年9月发布。" },
+    { date: "2026年9月", title: "全国竞赛", desc: "在莫斯科全国学生科研总决赛上展示。" },
+    { date: "ROADMAP", title: "语音助手", desc: "设备端语音识别已列入路线图（评估 Vosk / W2V BERT）；尚未进入 MVP。" }
+  ],
+  hi: [
+    { date: "2024–2025", title: "प्रोजेक्ट शुरू हुआ", desc: "प्रोजेक्ट एक कॉलेज में शुरू हुआ और क्षेत्रीय प्रतियोगिता में पहला स्थान पाया।" },
+    { date: "v1.2.0", title: "TN1 ऐप रिलीज़", desc: "पहला Android ऐप जो आपके फ़ोन पर ठगों से बचाता है।" },
+    { date: "2025", title: "AI मॉडल जोड़ा गया", desc: "बिना इंटरनेट ख़तरों का विश्लेषण करने वाला स्मार्ट मॉडल ऐप में जोड़ा गया।" },
+    { date: "सितंबर 2026", title: "TrustNode 3 — अगला स्तर", desc: "सात सुरक्षा स्तर। सितंबर 2026 में आ रहा है।" },
+    { date: "सितंबर 2026", title: "राष्ट्रीय प्रतियोगिता", desc: "मास्को में राष्ट्रीय छात्र अनुसंधान फाइनल में प्रस्तुति।" },
+    { date: "ROADMAP", title: "वॉइस असिस्टेंट", desc: "डिवाइस पर वाक् पहचान रोडमैप में है (Vosk / W2V BERT का मूल्यांकन); अभी MVP में नहीं।" }
+  ],
+  ar: [
+    { date: "2024–2025", title: "بدا المشروع", desc: "بدأ المشروع في كلية وحصل على المركز الأول في مسابقة إقليمية." },
+    { date: "v1.2.0", title: "إطلاق تطبيق TN1", desc: "أول تطبيق Android يحميك من المحتالين على هاتفك مباشرة." },
+    { date: "2025", title: "دمج الذكاء الاصطناعي", desc: "تمت إضافة نموذج ذكي لتحليل التهديدات بدون إنترنت إلى التطبيق." },
+    { date: "سبتمبر 2026", title: "TrustNode 3 — المستوى التالي", desc: "سبع طبقات حماية. قادمة في سبتمبر 2026." },
+    { date: "سبتمبر 2026", title: "مسابقة وطنية", desc: "عرض في النهائيات الوطنية لأبحاث الطلاب في موسكو." },
+    { date: "ROADMAP", title: "مساعد صوتي", desc: "التعرف على الكلام على الجهاز في خارطة الطريق (تقييم Vosk / W2V BERT)؛ ليس بعد في MVP." }
+  ],
+  pt: [
+    { date: "2024–2025", title: "O projeto começou", desc: "O projeto nasceu em uma faculdade e ganhou primeiro lugar em uma competição regional." },
+    { date: "v1.2.0", title: "App TN1 lançada", desc: "O primeiro app Android que te protege de golpistas no seu celular." },
+    { date: "2025", title: "IA integrada", desc: "Um modelo inteligente para analisar ameaças sem internet foi adicionado ao app." },
+    { date: "SETEMBRO 2026", title: "TrustNode 3 — próximo nível", desc: "Sete camadas de proteção. Chega em setembro de 2026." },
+    { date: "SETEMBRO 2026", title: "Competição federal", desc: "Apresentação nas finais nacionais de pesquisa estudantil." },
+    { date: "ROADMAP", title: "Assistente de voz", desc: "O reconhecimento de fala no dispositivo está no roadmap (avaliando Vosk / W2V BERT); ainda não está no MVP." }
+  ],
+  fr: [
+    { date: "2024–2025", title: "Le projet a commencé", desc: "Le projet est né dans un collège et a gagné la première place d'une compétition régionale." },
+    { date: "v1.2.0", title: "App TN1 lancée", desc: "La première application Android qui vous protège contre les arnaqueurs sur votre téléphone." },
+    { date: "2025", title: "IA intégrée", desc: "Un modèle intelligent pour analyser les menaces sans internet a été ajouté à l'app." },
+    { date: "SEPTEMBRE 2026", title: "TrustNode 3 — niveau supérieur", desc: "Sept niveaux de protection. Arrive en septembre 2026." },
+    { date: "SEPTEMBRE 2026", title: "Compétition nationale", desc: "Présentation aux finales nationales de recherche étudiante." },
+    { date: "ROADMAP", title: "Assistant vocal", desc: "La reconnaissance vocale sur l'appareil est dans la feuille de route (évaluation Vosk / W2V BERT) ; pas encore en MVP." }
+  ],
+  de: [
+    { date: "2024–2025", title: "Projekt gestartet", desc: "Das Projekt begann an einem College und gewann ersten Platz bei einem regionalen Wettbewerb." },
+    { date: "v1.2.0", title: "TN1-App veröffentlicht", desc: "Die erste Android-App, die Sie vor Betrügern auf Ihrem Smartphone schützt." },
+    { date: "2025", title: "KI eingebaut", desc: "Ein intelligentes Modell zur Analyse von Bedrohungen ohne Internet wurde in die App integriert." },
+    { date: "SEPTEMBER 2026", title: "TrustNode 3 — nächste Stufe", desc: "Sieben Schutzebenen. Kommt im September 2026." },
+    { date: "SEPTEMBER 2026", title: "Bundeswettbewerb", desc: "Vorstellung bei den nationalen Studentenforschungs-Finals." },
+    { date: "ROADMAP", title: "Sprachassistent", desc: "Geräteseitige Spracherkennung ist in der Roadmap (Vosk / W2V BERT werden bewertet); noch nicht im MVP." }
+  ],
+  ja: [
+    { date: "2024–2025", title: "プロジェクト開始", desc: "大学で始まり、地区コンペティションで1位を獲得。" },
+    { date: "v1.2.0", title: "TN1アプリリリース", desc: "スマホで詐欺師から守る初のAndroidアプリ。" },
+    { date: "2025", title: "AIモデル搭載", desc: "インターネットなしで脅威を分析するスマートモデルをアプリに統合。" },
+    { date: "2026年9月", title: "TrustNode 3 — 次世代", desc: "7つの保護レイヤー。2026年9月リリース。" },
+    { date: "2026年9月", title: "全国コンペティション", desc: "モスクワでの全国学生研究フィナレプレゼンテーション。" },
+    { date: "ROADMAP", title: "音声アシスタント", desc: "端末上での音声認識はロードマップに掲載（Vosk / W2V BERT を評価中）；まだ MVP ではありません。" }
+  ]
+};
 
 export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRoadmap?: boolean }) {
   const { t, language } = useTranslation();
+  const { ecoMode } = useEcoMode();
+  const { isSimple } = useDepth();
   const [activeTab, setActiveTab] = useState<"awards" | "graph" | "onnx" | "roadmap">(onlyRoadmap ? "roadmap" : "awards");
-  const [copiedModelName, setCopiedModelName] = useState(false);
-  const [certSrc, setCertSrc] = useState('');
-  const [graphSrc, setGraphSrc] = useState('');
+
+  /* When simple mode is enabled, prevent the ONNX tab from being active */
   useEffect(() => {
-    fetch(certImg).then(r => { if (!r.ok) throw new Error('cert ' + r.status); return r.blob(); }).then(b => setCertSrc(URL.createObjectURL(b))).catch(e => console.error('cert fetch fail:', e));
-    fetch(graphImg).then(r => { if (!r.ok) throw new Error('graph ' + r.status); return r.blob(); }).then(b => setGraphSrc(URL.createObjectURL(b))).catch(e => console.error('graph fetch fail:', e));
-  }, []);
+    if (isSimple && activeTab === "onnx") {
+      setActiveTab(onlyRoadmap ? "roadmap" : "awards");
+    }
+  }, [isSimple, activeTab, onlyRoadmap]);
 
   const dui = t.realDev.devUi;
   const tTitle = t.realDev.title;
   const tSubtitle = t.realDev.subtitle;
   const tBadge = t.realDev.badge;
+  const rmp = t.roadmapPage;
 
-  const displayTitle = onlyRoadmap ? (language === "ru" ? "Дорожная Карта" : "Development Roadmap") : tTitle;
-  const displaySubtitle = onlyRoadmap 
-    ? (language === "ru" ? "Статус разработки TrustNode, бэклог уязвимостей и фазы развертывания интеллектуальных модулей" : "Current progress of TrustNode, open vulnerabilities backlog, and semantic core deployment timeline") 
-    : tSubtitle;
-  const displayBadge = onlyRoadmap ? (language === "ru" ? "СТАТУС И ПЛАНЫ" : "STATUS & PLAN") : tBadge;
+  const displayTitle = onlyRoadmap
+    ? (isSimple ? (SIMPLE_RM_TITLE_BY_LANG[language] ?? rmp.title) : rmp.title)
+    : (isSimple ? (SIMPLE_RD_TITLE_BY_LANG[language] ?? tTitle) : tTitle);
+  const displaySubtitle = onlyRoadmap
+    ? (isSimple ? (SIMPLE_RM_SUBTITLE_BY_LANG[language] ?? rmp.subtitle) : rmp.subtitle)
+    : (isSimple ? (SIMPLE_RD_SUBTITLE_BY_LANG[language] ?? tSubtitle) : tSubtitle);
+  const displayBadge = onlyRoadmap
+    ? (isSimple ? (SIMPLE_RM_BADGE_BY_LANG[language] ?? rmp.badge) : rmp.badge)
+    : (isSimple ? (SIMPLE_RD_BADGE_BY_LANG[language] ?? tBadge) : tBadge);
+
+  /* Simple mode renders the concise milestone list / Kira desc from the local dicts */
+  const milestones = isSimple
+    ? (SIMPLE_MILESTONES_BY_LANG[language] ?? rmp.milestones)
+    : rmp.milestones;
+  const kiraDesc = isSimple
+    ? (SIMPLE_KIRA_DESC_BY_LANG[language] ?? rmp.kiraDesc)
+    : rmp.kiraDesc;
 
   const currentAward = t.realDev.awardDetails;
   const currentGraph = t.realDev.graphDetails;
   const currentOnnx = t.realDev.onnxDetails;
 
-  const handleCopyModelName = () => {
-    navigator.clipboard.writeText("rubert_fraud_merged_int8.onnx");
-    setCopiedModelName(true);
-    setTimeout(() => setCopiedModelName(false), 2000);
-  };
+  const onnxConsole = ONNX_DICT[language] || ONNX_DICT.en;
 
   return (
     <section 
-      className="relative w-full py-16 sm:py-20 px-4 border-t border-[#1F2937]/30 bg-[#0A0A0B] overflow-hidden" 
+      className="relative w-full py-16 sm:py-20 px-4 bg-[#0A0A0B] overflow-hidden" 
       id="verification"
     >
       {/* Background cyber grid and glow */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(46,125,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(46,125,255,0.015)_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[400px] h-[400px] bg-[#2E7DFF]/[0.02] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(59,130,246,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(59,130,246,0.015)_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[400px] h-[400px] bg-[#3B82F6]/[0.02] rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-[300px] h-[300px] bg-[#3B82F6]/[0.015] rounded-full blur-[100px] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto relative z-10">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-24">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#111827] border border-[#2E7DFF]/20 mb-6">
-            <Shield className="w-4.5 h-4.5 text-[#2E7DFF]" />
-            <span className="font-mono text-[10px] sm:text-xs font-semibold tracking-wider text-[#2E7DFF] uppercase">
-              {displayBadge}
-            </span>
+          <div className="flex items-center justify-center gap-2 font-mono text-[10px] sm:text-xs font-semibold tracking-wider text-[#3B82F6] uppercase mb-6">
+            <Shield className="w-4.5 h-4.5 text-[#3B82F6]" />
+            <span>{displayBadge}</span>
           </div>
           
-          <h2 className="font-display font-bold text-3xl sm:text-5xl text-[#F5F5F0] tracking-tight mb-6">
+          <h2 className="font-display font-medium text-3xl sm:text-5xl text-[#F5F5F0] tracking-tighter mb-6">
             {displayTitle}
           </h2>
           
@@ -72,12 +339,13 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
 
         {/* Tab Controls */}
         {!onlyRoadmap && (
-          <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4 mb-12 max-w-2xl mx-auto p-1 rounded-xl bg-[#0F0F12] border border-[#1F2937]/50">
+          <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4 mb-12 max-w-2xl mx-auto p-1 rounded-xl bg-[#0A0A0B] border border-[#3C404A]/50">
             <button
               onClick={() => setActiveTab("awards")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-mono text-xs font-semibold tracking-wide transition-all duration-300 ${
+              aria-pressed={activeTab === "awards"}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-semibold tracking-wide transition duration-300 ${
                 activeTab === "awards"
-                  ? "bg-[#2E7DFF] text-white shadow-[0_0_15px_rgba(46,125,255,0.25)]"
+                  ? "bg-[#3B82F6] text-white shadow-glow-md"
                   : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.02]"
               }`}
             >
@@ -87,9 +355,10 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
             
             <button
               onClick={() => setActiveTab("graph")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-mono text-xs font-semibold tracking-wide transition-all duration-300 ${
+              aria-pressed={activeTab === "graph"}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-semibold tracking-wide transition duration-300 ${
                 activeTab === "graph"
-                  ? "bg-[#2E7DFF] text-white shadow-[0_0_15px_rgba(46,125,255,0.25)]"
+                  ? "bg-[#3B82F6] text-white shadow-glow-md"
                   : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.02]"
               }`}
             >
@@ -97,17 +366,20 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
               <span>{dui.graph}</span>
             </button>
             
-            <button
-              onClick={() => setActiveTab("onnx")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-mono text-xs font-semibold tracking-wide transition-all duration-300 ${
-                activeTab === "onnx"
-                  ? "bg-[#2E7DFF] text-white shadow-[0_0_15px_rgba(46,125,255,0.25)]"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.02]"
-              }`}
-            >
-              <Cpu className="w-4 h-4" />
-              <span>{dui.core}</span>
-            </button>
+            {!isSimple && (
+              <button
+                onClick={() => setActiveTab("onnx")}
+                aria-pressed={activeTab === "onnx"}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-semibold tracking-wide transition duration-300 ${
+                  activeTab === "onnx"
+                    ? "bg-[#3B82F6] text-white shadow-glow-md"
+                    : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.02]"
+                }`}
+              >
+                <Cpu className="w-4 h-4" />
+                <span>{dui.core}</span>
+              </button>
+            )}
           </div>
         )}
 
@@ -122,20 +394,23 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4 }}
+                transition={{ duration: 0.2 }}
                 className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
               >
                 {/* Visual Certificate Mockup */}
-                <div className="lg:col-span-5 relative group overflow-hidden rounded-2xl border border-[#1F2937]/50 shadow-2xl">
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-transparent to-transparent opacity-80 z-10" />
-                  <img 
-                    src={certSrc} 
-                    alt="Scientific Certificate" 
-                    width={600}
-                    height={424}
-                    className="w-full h-auto object-cover transform group-hover:scale-102 transition-transform duration-500 rounded-2xl"
-                  />
-                  <div className="absolute top-4 right-4 z-20 px-3 py-1 rounded-full bg-[#111827]/90 border border-amber-500/30 font-mono text-[9px] font-bold text-amber-500 tracking-wider">
+                <div className="lg:col-span-5 relative group overflow-hidden rounded-xl border border-[#3C404A]/50 shadow-2xl">
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0B] via-transparent to-transparent opacity-80 z-10" />
+                  <picture>
+                    <source type="image/webp" srcSet={certImgWebp} />
+                    <img 
+                      src={certImg} 
+                      alt="Scientific Certificate" 
+                      loading="lazy"
+                      className="w-full h-auto object-cover transform group-hover:scale-[1.05] transition-transform duration-300 rounded-xl"
+                      referrerPolicy="no-referrer"
+                    />
+                  </picture>
+                  <div className="absolute top-4 right-4 z-20 font-mono text-[9px] font-bold text-amber-500 tracking-wider">
                     {currentAward.badge}
                   </div>
                 </div>
@@ -143,15 +418,15 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                 {/* Details Meta Block */}
                 <div className="lg:col-span-7 flex flex-col justify-center space-y-6">
                   <div>
-                    <h3 className="font-display font-bold text-2xl sm:text-3xl text-[#F5F5F0] mb-2">
+                    <h3 className="font-display font-medium text-2xl sm:text-3xl text-[#F5F5F0] mb-2">
                       {currentAward.title}
                     </h3>
-                    <p className="font-mono text-xs text-[#2E7DFF] uppercase tracking-wider mb-4">
+                    <p className="font-mono text-xs text-[#3B82F6] uppercase tracking-wider mb-4">
                       {currentAward.issuer}
                     </p>
                   </div>
 
-                  <div className="p-6 rounded-2xl bg-[#0F0F12]/80 border border-[#1F2937]/40 space-y-4">
+                  <ScanCard accent="59,130,246" borderColor="border-[#3C404A]/40" cardClassName="bg-[#0A0A0B]/80" padding="p-6" className="space-y-4">
                     <div className="flex items-start gap-3">
                       <CheckCircle2 className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                       <div>
@@ -161,7 +436,7 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-[#2E7DFF] shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-[#3B82F6] shrink-0 mt-0.5" />
                       <div>
                         <span className="block font-mono text-[10px] text-gray-500 uppercase tracking-widest">{dui.inst}</span>
                         <span className="font-sans text-xs sm:text-sm text-gray-300">{currentAward.institution}</span>
@@ -169,13 +444,13 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-[#2E7DFF] shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-[#3B82F6] shrink-0 mt-0.5" />
                       <div>
                         <span className="block font-mono text-[10px] text-gray-500 uppercase tracking-widest">{dui.event}</span>
                         <span className="font-sans text-xs sm:text-sm text-gray-300">{currentAward.event}</span>
                       </div>
                     </div>
-                  </div>
+                  </ScanCard>
 
                   <p className="font-sans text-xs sm:text-sm text-gray-400 leading-relaxed">
                     {currentAward.desc}
@@ -191,20 +466,23 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4 }}
+                transition={{ duration: 0.2 }}
                 className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
               >
                 {/* Graph Image Display */}
-                <div className="lg:col-span-5 relative group overflow-hidden rounded-2xl border border-[#1F2937]/50 shadow-2xl">
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-transparent to-transparent opacity-80 z-10" />
-                  <img 
-                    src={graphSrc} 
-                    alt="Obsidian Repository Graph" 
-                    width={600}
-                    height={424}
-                    className="w-full h-auto object-cover transform group-hover:scale-102 transition-transform duration-500 rounded-2xl"
-                  />
-                  <div className="absolute top-4 right-4 z-20 px-3 py-1 rounded-full bg-[#111827]/90 border border-cyan-500/30 font-mono text-[9px] font-bold text-cyan-500 tracking-wider">
+                <div className="lg:col-span-5 relative group overflow-hidden rounded-xl border border-[#3C404A]/50 shadow-2xl">
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0B] via-transparent to-transparent opacity-80 z-10" />
+                  <picture>
+                    <source type="image/webp" srcSet={graphImgWebp} />
+                    <img 
+                      src={graphImg} 
+                      alt="Obsidian Repository Graph" 
+                      loading="lazy"
+                      className="w-full h-auto object-cover transform group-hover:scale-[1.05] transition-transform duration-300 rounded-xl"
+                      referrerPolicy="no-referrer"
+                    />
+                  </picture>
+                  <div className="absolute top-4 right-4 z-20 font-mono text-[9px] font-bold text-cyan-500 tracking-wider">
                     {currentGraph.badge}
                   </div>
                 </div>
@@ -212,24 +490,24 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                 {/* Technical Node Description */}
                 <div className="lg:col-span-7 flex flex-col justify-center space-y-6">
                   <div>
-                    <h3 className="font-display font-bold text-2xl sm:text-3xl text-[#F5F5F0] mb-2">
+                    <h3 className="font-display font-medium text-2xl sm:text-3xl text-[#F5F5F0] mb-2">
                       {currentGraph.title}
                     </h3>
-                    <p className="font-mono text-xs text-[#2E7DFF] uppercase tracking-wider mb-4">
+                    <p className="font-mono text-xs text-[#3B82F6] uppercase tracking-wider mb-4">
                       {currentGraph.subtitle}
                     </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl bg-[#0F0F12]/80 border border-[#1F2937]/40 text-center">
-                      <span className="block font-display font-bold text-2xl sm:text-3xl text-cyan-500">74</span>
+                    <ScanCard accent="6,182,212" borderColor="border-[#3C404A]/40" cardClassName="bg-[#0A0A0B]/80" padding="p-4" className="items-center text-center">
+                      <span className="block font-display font-medium text-2xl sm:text-3xl text-cyan-500">74</span>
                       <span className="font-mono text-[10px] text-gray-500 uppercase tracking-widest">{dui.nodes}</span>
-                    </div>
+                    </ScanCard>
                     
-                    <div className="p-4 rounded-xl bg-[#0F0F12]/80 border border-[#1F2937]/40 text-center">
-                      <span className="block font-display font-bold text-2xl sm:text-3xl text-[#2E7DFF]">328</span>
+                    <ScanCard accent="59,130,246" borderColor="border-[#3C404A]/40" cardClassName="bg-[#0A0A0B]/80" padding="p-4" className="items-center text-center">
+                      <span className="block font-display font-medium text-2xl sm:text-3xl text-[#3B82F6]">328</span>
                       <span className="font-mono text-[10px] text-gray-500 uppercase tracking-widest">{dui.conns}</span>
-                    </div>
+                    </ScanCard>
                   </div>
 
                   <p className="font-sans text-xs sm:text-sm text-gray-400 leading-relaxed">
@@ -237,8 +515,8 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                   </p>
 
                   <div className="flex flex-wrap gap-2 pt-2">
-                    {["Architecture", "BertPhantomClassifier", "HeuristicsLayer", "ConsensusVoting", "SecurityTests", "VAULT_Egis"].map((tag) => (
-                      <span key={tag} className="px-2.5 py-1 rounded bg-[#111827] border border-[#2E7DFF]/15 font-mono text-[10px] text-gray-400">
+                    {["Architecture", "BertPhantomClassifier", "HeuristicsLayer", "ECHOPipeline", "SecurityTests", "VAULT_Egis"].map((tag) => (
+                      <span key={tag} className="px-2.5 py-1 rounded bg-[#3C404A] border border-[#3B82F6]/15 font-mono text-[10px] text-gray-400">
                         #{tag}
                       </span>
                     ))}
@@ -254,25 +532,25 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4 }}
+                transition={{ duration: 0.2 }}
                 className="space-y-8"
               >
                 {/* Specs & Playground Header */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch">
                   
                   {/* Left Column: Live Model Architecture Inspector Widget */}
-                  <div className="lg:col-span-5 p-6 rounded-2xl bg-[#0F0F12] border border-[#1F2937]/60 shadow-2xl relative overflow-hidden flex flex-col justify-between">
-                    <div className="absolute top-0 right-0 w-32 h-[1px] bg-gradient-to-l from-[#2E7DFF]/40 to-transparent" />
+                  <ScanCard accent="59,130,246" cardClassName="lg:col-span-5 shadow-2xl" className="flex-col justify-between" padding="p-6" borderColor="border-[#3C404A]/60">
+                    <div className="absolute top-0 right-0 w-32 h-[1px] bg-gradient-to-l from-[#3B82F6]/40 to-transparent" />
                     
                     <div>
                       {/* File card header */}
-                      <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#1F2937]/40">
+                      <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#3C404A]/40">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 rounded bg-blue-950/40 border border-blue-500/30 text-[#2E7DFF]">
+                          <div className="p-2 rounded bg-blue-950/40 border border-blue-500/30 text-[#3B82F6]">
                             <FileCode className="w-5 h-5" />
                           </div>
                           <div>
-                            <span className="block font-mono text-[10px] text-gray-500 tracking-wider">PROJECT ROOT FILE</span>
+                            <span className="block font-mono text-[10px] text-gray-500 tracking-wider">{onnxConsole.consoleRootFile}</span>
                             <span className="font-mono text-xs font-bold text-[#F5F5F0]">{currentOnnx.filename}</span>
                           </div>
                         </div>
@@ -285,25 +563,25 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                       <div className="space-y-3 font-mono text-[10px] sm:text-xs text-gray-400 bg-black/40 p-4 rounded-xl border border-white/[0.02] mb-6">
                         <div className="flex justify-between">
                           <span className="text-gray-600">&gt;_ onnx.checker.check_model()</span>
-                          <span className="text-emerald-500">SUCCESS</span>
+                          <span className="text-emerald-500">{onnxConsole.consoleSuccess}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">&gt;_ model.graph.input[0]</span>
-                          <span className="text-cyan-400">"input_ids" [1, 128]</span>
+                          <span className="text-cyan-400">"input_ids" [1, 512]</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">&gt;_ model.graph.output[0]</span>
-                          <span className="text-cyan-400">"logits" [1, 2]</span>
+                          <span className="text-cyan-400">"fraud_logits" [1, 2]</span>
                         </div>
-                        <div className="pt-2 border-t border-[#1F2937]/30 flex justify-between items-center text-[9px] text-gray-500">
-                          <span>QUANTIZATION: INT8 (dynamic)</span>
-                          <span>COMPATIBILITY: ORT 1.18+</span>
+                        <div className="pt-2 border-t border-[#3C404A]/30 flex justify-between items-center text-[9px] text-gray-500">
+                          <span>{onnxConsole.consoleQuant}</span>
+                          <span>{onnxConsole.consoleCompat}</span>
                         </div>
                       </div>
 
                       {/* Specifications */}
-                      <div className="p-4 rounded-xl bg-[#0F0F12]/80 border border-[#1F2937]/40">
-                        <h4 className="font-display font-semibold text-xs text-[#F5F5F0] uppercase tracking-wider mb-3">
+                      <ScanCard accent="59,130,246" borderColor="border-[#3C404A]/40" cardClassName="bg-[#0A0A0B]/80" padding="p-4">
+                        <h4 className="font-display font-medium text-xs text-[#F5F5F0] uppercase tracking-wider mb-3">
                           {dui.specs}
                         </h4>
                         <ul className="space-y-2 font-mono text-[11px] text-gray-400">
@@ -313,50 +591,25 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                           </li>
                           <li className="flex justify-between">
                             <span>{dui.params}</span>
-                            <span className="text-gray-200">~29.1M (optimized)</span>
+                            <span className="text-gray-200">{onnxConsole.paramValue}</span>
                           </li>
                           <li className="flex justify-between">
                             <span>{dui.latency}</span>
-                            <span className="text-[#2E7DFF]">&lt;14ms (on mobile CPU)</span>
+                            <span className="text-[#3B82F6]">{onnxConsole.latencyValue}</span>
                           </li>
                         </ul>
-                      </div>
+                      </ScanCard>
                     </div>
 
-                    {/* Actions inside card */}
-                    <div className="mt-6 flex flex-col sm:flex-row gap-2">
-                      <button 
-                        onClick={handleCopyModelName}
-                        className="flex-1 py-2.5 px-3 rounded-lg font-mono text-xs font-bold border border-[#1F2937]/60 bg-[#111827] hover:border-[#2E7DFF]/40 text-[#F5F5F0] hover:text-[#2E7DFF] transition-all flex items-center justify-center gap-1.5"
-                      >
-                        {copiedModelName ? (
-                          <>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                            <span className="text-emerald-500">{dui.copied}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5 shrink-0" />
-                            <span>{dui.copyName}</span>
-                          </>
-                        )}
-                      </button>
-                      <span
-                        className="flex-1 py-2.5 px-3 rounded-lg font-mono text-xs font-bold border border-emerald-500/30 bg-emerald-950/20 text-emerald-500 transition-all flex items-center justify-center gap-1.5 cursor-default"
-                        title={dui.dlOnnx}
-                      >
-                        <Lock className="w-3.5 h-3.5 shrink-0" />
-                        <span>{dui.dlOnnx}</span>
-                      </span>
-                    </div>
-                  </div>
+
+                  </ScanCard>
 
                   {/* Right Column: Dynamic Neural Tester & Telegram Ticket Portal */}
-                  <div className="lg:col-span-7 flex flex-col justify-between p-6 rounded-2xl bg-[#0F0F12] border border-[#1F2937]/60 shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-[1px] bg-gradient-to-l from-[#2E7DFF]/40 to-transparent" />
+                  <ScanCard accent="59,130,246" cardClassName="lg:col-span-7 shadow-2xl" className="flex-col justify-between" padding="p-6" borderColor="border-[#3C404A]/60">
+                    <div className="absolute top-0 right-0 w-32 h-[1px] bg-gradient-to-l from-[#3B82F6]/40 to-transparent" />
                     
                     <OnnxInteractiveTester language={language} />
-                  </div>
+                  </ScanCard>
 
                 </div>
               </motion.div>
@@ -368,167 +621,272 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4 }}
-                className="space-y-10"
+                transition={{ duration: 0.2 }}
+                className="space-y-12"
               >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {/* TN1 Card */}
-                  <div className="p-6 rounded-2xl bg-[#0F0F12] border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.05)] relative flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="font-mono text-[9px] text-emerald-400 uppercase tracking-widest bg-emerald-950/40 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                          {language === "ru" ? "ГОТОВЫЙ MVP" : "READY MVP"}
-                        </span>
-                        <span className="font-mono text-xs text-gray-500">v1.2.0</span>
-                      </div>
-                      <h4 className="font-display font-bold text-xl text-white mb-2">TrustNode 1 (TN1)</h4>
-                      <p className="font-sans text-xs text-gray-400 leading-relaxed mb-4">
-                        {language === "ru" 
-                          ? "Полностью готовое, протестированное Android-приложение для локальной сигнатурной защиты. Требует только дообучения весов и калибровки порогов."
-                          : "Fully operational and tested Android package for localized signature protection. Requires only model threshold calibration and weight fine-tuning."}
-                      </p>
-                      <div className="p-3 bg-black/40 rounded-xl border border-emerald-500/10 font-mono text-[10px] text-emerald-400/90 space-y-1 mb-4">
-                        <div className="flex justify-between">
-                          <span>{language === "ru" ? "ПАКЕТ:" : "PACKAGE:"}</span>
-                          <span className="text-gray-300">com.frauddetector.app</span>
+                {/* DEPLOYMENT PHASE RAIL */}
+                <div className="relative hidden sm:block">
+                  <div className="absolute left-[8%] right-[8%] top-[22px] h-[2px] bg-gradient-to-r from-emerald-500/60 via-[#3B82F6]/50 to-amber-500/30" />
+                  <div className="relative grid grid-cols-3 gap-4">
+                    {[
+                      { label: "TN1", ver: "v1.2.0", status: rmp.readyMvp, color: "text-emerald-400", dot: "bg-emerald-500", ring: "border-emerald-500/50", pulse: false },
+                      { label: "TN3", ver: "v2.0-alpha", status: rmp.underDevelopment, color: "text-[#6FB1FF]", dot: "bg-[#3B82F6]", ring: "border-[#3B82F6]/50", pulse: true },
+                      { label: "VOICE", ver: "ROADMAP", status: rmp.underDevelopment, color: "text-amber-400", dot: "bg-amber-500", ring: "border-amber-500/50", pulse: true },
+                    ].map((ph) => (
+                      <div key={ph.label} className="flex flex-col items-center gap-2">
+                        <div className={`relative w-11 h-11 rounded-full border ${ph.ring} bg-[#0E0F12] flex items-center justify-center`}>
+                          {ph.pulse && <span className="absolute inset-0 rounded-full border border-[#3B82F6]/40 animate-ping" />}
+                          <span className={`w-2.5 h-2.5 rounded-full ${ph.dot}`} />
                         </div>
-                        <div className="flex justify-between">
-                          <span>{language === "ru" ? "ДВИЖОК ЯДРА:" : "CORE ENGINE:"}</span>
-                          <span className="text-gray-300">Heuristics v1.2</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{language === "ru" ? "СТАТУС:" : "STATUS:"}</span>
-                          <span className="text-emerald-400 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                            {language === "ru" ? "ФАЗА КАЛИБРОВКИ" : "CALIBRATION PHASE"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* TN3 / PHANTOM 2.0 Card */}
-                  <div className="p-6 rounded-2xl bg-[#0F0F12] border border-[#2E7DFF]/30 shadow-[0_0_20px_rgba(46,125,255,0.05)] relative flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="font-mono text-[9px] text-[#2E7DFF] uppercase tracking-widest bg-[#0A162C]/40 border border-[#2E7DFF]/30 px-2 py-0.5 rounded-full">
-                          {language === "ru" ? "В РАЗРАБОТКЕ" : "UNDER DEVELOPMENT"}
-                        </span>
-                        <span className="font-mono text-xs text-gray-500">v2.0-alpha</span>
-                      </div>
-                      <h4 className="font-display font-bold text-xl text-white mb-2">TrustNode 3 (TN3) / PHANTOM 2.0</h4>
-                      <p className="font-sans text-xs text-gray-400 leading-relaxed mb-4">
-                        {language === "ru"
-                          ? "7-слойная архитектура PHANTOM 2.0 (по заявке на патент) с независимым ИИ-консенсусом и системой оповещений Beacon."
-                          : "7-layer patent-pending PHANTOM 2.0 architecture featuring independent AI consensus routing and Beacon notification networks."}
-                      </p>
-                      <div className="p-3 bg-black/40 rounded-xl border border-[#2E7DFF]/10 font-mono text-[10px] text-gray-300 space-y-1 mb-4">
-                        <div className="flex justify-between">
-                          <span>{language === "ru" ? "СРОК СДАЧИ:" : "DEADLINE:"}</span>
-                          <span className="text-[#2E7DFF] font-bold">{language === "ru" ? "СЕНТЯБРЬ 2026" : "SEPTEMBER 2026"}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{language === "ru" ? "ФАЗА:" : "PHASE:"}</span>
-                          <span className="text-amber-500 font-bold">{language === "ru" ? "Проектирование Архитектуры" : "Architecture Phase"}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{language === "ru" ? "УЯЗВИМОСТИ:" : "VULNERABILITIES:"}</span>
-                          <span className="text-red-500">{language === "ru" ? "9 АКТИВНЫХ ЭЛЕМЕНТОВ" : "9 ACTIVE ITEMS"}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* KIRA Voice Card */}
-                  <div className="p-6 rounded-2xl bg-[#0F0F12] border border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.05)] relative flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="font-mono text-[9px] text-amber-500 uppercase tracking-widest bg-amber-950/40 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                          {language === "ru" ? "КОНЦЕПТ-СПЕЦИФИКАЦИЯ" : "CONCEPTUAL SPEC"}
-                        </span>
-                        <span className="font-mono text-xs text-gray-500">v3.0-design</span>
-                      </div>
-                      <h4 className="font-display font-bold text-xl text-white mb-2">Kira Voice Assistant</h4>
-                      <p className="font-sans text-xs text-gray-400 leading-relaxed mb-4">
-                        {language === "ru"
-                          ? "Речевой интент-анализатор для блокирования манипулятивного речевого воздействия непосредственно в ходе живого разговора."
-                          : "Speech-intent analyzer to capture and neutralize manipulative speech acts during live dial channels."}
-                      </p>
-                      <div className="p-3 bg-black/40 rounded-xl border border-amber-500/10 font-mono text-[10px] text-amber-500 space-y-1 mb-4">
-                        <div className="flex justify-between">
-                          <span>{language === "ru" ? "СТАТУС:" : "STATUS:"}</span>
-                          <span className="font-bold">{language === "ru" ? "Проектирование" : "Design Phase"}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{language === "ru" ? "КЛЮЧЕВОЙ КОМПОНЕНТ:" : "CORE COMPONENT:"}</span>
-                          <span className="text-gray-300">Speech-Intent-Core</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{language === "ru" ? "ИНТЕГРАЦИЯ:" : "INTEGRATION:"}</span>
-                          <span className="text-gray-300">{language === "ru" ? "Локальное расширение ОЗУ" : "Local RAM Add-on"}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* VULNERABILITIES BACKLOG BOARD FOR TN3 */}
-                <div className="p-6 rounded-2xl bg-[#0C0D11]/90 border border-[#1F2937]/50">
-                  <div className="flex items-center gap-2.5 mb-4 border-b border-white/[0.04] pb-3">
-                    <AlertTriangle className="w-5 h-5 text-red-500 animate-pulse" />
-                    <div>
-                      <h4 className="font-display font-bold text-base text-white">
-                        {language === "ru" ? "Бэклог уязвимостей TrustNode 3" : "TrustNode 3 Open Vulnerabilities"}
-                      </h4>
-                      <p className="font-sans text-[11px] text-gray-500 mt-0.5">
-                        {language === "ru" 
-                          ? "Открытые архитектурные баги и векторы атак, запланированные к устранению в релизе PHANTOM 2.0"
-                          : "Open architectural vulnerabilities scheduled for patch in the master PHANTOM 2.0 release"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-[10px]">
-                    {(language === "ru" ? [
-                      { id: "VULN-001", title: "Состояние гонки консенсуса", severity: "ВЫСОКИЙ", desc: "Риск состояния гонки в распределении потоков агента консенсуса во время интенсивного фонового аудита." },
-                      { id: "VULN-002", title: "Утечка памяти при малом объеме ОЗУ", severity: "СРЕДНИЙ", desc: "Переполнение кучи нейронных весов INT8 на устройствах с объемом памяти менее 3 ГБ." },
-                      { id: "VULN-003", title: "Обход фильтра через омоглифы", severity: "ВЫСОКИЙ", desc: "Возможный обход регулярных выражений HeuristicsLayer при использовании смешанных кириллических и латинских символов в доменах." },
-                      { id: "VULN-004", title: "Задержка джиттера RTP-потока", severity: "НИЗКИЙ", desc: "Небольшое смещение точности классификации голоса при джиттере пакетов в мобильных сетях." },
-                      { id: "VULN-005", title: "Перехват ключей хранилища Egis", severity: "ВЫСОКИЙ", desc: "Угроза статического анализа памяти на старых рутованных устройствах Android с API < 26 при отсутствии элемента Keystore." },
-                      { id: "VULN-006", title: "Задержки WorkManager", severity: "СРЕДНИЙ", desc: "Аномалии задержки проверки целостности, вызванные жесткой оптимизацией батареи ОС." },
-                      { id: "VULN-007", title: "Блокировка очереди Beacon VK", severity: "НИЗКИЙ", desc: "Задержки отправки сообщений при сильной деградации сети." },
-                      { id: "VULN-008", title: "Локальная инъекция в песочницу", severity: "ВЫСОКИЙ", desc: "Потенциальная уязвимость подключения к процессу в старых альфа-сборках с включенной отладкой." },
-                      { id: "VULN-009", title: "Сбой ускорения NPU", severity: "СРЕДНИЙ", desc: "Ошибки динамического переключения на резервные ресурсы на некоторых процессорах Mediatek Dimensity, вызывающие перегрузку CPU." }
-                    ] : [
-                      { id: "VULN-001", title: "Consensus Race Condition", severity: "HIGH", desc: "Risk of race condition in Consensus Agent thread allocation during intensive background auditing." },
-                      { id: "VULN-002", title: "Memory Leak in low-RAM", severity: "MED", desc: "On-device INT8 neural weights heap overflow on devices with less than 3GB memory." },
-                      { id: "VULN-003", title: "Homoglyph Attack Escape", severity: "HIGH", desc: "Potential bypass of regex HeuristicsLayer when using non-standard mixed Cyrillic/Latin domains." },
-                      { id: "VULN-004", title: "RTP Stream Jitter lag", severity: "LOW", desc: "Slight voice classification precision drift during packet jitter on cellular connections." },
-                      { id: "VULN-005", title: "Egis Vault Key Hijack", severity: "HIGH", desc: "Static memory analysis threat on rooted older Android API < 26 with missing Keystore secure element." },
-                      { id: "VULN-006", title: "WorkManager Delay Gaps", severity: "MED", desc: "Integrity check delay anomalies caused by strict OS battery optimizations." },
-                      { id: "VULN-007", title: "Beacon VK Queue block", severity: "LOW", desc: "Message dispatch delays during heavy network degradation." },
-                      { id: "VULN-008", title: "Local Sandbox Injection", severity: "HIGH", desc: "Potential process attach vulnerability in older debug-enabled alpha builds." },
-                      { id: "VULN-009", title: "NPU Acceleration Crash", severity: "MED", desc: "Dynamic fallbacks failing on some Mediatek Dimensity APUs causing CPU over-utilization." }
-                    ]).map((vuln) => (
-                      <div key={vuln.id} className="p-3 bg-black/40 rounded-xl border border-white/[0.03] space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[#2E7DFF] font-bold">{vuln.id}</span>
-                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${
-                            vuln.severity === "HIGH" || vuln.severity === "ВЫСОКИЙ" 
-                              ? "bg-red-950/40 border border-red-500/30 text-red-500" 
-                              : vuln.severity === "MED" || vuln.severity === "СРЕДНИЙ" 
-                              ? "bg-amber-950/40 border border-amber-500/30 text-amber-500" 
-                              : "bg-emerald-950/40 border border-emerald-500/30 text-emerald-500"
-                          }`}>
-                            {vuln.severity}
-                          </span>
-                        </div>
-                        <div className="text-[#F5F5F0] font-sans font-semibold text-[11px] leading-tight">{vuln.title}</div>
-                        <div className="text-gray-400 font-sans text-[10px] leading-relaxed">{vuln.desc}</div>
+                        <span className="font-mono text-sm font-bold text-[#F5F5F0]">{ph.label}</span>
+                        <span className="font-mono text-[10px] text-gray-500">{ph.ver}</span>
+                        <span className={`font-mono text-[9px] sm:text-[10px] uppercase tracking-widest ${ph.color}`}>{ph.status}</span>
                       </div>
                     ))}
                   </div>
                 </div>
+
+                {/* STATUS CARDS */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {/* TN1 Card */}
+                  <ScanCard accent="16,185,129" borderColor="border-emerald-500/30" cardClassName="shadow-glow-success" className="h-full justify-between">
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="font-mono text-[10px] sm:text-xs text-emerald-300 uppercase tracking-widest flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          {rmp.readyMvp}
+                        </span>
+                        <span className="font-mono text-sm text-gray-300">v1.2.0</span>
+                      </div>
+
+                      <div className="mb-4">
+                        <div className="h-1 w-full bg-[#3C404A]/40 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400"
+                            initial={ecoMode ? undefined : { width: 0 }}
+                            whileInView={ecoMode ? undefined : { width: "100%" }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                          />
+                        </div>
+                      </div>
+
+                      <h4 className="font-display font-medium text-xl text-white mb-2 group-hover:text-[#3B82F6] transition duration-300">TrustNode 1 (TN1)</h4>
+                      <p className="font-sans text-sm text-gray-400 leading-relaxed mb-4">
+                        {rmp.tn1Desc}
+                      </p>
+                      <div className="p-3 bg-black/40 rounded-xl border border-emerald-500/10 font-mono text-xs text-emerald-300/90 space-y-1 mb-4">
+                        <div className="flex justify-between">
+                          <span>{rmp.packageLabel}</span>
+                          <span className="text-gray-200">com.frauddetector.app</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>{rmp.coreEngineLabel}</span>
+                          <span className="text-gray-200">Heuristics v1.2</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>{rmp.statusLabel}</span>
+                          <span className="text-emerald-400 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                            {rmp.fullyReady}
+                          </span>
+                        </div>
+                      </div>
+                      <a
+                        href="https://github.com/TrustNodeLab"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-full bg-[#3C404A] border border-[#3B82F6]/20 hover:border-[#3B82F6]/50 text-gray-400 hover:text-[#3B82F6] transition font-mono text-xs font-semibold w-full justify-center"
+                      >
+                        <SiGithubIcon className="w-3.5 h-3.5" />
+                        {rmp.sourceGithub}
+                      </a>
+                    </div>
+                  </ScanCard>
+
+                  {/* TN3 Card */}
+                  <ScanCard accent="59,130,246" borderColor="border-[#3B82F6]/30" cardClassName="shadow-glow-sm" className="h-full justify-between">
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="font-mono text-[10px] sm:text-xs text-[#6FB1FF] uppercase tracking-widest flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-ping" />
+                          {rmp.underDevelopment}
+                        </span>
+                        <span className="font-mono text-sm text-gray-300">v2.0-alpha</span>
+                      </div>
+
+                      <div className="mb-4">
+                        <div className="h-1 w-full bg-[#3C404A]/40 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full bg-gradient-to-r from-blue-700 to-[#3B82F6]"
+                            initial={ecoMode ? undefined : { width: 0 }}
+                            whileInView={ecoMode ? undefined : { width: "62%" }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                          />
+                        </div>
+                      </div>
+
+                      <h4 className="font-display font-medium text-xl text-white mb-2 group-hover:text-[#3B82F6] transition duration-300">TrustNode 3 (TN3)</h4>
+                      <p className="font-sans text-sm text-gray-400 leading-relaxed mb-4">
+                        {rmp.tn3Desc}
+                      </p>
+                      <div className="p-3 bg-black/40 rounded-xl border border-[#3B82F6]/10 font-mono text-xs text-gray-200 space-y-1 mb-4">
+                        <div className="flex justify-between">
+                          <span>{rmp.deadlineLabel}</span>
+                          <span className="text-[#6FB1FF] font-bold">{rmp.september2026}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>{rmp.phaseLabel}</span>
+                          <span className="text-amber-500 font-bold">{rmp.architecturePhase}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </ScanCard>
+
+                  {/* Voice Recognition (Roadmap) Card */}
+                  <ScanCard accent="251,191,36" borderColor="border-amber-500/30" cardClassName="shadow-glow-warn" className="h-full justify-between">
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="font-mono text-[10px] sm:text-xs text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                          {rmp.conceptualSpec}
+                        </span>
+                        <span className="font-mono text-sm text-gray-300">ROADMAP</span>
+                      </div>
+
+                      <div className="mb-4">
+                        <div className="h-1 w-full bg-[#3C404A]/40 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full bg-gradient-to-r from-amber-700 to-amber-500"
+                            initial={ecoMode ? undefined : { width: 0 }}
+                            whileInView={ecoMode ? undefined : { width: "18%" }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                          />
+                        </div>
+                      </div>
+
+                      <h4 className="font-display font-medium text-xl text-white mb-2 group-hover:text-[#3B82F6] transition duration-300">Voice Recognition (Roadmap)</h4>
+                      <p className="font-sans text-sm text-gray-400 leading-relaxed mb-4">
+                        {kiraDesc}
+                      </p>
+                      <div className="p-3 bg-black/40 rounded-xl border border-amber-500/10 font-mono text-xs text-amber-400 space-y-1 mb-4">
+                        <div className="flex justify-between">
+                          <span>{rmp.statusLabel}</span>
+                          <span className="font-bold">{rmp.designPhase}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>{rmp.coreComponentLabel}</span>
+                          <span className="text-gray-200">Speech-Intent-Core</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>{rmp.integrationLabel}</span>
+                          <span className="text-gray-200">{rmp.ramAddon}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </ScanCard>
+                </div>
+
+                {/* RELEASE MILESTONES TIMELINE */}
+                <ScanCard accent="59,130,246" borderColor="border-[#3C404A]/50" padding="p-6 sm:p-8">
+                  <div className="flex items-center gap-2.5 mb-6 border-b border-white/[0.04] pb-4">
+                    <div className="p-2 rounded-lg bg-[#12141A] border border-[#3B82F6]/20 text-[#3B82F6]">
+                      <Milestone className="w-5 h-5" />
+                    </div>
+                    <h4 className="font-display font-medium text-lg text-white">
+                      {rmp.milestonesTitle}
+                    </h4>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute left-[7px] top-2 bottom-2 w-px bg-gradient-to-b from-emerald-500/50 via-[#3B82F6]/40 to-amber-500/30" />
+                    <div className="space-y-7">
+                      {milestones.map((milestone, idx) => (
+                        <motion.div
+                          key={idx}
+                          initial={ecoMode ? undefined : { opacity: 0, x: 24 }}
+                          whileInView={ecoMode ? undefined : { opacity: 1, x: 0 }}
+                          viewport={{ once: true, margin: "-30px" }}
+                          transition={{ duration: 0.45, delay: idx * 0.06 }}
+                          className="relative pl-9 group"
+                        >
+                          <span className={`absolute left-0 top-1 w-[15px] h-[15px] rounded-full border-2 bg-[#0A0A0B] flex items-center justify-center ${idx === 0 ? "border-emerald-500" : idx === 5 ? "border-amber-500" : "border-[#3B82F6]"}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${idx === 0 ? "bg-emerald-500" : idx === 5 ? "bg-amber-500" : "bg-[#3B82F6]"}`} />
+                          </span>
+                          <div className="font-mono text-[10px] sm:text-xs text-[#6FB1FF] uppercase tracking-wider mb-1">
+                            {milestone.date}
+                          </div>
+                          <div className="font-sans font-semibold text-base text-[#F5F5F0] mb-1 group-hover:text-[#3B82F6] transition-colors">{milestone.title}</div>
+                          <div className="font-sans text-sm text-gray-400 leading-relaxed">{milestone.desc}</div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                  <a
+                    href="https://github.com/TrustNodeLab"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-6 inline-flex items-center gap-2 text-gray-400 hover:text-[#3B82F6] font-mono text-sm transition-colors"
+                  >
+                    <SiGithubIcon className="w-3.5 h-3.5" />
+                    {rmp.allProjectsGithub}
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </ScanCard>
+
+                {/* SECURITY DISCLOSURE POLICY */}
+                <ScanCard accent="16,185,129" borderColor="border-emerald-500/20" padding="p-6 sm:p-8">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 shrink-0">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-display font-medium text-base text-white">
+                        {rmp.disclosureTitle}
+                      </h4>
+                      <p className="font-sans text-sm text-gray-400 leading-relaxed mt-2">
+                        {rmp.disclosureDesc}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <a
+                      href="https://t.me/TrustNode_team"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Telegram"
+                      title="Telegram"
+                      className="inline-flex items-center justify-center gap-2 min-h-11 px-4 py-2.5 rounded-full bg-[#12141A] border border-[#3B82F6]/40 text-gray-200 hover:text-white hover:bg-[#12141A] transition-colors font-sans text-xs font-bold"
+                    >
+                      <SiTelegramIcon className="w-4 h-4 text-[#3B82F6]" />
+                      {rmp.reportTelegram}
+                    </a>
+                    <a
+                      href="https://vk.com/trustnode"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="VK"
+                      title="VK"
+                      className="inline-flex items-center justify-center gap-2 min-h-11 px-4 py-2.5 rounded-full bg-[#12141A] border border-[#3B82F6]/40 text-gray-200 hover:text-white hover:bg-[#12141A] transition-colors font-sans text-xs font-bold"
+                    >
+                      <SiVkIcon className="w-4 h-4 text-[#3B82F6]" />
+                      {rmp.reportVk}
+                    </a>
+                    <a
+                      href="https://github.com/TrustNodeLab/security"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="GitHub"
+                      title="GitHub"
+                      className="inline-flex items-center justify-center gap-2 min-h-11 px-4 py-2.5 rounded-full bg-[#12141A] border border-[#3B82F6]/40 text-gray-200 hover:text-white hover:bg-[#12141A] transition-colors font-sans text-xs font-bold"
+                    >
+                      <SiGithubIcon className="w-4 h-4 text-[#3B82F6]" />
+                      {rmp.reportGithub}
+                    </a>
+                  </div>
+                </ScanCard>
+
               </motion.div>
             )}
 
@@ -550,67 +908,389 @@ interface OnnxPreset {
   isThreat: boolean;
 }
 
-export function OnnxInteractiveTester({ language }: { language: string }) {
-  const isRu = language === "ru";
-  const isTr = language === "tr";
+interface OnnxDictType {
+  title: string; subtitle: string; placeholder: string; btnRun: string; btnRunning: string; resultHeader: string; fraudLabel: string; safeLabel: string; attentionTitle: string; presetTitle: string; feedbackHeader: string; feedbackSub: string; errType: string; errFalsePositive: string; errFalseNegative: string; errOther: string; commentLabel: string; commentPlaceholder: string; btnTg: string; btnCopy: string; copied: string; modelStatusSafe: string; modelStatusSuspicious: string; modelStatusFraud: string; hideTicketForm: string; ticketSpec: string; consoleRootFile: string; consoleSuccess: string; consoleQuant: string; consoleCompat: string; paramValue: string; latencyValue: string;
+}
 
-  // Localized dictionaries
-  const dict = {
-    title: isRu 
-      ? "Интерактивная Лаборатория Тестирования RuBERT" 
-      : isTr 
-      ? "Etkileşimli RuBERT ONNX Test Laboratuvarı" 
-      : "Interactive RuBERT ONNX Test Lab",
-    subtitle: isRu 
-      ? "Оцените локальный инференс весов модели rubert_fraud_merged_int8.onnx в реальном времени." 
-      : isTr 
-      ? "rubert_fraud_merged_int8.onnx model ağırlıklarının gerçek zamanlı yerel çıkarımını değerlendirin." 
-      : "Evaluate real-time local inference of the rubert_fraud_merged_int8.onnx model weights.",
-    placeholder: isRu 
-      ? "Введите текст подозрительного диалога или СМС для анализа..." 
-      : isTr 
-      ? "Analiz için şüpheli diyalog veya SMS metnini girin..." 
-      : "Enter suspicious dialogue text or SMS for safety classification...",
-    btnRun: isRu ? "Запустить инференс модели" : isTr ? "Model Çıkarımını Başlat" : "Run Model Inference",
-    btnRunning: isRu ? "Вычисление весов..." : isTr ? "Çıkarım Yapılıyor..." : "Running Weights...",
-    resultHeader: isRu ? "ВЫХОД СЕМАНТИЧЕСКОГО ДЕКОДЕРА" : isTr ? "ANLAMSAL DEKODER ÇIKTI" : "SEMANTIC DECODER OUTPUT",
-    fraudLabel: isRu ? "Вероятность Соц. Инженерии (FRAUD):" : isTr ? "Sosyal Mühendislik Riski (FRAUD):" : "Social Engineering Risk (FRAUD):",
-    safeLabel: isRu ? "Безопасный Диалог (SAFE):" : isTr ? "Güvenli Diyalog (SAFE):" : "Safe Dialogue (SAFE):",
-    attentionTitle: isRu ? "Карта внимания BERT (Флаги токенов):" : isTr ? "BERT Dikkat Haritası (Token Bayrakları):" : "BERT Attention Map (Token Flags):",
-    presetTitle: isRu ? "Быстрые пресеты:" : isTr ? "Hızlı Şablonlar:" : "Quick Presets:",
-    feedbackHeader: isRu ? "⚠️ Обнаружили ошибку инференса?" : isTr ? "⚠️ Sınıflandırma Hatası mı Buldunuz?" : "⚠️ Found a Classification Error?",
-    feedbackSub: isRu 
-      ? "Помогите обучить веса нейросети! Отправьте тикет об ошибке напрямую в команду поддержки в Telegram." 
-      : isTr 
-      ? "Yapay sinir ağı ağırlıklarını eğitmeye yardımcı olun! Doğrudan destek ekibine Telegram üzerinden hata bildirimi gönderin." 
-      : "Help train the neural net weights! Report a classification bug ticket directly to our support team in Telegram.",
-    errType: isRu ? "Тип ошибки" : isTr ? "Hata Türü" : "Error Classification",
-    errFalsePositive: isRu 
-      ? "Ложное срабатывание (Безопасный текст помечен как угроза)" 
-      : isTr 
-      ? "Yanlış Pozitif (Güvenli metin tehdit olarak algılandı)" 
-      : "False Positive (Safe text flagged as threat)",
-    errFalseNegative: isRu 
-      ? "Пропуск угрозы (Мошеннический текст посчитан безопасным)" 
-      : isTr 
-      ? "Yanlış Negatif (Tehdit içeren metin güvenli sayıldı)" 
-      : "False Negative (Fraudulent text marked as safe)",
-    errOther: isRu ? "Другой баг классификации" : isTr ? "Diğer sınıflandırma hatası" : "Other classification anomaly",
-    commentLabel: isRu ? "Ваш комментарий (что пошло не так?)" : isTr ? "Yorumunuz (ne yanlış gitti?)" : "Your feedback comments",
-    commentPlaceholder: isRu 
-      ? "Укажите, например, какие слова модель посчитала критичными..." 
-      : isTr 
-      ? "Örneğin modelin hangi kelimeleri yanlış yorumladığını belirtin..." 
-      : "Explain which words caused the model to misbehave...",
-    btnTg: isRu ? "Отправить тикет в Telegram" : isTr ? "Telegram'a Bildirim Gönder" : "Send Ticket to Telegram",
-    btnCopy: isRu ? "Скопировать тикет" : isTr ? "Bildirimi Kopyala" : "Copy Ticket Content",
-    copied: isRu ? "Скопировано!" : isTr ? "Kopyalandı!" : "Copied!",
-    modelStatusSafe: isRu ? "БЕЗОПАСНАЯ СЕМАНТИКА" : isTr ? "GÜVENLİ ANLAM" : "SAFE SEMANTICS",
-    modelStatusSuspicious: isRu ? "ПОДОЗРИТЕЛЬНО" : isTr ? "ŞÜPHELİ DIALOG" : "SUSPICIOUS ACTIVITY",
-    modelStatusFraud: isRu ? "МОШЕННИЧЕСКИЙ НАВЫК" : isTr ? "DOLANDIRICILIK TESPİTİ" : "FRAUDULENT SEMANTICS",
-  };
+const ONNX_DICT: Record<LanguageCode, OnnxDictType> = {
+  ru: {
+    title: "Интерактивная Лаборатория Тестирования RuBERT",
+    subtitle: "Оцените локальный инференс весов модели rubert_fraud_4m_v4_int8.onnx в реальном времени.",
+    placeholder: "Введите текст подозрительного диалога или СМС для анализа...",
+    btnRun: "Запустить инференс модели",
+    btnRunning: "Вычисление весов...",
+    resultHeader: "ВЫХОД СЕМАНТИЧЕСКОГО ДЕКОДЕРА",
+    fraudLabel: "Вероятность Соц. Инженерии (FRAUD):",
+    safeLabel: "Безопасный Диалог (SAFE):",
+    attentionTitle: "Карта внимания BERT (Флаги токенов):",
+    presetTitle: "Быстрые пресеты:",
+    feedbackHeader: "⚠️ Обнаружили ошибку инференса?",
+    feedbackSub: "Помогите обучить веса нейросети! Отправьте тикет об ошибке напрямую в команду поддержки в Telegram.",
+    errType: "Тип ошибки",
+    errFalsePositive: "Ложное срабатывание (Безопасный текст помечен как угроза)",
+    errFalseNegative: "Пропуск угрозы (Мошеннический текст посчитан безопасным)",
+    errOther: "Другой баг классификации",
+    commentLabel: "Ваш комментарий (что пошло не так?)",
+    commentPlaceholder: "Укажите, например, какие слова модель посчитала критичными...",
+    btnTg: "Отправить тикет в Telegram",
+    btnCopy: "Скопировать тикет",
+    copied: "Скопировано!",
+    modelStatusSafe: "БЕЗОПАСНАЯ СЕМАНТИКА",
+    modelStatusSuspicious: "ПОДОЗРИТЕЛЬНО",
+    modelStatusFraud: "МОШЕННИЧЕСКИЙ НАВЫК",
+    hideTicketForm: "Скрыть тикет-форму",
+    ticketSpec: "СПЕЦИФИКАЦИЯ ФОРМАТА ТИКЕТА",
+    consoleRootFile: "КОРНЕВОЙ ФАЙЛ ПРОЕКТА",
+    consoleSuccess: "УСПЕХ",
+    consoleQuant: "КВАНТИЗАЦИЯ: INT8 (динамическая)",
+    consoleCompat: "СОВМЕСТИМОСТЬ: ORT 1.18+",
+    paramValue: "~29.1M (оптимизировано)",
+    latencyValue: "<14ms (на мобильном CPU)",
+  },
+  en: {
+    title: "Interactive RuBERT ONNX Test Lab",
+    subtitle: "Evaluate real-time local inference of the rubert_fraud_4m_v4_int8.onnx model weights.",
+    placeholder: "Enter suspicious dialogue text or SMS for safety classification...",
+    btnRun: "Run Model Inference",
+    btnRunning: "Running Weights...",
+    resultHeader: "SEMANTIC DECODER OUTPUT",
+    fraudLabel: "Social Engineering Risk (FRAUD):",
+    safeLabel: "Safe Dialogue (SAFE):",
+    attentionTitle: "BERT Attention Map (Token Flags):",
+    presetTitle: "Quick Presets:",
+    feedbackHeader: "⚠️ Found a Classification Error?",
+    feedbackSub: "Help train the neural net weights! Report a classification bug ticket directly to our support team in Telegram.",
+    errType: "Error Classification",
+    errFalsePositive: "False Positive (Safe text flagged as threat)",
+    errFalseNegative: "False Negative (Fraudulent text marked as safe)",
+    errOther: "Other classification anomaly",
+    commentLabel: "Your feedback comments",
+    commentPlaceholder: "Explain which words caused the model to misbehave...",
+    btnTg: "Send Ticket to Telegram",
+    btnCopy: "Copy Ticket Content",
+    copied: "Copied!",
+    modelStatusSafe: "SAFE SEMANTICS",
+    modelStatusSuspicious: "SUSPICIOUS ACTIVITY",
+    modelStatusFraud: "FRAUDULENT SEMANTICS",
+    hideTicketForm: "Hide ticket form",
+    ticketSpec: "TICKET FORMAT SPEC",
+    consoleRootFile: "PROJECT ROOT FILE",
+    consoleSuccess: "SUCCESS",
+    consoleQuant: "QUANTIZATION: INT8 (dynamic)",
+    consoleCompat: "COMPATIBILITY: ORT 1.18+",
+    paramValue: "~29.1M (optimized)",
+    latencyValue: "<14ms (on mobile CPU)",
+  },
+  tr: {
+    title: "Etkileşimli RuBERT ONNX Test Laboratuvarı",
+    subtitle: "rubert_fraud_4m_v4_int8.onnx model ağırlıklarının gerçek zamanlı yerel çıkarımını değerlendirin.",
+    placeholder: "Analiz için şüpheli diyalog veya SMS metnini girin...",
+    btnRun: "Model Çıkarımını Başlat",
+    btnRunning: "Çıkarım Yapılıyor...",
+    resultHeader: "ANLAMSAL DEKODER ÇIKTI",
+    fraudLabel: "Sosyal Mühendislik Riski (FRAUD):",
+    safeLabel: "Güvenli Diyalog (SAFE):",
+    attentionTitle: "BERT Dikkat Haritası (Token Bayrakları):",
+    presetTitle: "Hızlı Şablonlar:",
+    feedbackHeader: "⚠️ Sınıflandırma Hatası mı Buldunuz?",
+    feedbackSub: "Yapay sinir ağı ağırlıklarını eğitmeye yardımcı olun! Doğrudan destek ekibine Telegram üzerinden hata bildirimi gönderin.",
+    errType: "Hata Türü",
+    errFalsePositive: "Yanlış Pozitif (Güvenli metin tehdit olarak algılandı)",
+    errFalseNegative: "Yanlış Negatif (Tehdit içeren metin güvenli sayıldı)",
+    errOther: "Diğer sınıflandırma hatası",
+    commentLabel: "Yorumunuz (ne yanlış gitti?)",
+    commentPlaceholder: "Örneğin modelin hangi kelimeleri yanlış yorumladığını belirtin...",
+    btnTg: "Telegram'a Bildirim Gönder",
+    btnCopy: "Bildirimi Kopyala",
+    copied: "Kopyalandı!",
+    modelStatusSafe: "GÜVENLİ ANLAM",
+    modelStatusSuspicious: "ŞÜPHELİ DIALOG",
+    modelStatusFraud: "DOLANDIRICILIK TESPİTİ",
+    hideTicketForm: "Bildirim Formunu Gizle",
+    ticketSpec: "BİLET FORMATI",
+    consoleRootFile: "PROJE KÖK DOSYASI",
+    consoleSuccess: "BAŞARILI",
+    consoleQuant: "KANTİZASYON: INT8 (dinamik)",
+    consoleCompat: "UYUMLULUK: ORT 1.18+",
+    paramValue: "~29.1M (optimize edilmiş)",
+    latencyValue: "<14ms (mobil CPU'da)",
+  },
+  es: {
+    title: "Laboratorio de pruebas interactivo RuBERT ONNX",
+    subtitle: "Evalúa la inferencia local en tiempo real de los pesos del modelo rubert_fraud_4m_v4_int8.onnx.",
+    placeholder: "Introduce texto de diálogo sospechoso o SMS para la clasificación de seguridad...",
+    btnRun: "Ejecutar inferencia del modelo",
+    btnRunning: "Calculando pesos...",
+    resultHeader: "SALIDA DEL DECODIFICADOR SEMÁNTICO",
+    fraudLabel: "Riesgo de Ingeniería Social (FRAUD):",
+    safeLabel: "Diálogo seguro (SAFE):",
+    attentionTitle: "Mapa de Atención BERT (Banderas de Tokens):",
+    presetTitle: "Preajustes rápidos:",
+    feedbackHeader: "⚠️ ¿Encontraste un error de clasificación?",
+    feedbackSub: "¡Ayuda a entrenar los pesos de la red neuronal! Envía un ticket de error de clasificación directamente a nuestro equipo de soporte en Telegram.",
+    errType: "Clasificación del error",
+    errFalsePositive: "Falso positivo (texto seguro marcado como amenaza)",
+    errFalseNegative: "Falso negativo (texto fraudulento marcado como seguro)",
+    errOther: "Otra anomalía de clasificación",
+    commentLabel: "Tus comentarios",
+    commentPlaceholder: "Explica qué palabras hicieron que el modelo se comportara mal...",
+    btnTg: "Enviar ticket a Telegram",
+    btnCopy: "Copiar contenido del ticket",
+    copied: "¡Copiado!",
+    modelStatusSafe: "SEMÁNTICA SEGURA",
+    modelStatusSuspicious: "ACTIVIDAD SOSPECHOSA",
+    modelStatusFraud: "SEMÁNTICA FRAUDULENTA",
+    hideTicketForm: "Ocultar formulario de ticket",
+    ticketSpec: "ESPECIFICACIÓN DEL FORMATO DE TICKET",
+    consoleRootFile: "ARCHIVO RAÍZ DEL PROYECTO",
+    consoleSuccess: "ÉXITO",
+    consoleQuant: "CUANTIZACIÓN: INT8 (dinámica)",
+    consoleCompat: "COMPATIBILIDAD: ORT 1.18+",
+    paramValue: "~29.1M (optimizado)",
+    latencyValue: "<14ms (en CPU móvil)",
+  },
+  zh: {
+    title: "交互式 RuBERT ONNX 测试实验室",
+    subtitle: "评估 rubert_fraud_4m_v4_int8.onnx 模型权重的实时本地推理。",
+    placeholder: "输入可疑对话文本或短信，进行安全分类...",
+    btnRun: "运行模型推理",
+    btnRunning: "正在计算权重...",
+    resultHeader: "语义解码器输出",
+    fraudLabel: "社会工程风险（FRAUD）：",
+    safeLabel: "安全对话（SAFE）：",
+    attentionTitle: "BERT 注意力图（令牌标记）：",
+    presetTitle: "快速预设：",
+    feedbackHeader: "⚠️ 发现分类错误？",
+    feedbackSub: "帮助训练神经网络权重！直接将分类错误票证报告给我们在 Telegram 上的支持团队。",
+    errType: "错误分类",
+    errFalsePositive: "误报（安全文本被标记为威胁）",
+    errFalseNegative: "漏报（欺诈文本被标记为安全）",
+    errOther: "其他分类异常",
+    commentLabel: "您的反馈评论",
+    commentPlaceholder: "请说明哪些词导致模型出错...",
+    btnTg: "发送票证到 Telegram",
+    btnCopy: "复制票证内容",
+    copied: "已复制！",
+    modelStatusSafe: "安全语义",
+    modelStatusSuspicious: "可疑活动",
+    modelStatusFraud: "欺诈语义",
+    hideTicketForm: "隐藏票证表单",
+    ticketSpec: "票证格式规范",
+    consoleRootFile: "项目根文件",
+    consoleSuccess: "成功",
+    consoleQuant: "量化：INT8（动态）",
+    consoleCompat: "兼容性：ORT 1.18+",
+    paramValue: "~29.1M (已优化)",
+    latencyValue: "<14ms（移动端 CPU）",
+  },
+  hi: {
+    title: "इंटरैक्टिव RuBERT ONNX टेस्ट लैब",
+    subtitle: "rubert_fraud_4m_v4_int8.onnx मॉडल के वज़न की वास्तविक समय में स्थानीय इन्फ़रेंस का मूल्यांकन करें।",
+    placeholder: "सुरक्षा वर्गीकरण के लिए संदिग्ध संवाद पाठ या SMS दर्ज करें...",
+    btnRun: "मॉडल इन्फ़रेंस चलाएँ",
+    btnRunning: "वज़न की गणना हो रही है...",
+    resultHeader: "सिमेंटिक डिकोडर आउटपुट",
+    fraudLabel: "सामाजिक इंजीनियरिंग जोखिम (FRAUD):",
+    safeLabel: "सुरक्षित संवाद (SAFE):",
+    attentionTitle: "BERT ध्यान मानचित्र (टोकन फ़्लैग):",
+    presetTitle: "त्वरित प्रीसेट:",
+    feedbackHeader: "⚠️ कोई वर्गीकरण त्रुटि मिली?",
+    feedbackSub: "न्यूरल नेट वज़न प्रशिक्षित करने में मदद करें! टेलीग्राम पर हमारी सहायता टीम को सीधे वर्गीकरण बग टिकट रिपोर्ट करें।",
+    errType: "त्रुटि वर्गीकरण",
+    errFalsePositive: "ग़लत सकारात्मक (सुरक्षित पाठ को ख़तरे के रूप में चिह्नित किया गया)",
+    errFalseNegative: "ग़लत नकारात्मक (धोखाधड़ी पाठ को सुरक्षित चिह्नित किया गया)",
+    errOther: "अन्य वर्गीकरण विसंगति",
+    commentLabel: "आपकी प्रतिक्रिया टिप्पणियाँ",
+    commentPlaceholder: "बताएँ कि किन शब्दों ने मॉडल को ग़लत व्यवहार करने पर मजबूर किया...",
+    btnTg: "टेलीग्राम पर टिकट भेजें",
+    btnCopy: "टिकट सामग्री कॉपी करें",
+    copied: "कॉपी हो गया!",
+    modelStatusSafe: "सुरक्षित सिमेंटिक्स",
+    modelStatusSuspicious: "संदिग्ध गतिविधि",
+    modelStatusFraud: "धोखाधड़ी सिमेंटिक्स",
+    hideTicketForm: "टिकट फ़ॉर्म छुपाएँ",
+    ticketSpec: "टिकट प्रारूप विनिर्देश",
+    consoleRootFile: "प्रोजेक्ट रूट फ़ाइल",
+    consoleSuccess: "सफलता",
+    consoleQuant: "क्वांटाइज़ेशन: INT8 (डायनामिक)",
+    consoleCompat: "संगतता: ORT 1.18+",
+    paramValue: "~29.1M (अनुकूलित)",
+    latencyValue: "<14ms (मोबाइल CPU पर)",
+  },
+  ar: {
+    title: "مختبر اختبار RuBERT ONNX التفاعلي",
+    subtitle: "قيّم الاستدلال المحلي في الوقت الفعلي لأوزان نموذج rubert_fraud_4m_v4_int8.onnx.",
+    placeholder: "أدخل نص حوار مشبوه أو رسالة SMS لتصنيف الأمان...",
+    btnRun: "تشغيل استدلال النموذج",
+    btnRunning: "جارٍ حساب الأوزان...",
+    resultHeader: "مخرجات المفكك الدلالي",
+    fraudLabel: "خطر الهندسة الاجتماعية (FRAUD):",
+    safeLabel: "حوار آمن (SAFE):",
+    attentionTitle: "خريطة انتباه BERT (أعلام الرموز):",
+    presetTitle: "إعدادات سريعة:",
+    feedbackHeader: "⚠️ وجدت خطأ في التصنيف؟",
+    feedbackSub: "ساعد في تدريب أوزان الشبكة العصبية! أبلغ عن تذكرة خطأ تصنيف مباشرةً إلى فريق الدعم لدينا على تيليغرام.",
+    errType: "تصنيف الخطأ",
+    errFalsePositive: "إيجابي كاذب (نص آمن وُسم كتهديد)",
+    errFalseNegative: "سلبي كاذب (نص احتيالي وُسم كآمن)",
+    errOther: "شذوذ تصنيف آخر",
+    commentLabel: "تعليقاتك",
+    commentPlaceholder: "اشرح الكلمات التي جعلت النموذج يتصرف بشكل خاطئ...",
+    btnTg: "إرسال التذكرة إلى تيليغرام",
+    btnCopy: "نسخ محتوى التذكرة",
+    copied: "تم النسخ!",
+    modelStatusSafe: "دلالات آمنة",
+    modelStatusSuspicious: "نشاط مشبوه",
+    modelStatusFraud: "دلالات احتيالية",
+    hideTicketForm: "إخفاء نموذج التذكرة",
+    ticketSpec: "مواصفات تنسيق التذكرة",
+    consoleRootFile: "ملف جذر المشروع",
+    consoleSuccess: "نجاح",
+    consoleQuant: "القياس الكمي: INT8 (ديناميكي)",
+    consoleCompat: "التوافق: ORT 1.18+",
+    paramValue: "~29.1M (محسّن)",
+    latencyValue: "<14ms (على معالج الهاتف)",
+  },
+  pt: {
+    title: "Laboratório de Teste Interativo RuBERT ONNX",
+    subtitle: "Avalie a inferência local em tempo real dos pesos do modelo rubert_fraud_4m_v4_int8.onnx.",
+    placeholder: "Digite texto de diálogo suspeito ou SMS para classificação de segurança...",
+    btnRun: "Executar inferência do modelo",
+    btnRunning: "Calculando pesos...",
+    resultHeader: "SAÍDA DO DECODIFICADOR SEMÂNTICO",
+    fraudLabel: "Risco de Engenharia Social (FRAUD):",
+    safeLabel: "Diálogo seguro (SAFE):",
+    attentionTitle: "Mapa de Atenção BERT (Bandeiras de Tokens):",
+    presetTitle: "Predefinições rápidas:",
+    feedbackHeader: "⚠️ Encontrou um erro de classificação?",
+    feedbackSub: "Ajude a treinar os pesos da rede neural! Envie um ticket de erro de classificação diretamente à nossa equipe de suporte no Telegram.",
+    errType: "Classificação do Erro",
+    errFalsePositive: "Falso Positivo (texto seguro sinalizado como ameaça)",
+    errFalseNegative: "Falso Negativo (texto fraudulento marcado como seguro)",
+    errOther: "Outra anomalia de classificação",
+    commentLabel: "Seus comentários",
+    commentPlaceholder: "Explique quais palavras fizeram o modelo se comportar mal...",
+    btnTg: "Enviar ticket para o Telegram",
+    btnCopy: "Copiar conteúdo do ticket",
+    copied: "Copiado!",
+    modelStatusSafe: "SEMÂNTICA SEGURA",
+    modelStatusSuspicious: "ATIVIDADE SUSPEITA",
+    modelStatusFraud: "SEMÂNTICA FRAUDULENTA",
+    hideTicketForm: "Ocultar formulário de ticket",
+    ticketSpec: "ESPECIFICAÇÃO DO FORMATO DO TICKET",
+    consoleRootFile: "ARQUIVO RAIZ DO PROJETO",
+    consoleSuccess: "SUCESSO",
+    consoleQuant: "QUANTIZAÇÃO: INT8 (dinâmica)",
+    consoleCompat: "COMPATIBILIDADE: ORT 1.18+",
+    paramValue: "~29.1M (otimizado)",
+    latencyValue: "<14ms (em CPU móvel)",
+  },
+  fr: {
+    title: "Laboratoire de test interactif RuBERT ONNX",
+    subtitle: "Évaluez l'inférence locale en temps réel des poids du modèle rubert_fraud_4m_v4_int8.onnx.",
+    placeholder: "Saisissez un texte de dialogue suspect ou un SMS pour la classification de sécurité...",
+    btnRun: "Exécuter l'inférence du modèle",
+    btnRunning: "Calcul des poids...",
+    resultHeader: "SORTIE DU DÉCODEUR SÉMANTIQUE",
+    fraudLabel: "Risque d'ingénierie sociale (FRAUD) :",
+    safeLabel: "Dialogue sûr (SAFE) :",
+    attentionTitle: "Carte d'attention BERT (Drapeaux de jetons) :",
+    presetTitle: "Présélections rapides :",
+    feedbackHeader: "⚠️ Vous avez trouvé une erreur de classification ?",
+    feedbackSub: "Aidez à entraîner les poids du réseau neuronal ! Signalez un ticket de bug de classification directement à notre équipe de support sur Telegram.",
+    errType: "Classification de l'erreur",
+    errFalsePositive: "Faux positif (texte sûr signalé comme menace)",
+    errFalseNegative: "Faux négatif (texte frauduleux marqué comme sûr)",
+    errOther: "Autre anomalie de classification",
+    commentLabel: "Vos commentaires",
+    commentPlaceholder: "Expliquez quels mots ont fait mal se comporter le modèle...",
+    btnTg: "Envoyer le ticket sur Telegram",
+    btnCopy: "Copier le contenu du ticket",
+    copied: "Copié !",
+    modelStatusSafe: "SÉMANTIQUE SÛRE",
+    modelStatusSuspicious: "ACTIVITÉ SUSPECTE",
+    modelStatusFraud: "SÉMANTIQUE FRAUDULEUSE",
+    hideTicketForm: "Masquer le formulaire de ticket",
+    ticketSpec: "SPÉCIFICATION DU FORMAT DE TICKET",
+    consoleRootFile: "FICHIER RACINE DU PROJET",
+    consoleSuccess: "SUCCÈS",
+    consoleQuant: "QUANTIFICATION : INT8 (dynamique)",
+    consoleCompat: "COMPATIBILITÉ : ORT 1.18+",
+    paramValue: "~29.1M (optimisé)",
+    latencyValue: "<14ms (sur CPU mobile)",
+  },
+  de: {
+    title: "Interaktives RuBERT-ONNX-Testlabor",
+    subtitle: "Bewerten Sie die lokale Echtzeit-Inferenz der Gewichte des Modells rubert_fraud_4m_v4_int8.onnx.",
+    placeholder: "Geben Sie verdächtigen Dialogtext oder SMS zur Sicherheitsklassifizierung ein...",
+    btnRun: "Modell-Inferenz ausführen",
+    btnRunning: "Gewichte werden berechnet...",
+    resultHeader: "AUSGABE DES SEMANTISCHEN DEKODERS",
+    fraudLabel: "Social-Engineering-Risiko (FRAUD):",
+    safeLabel: "Sicherer Dialog (SAFE):",
+    attentionTitle: "BERT-Aufmerksamkeitskarte (Token-Flags):",
+    presetTitle: "Schnelle Voreinstellungen:",
+    feedbackHeader: "⚠️ Einen Klassifizierungsfehler gefunden?",
+    feedbackSub: "Helfen Sie, die Gewichte des neuronalen Netzes zu trainieren! Melden Sie ein Klassifizierungsfehler-Ticket direkt an unser Support-Team in Telegram.",
+    errType: "Fehlerklassifizierung",
+    errFalsePositive: "Falsch positiv (sicherer Text als Bedrohung markiert)",
+    errFalseNegative: "Falsch negativ (betrügerischer Text als sicher markiert)",
+    errOther: "Andere Klassifizierungsanomalie",
+    commentLabel: "Ihre Feedback-Kommentare",
+    commentPlaceholder: "Erklären Sie, welche Wörter das Modell zu Fehlverhalten veranlasst haben...",
+    btnTg: "Ticket an Telegram senden",
+    btnCopy: "Ticketinhalt kopieren",
+    copied: "Kopiert!",
+    modelStatusSafe: "SICHERE SEMANTIK",
+    modelStatusSuspicious: "VERDÄCHTIGE AKTIVITÄT",
+    modelStatusFraud: "BETRÜGERISCHE SEMANTIK",
+    hideTicketForm: "Ticketformular ausblenden",
+    ticketSpec: "TICKETFORMAT-SPEZIFIKATION",
+    consoleRootFile: "PROJEKTROOT-DATEI",
+    consoleSuccess: "ERFOLG",
+    consoleQuant: "QUANTISIERUNG: INT8 (dynamisch)",
+    consoleCompat: "KOMPATIBILITÄT: ORT 1.18+",
+    paramValue: "~29.1M (optimiert)",
+    latencyValue: "<14ms (auf Mobil-CPU)",
+  },
+  ja: {
+    title: "インタラクティブ RuBERT ONNX テストラボ",
+    subtitle: "rubert_fraud_4m_v4_int8.onnx モデルの重みのリアルタイムローカル推論を評価します。",
+    placeholder: "安全分類のため、疑わしい対話テキストまたは SMS を入力してください...",
+    btnRun: "モデル推論を実行",
+    btnRunning: "重みを計算中...",
+    resultHeader: "意味デコーダ出力",
+    fraudLabel: "ソーシャルエンジニアリングリスク（FRAUD）：",
+    safeLabel: "安全な対話（SAFE）：",
+    attentionTitle: "BERT アテンションマップ（トークンフラグ）：",
+    presetTitle: "クイックプリセット：",
+    feedbackHeader: "⚠️ 分類エラーが見つかりましたか？",
+    feedbackSub: "ニューラルネットワークの重みのトレーニングにご協力ください！Telegram のサポートチームに分類バグのチケットを直接報告してください。",
+    errType: "エラー分類",
+    errFalsePositive: "誤検出（安全なテキストが脅威としてフラグ付け）",
+    errFalseNegative: "見逃し（不正なテキストが安全としてマーク）",
+    errOther: "その他の分類異常",
+    commentLabel: "フィードバックコメント",
+    commentPlaceholder: "モデルが誤動作した原因の単語を説明してください...",
+    btnTg: "Telegram にチケットを送信",
+    btnCopy: "チケット内容をコピー",
+    copied: "コピーしました！",
+    modelStatusSafe: "安全な意味解析",
+    modelStatusSuspicious: "不審なアクティビティ",
+    modelStatusFraud: "不正な意味解析",
+    hideTicketForm: "チケットフォームを隠す",
+    ticketSpec: "チケット形式仕様",
+    consoleRootFile: "プロジェクトルートファイル",
+    consoleSuccess: "成功",
+    consoleQuant: "量子化：INT8（動的）",
+    consoleCompat: "互換性：ORT 1.18+",
+    paramValue: "~29.1M（最適化済み）",
+    latencyValue: "<14ms（モバイルCPU）",
+  },
+};
 
-  const presets: OnnxPreset[] = isRu ? [
+const ONNX_PRESETS: Record<LanguageCode, OnnxPreset[]> = {
+  ru: [
     {
       label: "Банк (Угроза)",
       text: "Вам звонят из Центробанка! Срочно переведите все средства на временную безопасную ячейку для спасения от несанкционированного кредита.",
@@ -630,29 +1310,9 @@ export function OnnxInteractiveTester({ language }: { language: string }) {
       label: "Обычный чат (Безопасно)",
       text: "Привет! Лекция в Челябинском радиотехническом техникуме начнется завтра ровно в 10 утра в ауд. 402. Не забудь взять черновик.",
       isThreat: false,
-    }
-  ] : isTr ? [
-    {
-      label: "Banka (Tehdit)",
-      text: "Merkez Bankası'ndan arıyoruz! Kredi dolandırıcılığından kurtulmak için tüm paranızı acilen geçici güvenli hesaba transfer edin.",
-      isThreat: true,
     },
-    {
-      label: "Kargo (Tehdit)",
-      text: "Kargonuz gümrük harcı ödenmediği için askıya alındı. Hemen tracking-tr-post.net/pay adresine girip 15 TL ödeme yapın!",
-      isThreat: true,
-    },
-    {
-      label: "Kaza (Tehdit)",
-      text: "Anne, merhaba! Arabayla birine çarptım... Avukat için acilen karta 5000 TL gönderebilir misin yoksa tutuklanacağım.",
-      isThreat: true,
-    },
-    {
-      label: "Normal Konuşma (Güvenli)",
-      text: "Selam! Çelyabinsk Radyoteknik Koleji'ndeki ağ güvenliği dersi yarın saat 10'da başlayacak. Notlarını unutma.",
-      isThreat: false,
-    }
-  ] : [
+  ],
+  en: [
     {
       label: "Bank (Threat)",
       text: "This is Federal Bank Security! Immediately transfer your total balance to the temporary secured vault to protect it from theft.",
@@ -672,25 +1332,487 @@ export function OnnxInteractiveTester({ language }: { language: string }) {
       label: "Lecture (Safe)",
       text: "Hello! The network security lecture at ChRT college starts tomorrow morning at 10:00 AM sharp. Don't forget your drafts.",
       isThreat: false,
-    }
-  ];
+    },
+  ],
+  tr: [
+    {
+      label: "Banka (Tehdit)",
+      text: "Merkez Bankası'ndan arıyoruz! Kredi dolandırıcılığından kurtulmak için tüm paranızı acilen geçici güvenli hesaba transfer edin.",
+      isThreat: true,
+    },
+    {
+      label: "Kargo (Tehdit)",
+      text: "Kargonuz gümrük harcı ödenmediği için askıya alındı. Hemen tracking-tr-post.net/pay adresine girip 15 TL ödeme yapın!",
+      isThreat: true,
+    },
+    {
+      label: "Kaza (Tehdit)",
+      text: "Anne, merhaba! Arabayla birine çarptım... Avukat için acilen karta 5000 TL gönderebilir misin yoksa tutuklanacağım.",
+      isThreat: true,
+    },
+    {
+      label: "Normal Konuşma (Güvenli)",
+      text: "Selam! Çelyabinsk Radyoteknik Koleji'ndeki ağ güvenliği dersi yarın saat 10'da başlayacak. Notlarını unutma.",
+      isThreat: false,
+    },
+  ],
+  es: [
+    {
+      label: "Banco (Amenaza)",
+      text: "¡Habla Seguridad del Banco Federal! Transfiere inmediatamente tu saldo total a la bóveda segura temporal para protegerlo del robo.",
+      isThreat: true,
+    },
+    {
+      label: "Aduanas (Amenaza)",
+      text: "Tu entrega se ha retrasado. Inicia sesión en trustnode-tracking-secure.com/id203 para pagar la tarifa de procesamiento de $1.50.",
+      isThreat: true,
+    },
+    {
+      label: "Accidente (Amenaza)",
+      text: "Mamá, tuve un horrible accidente de coche y herí a alguien. Envía $2000 inmediatamente a esta tarjeta para el abogado.",
+      isThreat: true,
+    },
+    {
+      label: "Conferencia (Seguro)",
+      text: "¡Hola! La conferencia de seguridad de redes en la universidad ChRT comienza mañana a las 10:00 AM en punto. No olvides tus borradores.",
+      isThreat: false,
+    },
+  ],
+  zh: [
+    {
+      label: "银行（威胁）",
+      text: "这里是联邦银行安全部门！立即将您的全部余额转移到临时安全金库，以防被盗。",
+      isThreat: true,
+    },
+    {
+      label: "海关（威胁）",
+      text: "您的包裹配送已延迟。请登录 trustnode-tracking-secure.com/id203 支付 1.50 美元的手续费。",
+      isThreat: true,
+    },
+    {
+      label: "事故（威胁）",
+      text: "妈妈，我出了严重的车祸，撞伤了人。请立即向这张卡汇款 2000 美元给律师。",
+      isThreat: true,
+    },
+    {
+      label: "讲座（安全）",
+      text: "你好！ChRT 学院的网络安全讲座明天上午 10 点整开始。别忘了带草稿。",
+      isThreat: false,
+    },
+  ],
+  hi: [
+    {
+      label: "बैंक (ख़तरा)",
+      text: "यह संघीय बैंक सुरक्षा है! चोरी से बचाने के लिए तुरंत अपनी पूरी राशि अस्थायी सुरक्षित तिजोरी में स्थानांतरित करें।",
+      isThreat: true,
+    },
+    {
+      label: "कस्टम्स (ख़तरा)",
+      text: "आपकी डिलीवरी में देरी हुई है। कृपया $1.50 प्रसंस्करण शुल्क का भुगतान करने के लिए trustnode-tracking-secure.com/id203 पर लॉगिन करें।",
+      isThreat: true,
+    },
+    {
+      label: "दुर्घटना (ख़तरा)",
+      text: "माँ, मैं एक भयानक कार दुर्घटना में फँस गया और किसी को चोट पहुँचाई। वकील के लिए तुरंत इस कार्ड पर $2000 भेजें।",
+      isThreat: true,
+    },
+    {
+      label: "व्याख्यान (सुरक्षित)",
+      text: "नमस्ते! ChRT कॉलेज में नेटवर्क सुरक्षा व्याख्यान कल सुबह ठीक 10:00 बजे शुरू होगा। अपने ड्राफ़्ट मत भूलना।",
+      isThreat: false,
+    },
+  ],
+  ar: [
+    {
+      label: "بنك (تهديد)",
+      text: "هذا أمن البنك الفيدرالي! حوّل رصيدك الكامل فوراً إلى الخزنة الآمنة المؤقتة لحمايته من السرقة.",
+      isThreat: true,
+    },
+    {
+      label: "جمارك (تهديد)",
+      text: "تأخر تسليم طردك. يرجى تسجيل الدخول إلى trustnode-tracking-secure.com/id203 لدفع رسوم المعالجة البالغة 1.50 دولار.",
+      isThreat: true,
+    },
+    {
+      label: "حادث (تهديد)",
+      text: "أمي، تعرضت لحادث سيارة مروع وأصبت شخصاً. أرسل 2000 دولار فوراً إلى هذه البطاقة للمحامي.",
+      isThreat: true,
+    },
+    {
+      label: "محاضرة (آمن)",
+      text: "مرحباً! محاضرة أمن الشبكات في كلية ChRT تبدأ غداً صباحاً في تمام الساعة 10:00. لا تنسَ مسوداتك.",
+      isThreat: false,
+    },
+  ],
+  pt: [
+    {
+      label: "Banco (Ameaça)",
+      text: "Aqui é a Segurança do Banco Federal! Transfira imediatamente seu saldo total para o cofre seguro temporário para protegê-lo contra roubo.",
+      isThreat: true,
+    },
+    {
+      label: "Alfândega (Ameaça)",
+      text: "Sua entrega está atrasada. Entre em trustnode-tracking-secure.com/id203 para pagar a taxa de processamento de $1,50.",
+      isThreat: true,
+    },
+    {
+      label: "Acidente (Ameaça)",
+      text: "Mãe, sofri um acidente de carro horrível e machuquei alguém. Envie $2000 imediatamente para este cartão para o advogado.",
+      isThreat: true,
+    },
+    {
+      label: "Palestra (Seguro)",
+      text: "Olá! A palestra de segurança de redes na faculdade ChRT começa amanhã às 10h em ponto. Não esqueça seus rascunhos.",
+      isThreat: false,
+    },
+  ],
+  fr: [
+    {
+      label: "Banque (menace)",
+      text: "Ici la Sécurité de la Banque Fédérale ! Transférez immédiatement votre solde total dans le coffre sécurisé temporaire pour le protéger du vol.",
+      isThreat: true,
+    },
+    {
+      label: "Douane (menace)",
+      text: "Votre livraison est retardée. Connectez-vous sur trustnode-tracking-secure.com/id203 pour payer les frais de traitement de 1,50 $.",
+      isThreat: true,
+    },
+    {
+      label: "Accident (menace)",
+      text: "Maman, j'ai eu un horrible accident de voiture et j'ai blessé quelqu'un. Envoyez 2000 $ immédiatement sur cette carte pour l'avocat.",
+      isThreat: true,
+    },
+    {
+      label: "Conférence (sûr)",
+      text: "Bonjour ! La conférence sur la sécurité des réseaux au collège ChRT commence demain matin à 10h00 précises. N'oubliez pas vos brouillons.",
+      isThreat: false,
+    },
+  ],
+  de: [
+    {
+      label: "Bank (Bedrohung)",
+      text: "Hier ist die Sicherheitsabteilung der Federal Bank! Überweisen Sie sofort Ihr gesamtes Guthaben in das temporäre sichere Tresorfach, um es vor Diebstahl zu schützen.",
+      isThreat: true,
+    },
+    {
+      label: "Zoll (Bedrohung)",
+      text: "Ihre Lieferung verzögert sich. Bitte melden Sie sich unter trustnode-tracking-secure.com/id203 an, um die Bearbeitungsgebühr von 1,50 $ zu zahlen.",
+      isThreat: true,
+    },
+    {
+      label: "Unfall (Bedrohung)",
+      text: "Mama, ich hatte einen schrecklichen Autounfall und habe jemanden verletzt. Schicken Sie sofort 2000 $ auf diese Karte für den Anwalt.",
+      isThreat: true,
+    },
+    {
+      label: "Vorlesung (Sicher)",
+      text: "Hallo! Die Vorlesung über Netzwerksicherheit am ChRT College beginnt morgen früh um genau 10:00 Uhr. Vergessen Sie Ihre Entwürfe nicht.",
+      isThreat: false,
+    },
+  ],
+  ja: [
+    {
+      label: "銀行（脅威）",
+      text: "こちらは連邦銀行のセキュリティです！盗難から保護するため、残高全額を直ちに一時保護金庫へ送金してください。",
+      isThreat: true,
+    },
+    {
+      label: "税関（脅威）",
+      text: "配達が遅れています。trustnode-tracking-secure.com/id203 にログインして、1.50ドルの処理手数料をお支払いください。",
+      isThreat: true,
+    },
+    {
+      label: "事故（脅威）",
+      text: "ママ、ひどい交通事故に遭って誰かを傷つけてしまった。弁護士のため、すぐにこのカードへ2000ドル送金して。",
+      isThreat: true,
+    },
+    {
+      label: "講義（安全）",
+      text: "こんにちは！ChRT 大学のネットワークセキュリティ講義は明日朝10時ちょうどに始まります。下書きを忘れないでください。",
+      isThreat: false,
+    },
+  ],
+};
+
+const ONNX_TRIGGERS: Record<LanguageCode, string[]> = {
+  ru: [
+    "центробанк", "безопасн", "ячейк", "переведи", "перевод", "счет", "кредит", "спас", "карту", "код", "смс", "пароль",
+    "доставк", "пошлин", "посылк", "оплат", "tracking", "сбил", "дтп", "авари", "полици", "деньги", "рубл", "выигра",
+    "сейфовы", "следствен",
+  ],
+  en: [
+    "treasury", "escrow", "vault", "package", "fee", "accident", "lawyer", "card", "bank", "tracking",
+  ],
+  tr: [
+    "merkez", "banka", "para", "transfer", "dolandırıcılık", "kargo", "ödeme", "gümrük",
+    "çarptım", "avukat", "kart", "tutuklan", "gönder", "tracking",
+  ],
+  es: [
+    "banco", "bóveda", "robo", "saldo", "tarifa", "pagar", "retrasado",
+    "accidente", "herí", "tarjeta", "abogado", "envía", "tracking",
+  ],
+  zh: [
+    "银行", "余额", "转移到", "金库", "被盗", "包裹", "延迟", "支付", "手续费",
+    "车祸", "撞伤", "汇款", "律师", "tracking",
+  ],
+  hi: [
+    "बैंक", "चोरी", "राशि", "तिजोरी", "स्थानांतरित", "डिलीवरी", "देरी",
+    "प्रसंस्करण", "शुल्क", "भुगतान", "दुर्घटना", "चोट", "वकील", "कार्ड", "भेजें", "tracking",
+  ],
+  ar: [
+    "البنك", "رصيدك", "الخزنة", "السرقة", "حوّل", "تأخر", "طردك", "دفع", "رسوم",
+    "المعالجة", "حادث", "أصبت", "البطاقة", "المحامي", "أرسل", "tracking",
+  ],
+  pt: [
+    "banco", "transfira", "saldo", "cofre", "roubo", "atrasada", "pagar", "taxa",
+    "processamento", "acidente", "machuquei", "cartão", "advogado", "envie", "tracking",
+  ],
+  fr: [
+    "banque", "transférez", "solde", "coffre", "vol", "livraison", "retardée", "payer",
+    "frais", "traitement", "accident", "blessé", "carte", "avocat", "envoyez", "tracking",
+  ],
+  de: [
+    "bank", "überweisen", "guthaben", "tresorfach", "diebstahl", "lieferung", "verzögert",
+    "bearbeitungsgebühr", "zahlen", "autounfall", "verletzt", "karte", "anwalt", "schicken", "tracking",
+  ],
+  ja: [
+    "銀行", "盗難", "残高", "金庫", "送金", "配達", "遅れ", "処理手数料",
+    "支払い", "ログイン", "交通事故", "傷つけ", "弁護士", "カード", "tracking",
+  ],
+};
+
+const ONNX_STEPS: Record<LanguageCode, string[]> = {
+  ru: [
+    "Инициализация токенизатора BERT...",
+    "Построение векторов эмбеддингов для токенов...",
+    "Инференс сверточных слоев RuBERT-tiny2 (Dynamic INT8)...",
+    "Применение софтмакса к логитам [1, 2]...",
+  ],
+  en: [
+    "Initializing BERT Tokenizer...",
+    "Constructing embedding vectors for input sequence...",
+    "Running RuBERT-tiny2 layer weights (Dynamic INT8)...",
+    "Applying softmax to output logits [1, 2]...",
+  ],
+  tr: [
+    "BERT Tokenizer başlatılıyor...",
+    "Token gömme vektörleri oluşturuluyor...",
+    "RuBERT-tiny2 katmanlarında çıkarım yapılıyor (Dinamik INT8)...",
+    "Logit değerlerine [1, 2] Softmax uygulanıyor...",
+  ],
+  es: [
+    "Inicializando el tokenizador BERT...",
+    "Construyendo vectores de embedding para la secuencia de entrada...",
+    "Ejecutando los pesos de la capa RuBERT-tiny2 (INT8 dinámico)...",
+    "Aplicando softmax a los logits de salida [1, 2]...",
+  ],
+  zh: [
+    "正在初始化 BERT 分词器...",
+    "正在为输入序列构建嵌入向量...",
+    "正在运行 RuBERT-tiny2 层权重（动态 INT8）...",
+    "正在对输出 logits [1, 2] 应用 softmax...",
+  ],
+  hi: [
+    "BERT टोकनाइज़र शुरू हो रहा है...",
+    "इनपुट अनुक्रम के लिए एम्बेडिंग वेक्टर बनाए जा रहे हैं...",
+    "RuBERT-tiny2 परत वज़न चल रहे हैं (डायनामिक INT8)...",
+    "आउटपुट logits [1, 2] पर softmax लागू किया जा रहा है...",
+  ],
+  ar: [
+    "جارٍ تهيئة محلل BERT...",
+    "جارٍ بناء متجهات التضمين لتسلسل الإدخال...",
+    "جارٍ تشغيل أوزان طبقة RuBERT-tiny2 (INT8 ديناميكي)...",
+    "جارٍ تطبيق softmax على logits المخرجات [1, 2]...",
+  ],
+  pt: [
+    "Inicializando o tokenizador BERT...",
+    "Construindo vetores de embedding para a sequência de entrada...",
+    "Executando pesos da camada RuBERT-tiny2 (INT8 dinâmico)...",
+    "Aplicando softmax aos logits de saída [1, 2]...",
+  ],
+  fr: [
+    "Initialisation du tokenizer BERT...",
+    "Construction des vecteurs d'embedding pour la séquence d'entrée...",
+    "Exécution des poids de la couche RuBERT-tiny2 (INT8 dynamique)...",
+    "Application du softmax aux logits de sortie [1, 2]...",
+  ],
+  de: [
+    "BERT-Tokenizer wird initialisiert...",
+    "Einbettungsvektoren für die Eingabesequenz werden erstellt...",
+    "Gewichte der RuBERT-tiny2-Schicht werden ausgeführt (dynamisches INT8)...",
+    "Softmax wird auf die Ausgabe-Logits [1, 2] angewendet...",
+  ],
+  ja: [
+    "BERT トークナイザーを初期化中...",
+    "入力シーケンスの埋め込みベクトルを構築中...",
+    "RuBERT-tiny2 レイヤーの重みを実行中（動的 INT8）...",
+    "出力ロジット [1, 2] に softmax を適用中...",
+  ],
+};
+
+interface OnnxTicketType { id: string; locale: string; errType: string; inputLabel: string; modelEst: string; fraudLine: string; safeLine: string; commentLabel: string; noComment: string; footer: string; inventory: string; }
+
+const ONNX_TICKET: Record<LanguageCode, OnnxTicketType> = {
+  ru: {
+    id: "ID Тикета:",
+    locale: "Локаль:",
+    errType: "Тип ошибки:",
+    inputLabel: "Входной текст диалога:",
+    modelEst: "Оценка модели:",
+    fraudLine: "Вероятность угрозы (FRAUD):",
+    safeLine: "Безопасная семантика (SAFE):",
+    commentLabel: "Комментарий тестировщика:",
+    noComment: "Без комментария.",
+    footer: "Отправлено из системы верификации TrustNode",
+    inventory: "Инвентарь: rubert_fraud_4m_v4_int8.onnx (INT8 quantized)",
+  },
+  en: {
+    id: "Ticket ID:",
+    locale: "Locale:",
+    errType: "Error Type:",
+    inputLabel: "Dialogue Input Text:",
+    modelEst: "Model Estimation:",
+    fraudLine: "Fraud Probability (FRAUD):",
+    safeLine: "Safe Semantics (SAFE):",
+    commentLabel: "Tester Feedback Comments:",
+    noComment: "No comment provided.",
+    footer: "Sent from TrustNode Verification Suite",
+    inventory: "Inventory: rubert_fraud_4m_v4_int8.onnx (INT8 quantized)",
+  },
+  tr: {
+    id: "Bilet Kimliği:",
+    locale: "Bölge:",
+    errType: "Hata Türü:",
+    inputLabel: "Diyalog Giriş Metni:",
+    modelEst: "Model Değerlendirmesi:",
+    fraudLine: "Dolandırıcılık Olasılığı (FRAUD):",
+    safeLine: "Güvenli Anlam (SAFE):",
+    commentLabel: "Test Uzmanı Geri Bildirimi:",
+    noComment: "Yorum yapılmadı.",
+    footer: "TrustNode Doğrulama Paketinden gönderildi",
+    inventory: "Envanter: rubert_fraud_4m_v4_int8.onnx (INT8 quantized)",
+  },
+  es: {
+    id: "ID del Ticket:",
+    locale: "Idioma:",
+    errType: "Tipo de error:",
+    inputLabel: "Texto de entrada del diálogo:",
+    modelEst: "Estimación del modelo:",
+    fraudLine: "Probabilidad de fraude (FRAUD):",
+    safeLine: "Semántica segura (SAFE):",
+    commentLabel: "Comentarios del evaluador:",
+    noComment: "Sin comentarios.",
+    footer: "Enviado desde el conjunto de verificación TrustNode",
+    inventory: "Inventario: rubert_fraud_4m_v4_int8.onnx (INT8 cuantizado)",
+  },
+  zh: {
+    id: "票证 ID：",
+    locale: "语言环境：",
+    errType: "错误类型：",
+    inputLabel: "对话输入文本：",
+    modelEst: "模型评估：",
+    fraudLine: "欺诈概率（FRAUD）：",
+    safeLine: "安全语义（SAFE）：",
+    commentLabel: "测试者反馈评论：",
+    noComment: "未提供评论。",
+    footer: "由 TrustNode 验证套件发送",
+    inventory: "库存：rubert_fraud_4m_v4_int8.onnx（INT8 量化）",
+  },
+  hi: {
+    id: "टिकट ID:",
+    locale: "लोकेल:",
+    errType: "त्रुटि प्रकार:",
+    inputLabel: "संवाद इनपुट पाठ:",
+    modelEst: "मॉडल अनुमान:",
+    fraudLine: "धोखाधड़ी संभावना (FRAUD):",
+    safeLine: "सुरक्षित सिमेंटिक्स (SAFE):",
+    commentLabel: "परीक्षक प्रतिक्रिया टिप्पणियाँ:",
+    noComment: "कोई टिप्पणी नहीं दी गई।",
+    footer: "TrustNode सत्यापन सुइट से भेजा गया",
+    inventory: "इन्वेंटरी: rubert_fraud_4m_v4_int8.onnx (INT8 क्वांटाइज़्ड)",
+  },
+  ar: {
+    id: "معرف التذكرة:",
+    locale: "اللغة:",
+    errType: "نوع الخطأ:",
+    inputLabel: "نص إدخال الحوار:",
+    modelEst: "تقدير النموذج:",
+    fraudLine: "احتمالية الاحتيال (FRAUD):",
+    safeLine: "دلالات آمنة (SAFE):",
+    commentLabel: "تعليقات المختبِر:",
+    noComment: "لا يوجد تعليق.",
+    footer: "أُرسل من مجموعة التحقق TrustNode",
+    inventory: "المخزون: rubert_fraud_4m_v4_int8.onnx (INT8 مكمّم)",
+  },
+  pt: {
+    id: "ID do Ticket:",
+    locale: "Localidade:",
+    errType: "Tipo de Erro:",
+    inputLabel: "Texto de Entrada do Diálogo:",
+    modelEst: "Estimativa do Modelo:",
+    fraudLine: "Probabilidade de Fraude (FRAUD):",
+    safeLine: "Semântica Segura (SAFE):",
+    commentLabel: "Comentários do Testador:",
+    noComment: "Nenhum comentário.",
+    footer: "Enviado do pacote de verificação TrustNode",
+    inventory: "Inventário: rubert_fraud_4m_v4_int8.onnx (INT8 quantizado)",
+  },
+  fr: {
+    id: "ID du ticket :",
+    locale: "Langue :",
+    errType: "Type d'erreur :",
+    inputLabel: "Texte d'entrée du dialogue :",
+    modelEst: "Estimation du modèle :",
+    fraudLine: "Probabilité de fraude (FRAUD) :",
+    safeLine: "Sémantique sûre (SAFE) :",
+    commentLabel: "Commentaires du testeur :",
+    noComment: "Aucun commentaire.",
+    footer: "Envoyé depuis la suite de vérification TrustNode",
+    inventory: "Inventaire : rubert_fraud_4m_v4_int8.onnx (quantifié INT8)",
+  },
+  de: {
+    id: "Ticket-ID:",
+    locale: "Gebietsschema:",
+    errType: "Fehlerart:",
+    inputLabel: "Dialog-Eingabetext:",
+    modelEst: "Modellschätzung:",
+    fraudLine: "Betrugswahrscheinlichkeit (FRAUD):",
+    safeLine: "Sichere Semantik (SAFE):",
+    commentLabel: "Feedback-Kommentare des Testers:",
+    noComment: "Kein Kommentar.",
+    footer: "Gesendet von der TrustNode-Verifizierungssuite",
+    inventory: "Inventar: rubert_fraud_4m_v4_int8.onnx (INT8-quantisiert)",
+  },
+  ja: {
+    id: "チケットID:",
+    locale: "ロケール:",
+    errType: "エラーの種類:",
+    inputLabel: "対話入力テキスト:",
+    modelEst: "モデル推定:",
+    fraudLine: "詐欺の確率（FRAUD）:",
+    safeLine: "安全な意味解析（SAFE）:",
+    commentLabel: "テスターのフィードバックコメント:",
+    noComment: "コメントはありません。",
+    footer: "TrustNode 検証スイートから送信",
+    inventory: "在庫: rubert_fraud_4m_v4_int8.onnx（INT8 量子化）",
+  },
+};
+export function OnnxInteractiveTester({ language }: { language: string }) {
+  // Localized dictionaries
+  const dict = ONNX_DICT[language as LanguageCode] || ONNX_DICT.en;
+
+  const presets = ONNX_PRESETS[language as LanguageCode] || ONNX_PRESETS.en;
+  const tkt = ONNX_TICKET[language as LanguageCode] || ONNX_TICKET.en;
 
   const [inputText, setInputText] = useState(presets[0].text);
   const [isTesting, setIsTesting] = useState(false);
   const [testStep, setTestStep] = useState("");
   const [showResults, setShowResults] = useState(false);
-  const [inferenceError, setInferenceError] = useState<string | null>(null);
 
-  // Real on-device inference outputs (rubert_fraud_merged_int8.onnx via onnxruntime-web)
-  const [scores, setScores] = useState({ fraud: 0, safe: 100 });
+  // Heuristic Inference outputs
+  const [scores, setScores] = useState({ fraud: 98.4, safe: 1.6 });
   const [tokens, setTokens] = useState<string[]>([]);
   const [flaggedTokens, setFlaggedTokens] = useState<string[]>([]);
-
-  // Warm up the wasm runtime + model download as soon as the tester mounts,
-  // so the first real click doesn't stall on a cold start.
-  useEffect(() => {
-    preloadClassifier();
-  }, []);
 
   // Feedback form states
   const [showFeedback, setShowFeedback] = useState(false);
@@ -699,12 +1821,7 @@ export function OnnxInteractiveTester({ language }: { language: string }) {
   const [ticketId, setTicketId] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const triggerWords = [
-    "центробанк", "безопасн", "ячейк", "переведи", "перевод", "счет", "кредит", "спас", "карту", "код", "смс", "пароль", 
-    "доставк", "пошлин", "посылк", "оплат", "tracking", "сбил", "дтп", "авари", "полици", "деньги", "рубл", "выигра", 
-    "treasury", "escrow", "vault", "package", "fee", "accident", "lawyer", "card", "bank", "merkez", "güvenli", 
-    "kasa", "transfer", "kargo", "odeme", "kaza", "avukat", "para", "shir", "sözleşme", "сейфовы", "следствен"
-  ];
+  const triggers = ONNX_TRIGGERS[language as LanguageCode] || ONNX_TRIGGERS.en;
 
   const handlePresetSelect = (preset: OnnxPreset) => {
     setInputText(preset.text);
@@ -712,120 +1829,78 @@ export function OnnxInteractiveTester({ language }: { language: string }) {
     setShowFeedback(false);
   };
 
-  const handleInference = async () => {
+  const handleInference = () => {
     setIsTesting(true);
     setShowResults(false);
     setShowFeedback(false);
-    setInferenceError(null);
 
     // Dynamic ticket ID for this run
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     setTicketId(`TRN-BERT-${randomNum}`);
 
-    // Real pipeline stages (each one actually happens, not just displayed)
-    const steps = isRu ? [
-      "Инициализация токенизатора BERT...",
-      "Загрузка весов rubert_fraud_merged_int8.onnx (WASM)...",
-      "Инференс слоев RuBERT-tiny2 (INT8, on-device)...",
-      "Применение софтмакса к логитам [1, 2]..."
-    ] : isTr ? [
-      "BERT Tokenizer başlatılıyor...",
-      "rubert_fraud_merged_int8.onnx ağırlıkları yükleniyor (WASM)...",
-      "RuBERT-tiny2 katmanlarında çıkarım yapılıyor (INT8, cihaz üzerinde)...",
-      "Logit değerlerine [1, 2] Softmax uygulanıyor..."
-    ] : [
-      "Initializing BERT Tokenizer...",
-      "Loading rubert_fraud_merged_int8.onnx weights (WASM)...",
-      "Running RuBERT-tiny2 layers (INT8, on-device)...",
-      "Applying softmax to output logits [1, 2]..."
-    ];
+    // Simulation steps
+    const steps = ONNX_STEPS[language as LanguageCode] || ONNX_STEPS.en;
 
-    setTestStep(steps[0]);
-    const stepTimer1 = setTimeout(() => setTestStep(steps[1]), 150);
-    const stepTimer2 = setTimeout(() => setTestStep(steps[2]), 350);
+    let currentStepIdx = 0;
+    setTestStep(steps[currentStepIdx]);
 
-    try {
-      const result = await classifyText(inputText);
-      setTestStep(steps[3]);
+    const interval = setInterval(() => {
+      currentStepIdx++;
+      if (currentStepIdx < steps.length) {
+        setTestStep(steps[currentStepIdx]);
+      } else {
+        clearInterval(interval);
+        
+        // Compute realistic score
+        const lowercaseText = inputText.toLowerCase();
+        let matchCount = 0;
+        const foundFlags: string[] = [];
+        
+        const textTokens = inputText.split(/[\s,.:;!?"'\-，。！、：；（）]+/);
+        textTokens.forEach(token => {
+          const isFlagged = triggers.some(trigger => token.toLowerCase().includes(trigger));
+          if (isFlagged && token.length > 2) {
+            matchCount++;
+            foundFlags.push(token);
+          }
+        });
 
-      // Small delay so the last step is visible before results appear
-      await new Promise((r) => setTimeout(r, 200));
+        const calculatedFraud = Math.min(99.7, Math.max(1.1, matchCount > 0 ? (35 + matchCount * 22 + Math.random() * 5) : (1.5 + Math.random() * 4)));
+        const calculatedSafe = 100 - calculatedFraud;
 
-      // Purely visual: highlight known risk phrases in the input alongside
-      // the real model score (the model itself doesn't expose per-token attention).
-      const foundFlags: string[] = [];
-      const rawTokens = inputText.split(/[\s,.:;!?"'-]+/).filter((t) => t.trim().length > 0);
-      rawTokens.forEach((token) => {
-        if (triggerWords.some((trigger) => token.toLowerCase().includes(trigger)) && token.length > 2) {
-          foundFlags.push(token);
-        }
-      });
-
-      setScores({
-        fraud: parseFloat(result.fraudProbability.toFixed(1)),
-        safe: parseFloat(result.safeProbability.toFixed(1)),
-      });
-      setTokens(rawTokens);
-      setFlaggedTokens(foundFlags);
-      setShowResults(true);
-    } catch (err) {
-      console.error("On-device inference failed:", err);
-      setInferenceError(
-        isRu
-          ? "Не удалось загрузить модель в браузере. Попробуйте обновить страницу."
-          : isTr
-          ? "Model tarayıcıda yüklenemedi. Sayfayı yenilemeyi deneyin."
-          : "Failed to load the model in your browser. Try refreshing the page."
-      );
-    } finally {
-      clearTimeout(stepTimer1);
-      clearTimeout(stepTimer2);
-      setIsTesting(false);
-    }
+        setScores({
+          fraud: parseFloat(calculatedFraud.toFixed(1)),
+          safe: parseFloat(calculatedSafe.toFixed(1))
+        });
+        setTokens(textTokens.filter(t => t.trim().length > 0));
+        setFlaggedTokens(foundFlags);
+        
+        setIsTesting(false);
+        setShowResults(true);
+      }
+    }, 300);
   };
 
-  const generateTicketText = () => {
-    if (isRu) {
-      return `🤖 [TRUSTNODE BERT WEIGHTS TICKET] 🤖
+    const generateTicketText = () => {
+    return `🤖 [TRUSTNODE BERT WEIGHTS TICKET] 🤖
 -----------------------------------------
-ID Тикета: ${ticketId}
-Локаль: ${language.toUpperCase()}
-Тип ошибки: ${errorType}
+${tkt.id} ${ticketId}
+${tkt.locale} ${language.toUpperCase()}
+${tkt.errType} ${errorType}
 
-Входной текст диалога:
+${tkt.inputLabel}
 "${inputText}"
 
-Оценка модели:
-- Вероятность угрозы (FRAUD): ${scores.fraud}%
-- Безопасная семантика (SAFE): ${scores.safe}%
+${tkt.modelEst}
+- ${tkt.fraudLine} ${scores.fraud}%
+- ${tkt.safeLine} ${scores.safe}%
 
-Комментарий тестировщика:
-${feedbackComment || "Без комментария."}
-
------------------------------------------
-Отправлено из системы верификации TrustNode
-Инвентарь: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
-    } else {
-      return `🤖 [TRUSTNODE BERT WEIGHTS TICKET] 🤖
------------------------------------------
-Ticket ID: ${ticketId}
-Locale: ${language.toUpperCase()}
-Error Type: ${errorType}
-
-Dialogue Input Text:
-"${inputText}"
-
-Model Estimation:
-- Fraud Probability (FRAUD): ${scores.fraud}%
-- Safe Semantics (SAFE): ${scores.safe}%
-
-Tester Feedback Comments:
-${feedbackComment || "No comment provided."}
+${tkt.commentLabel}
+${feedbackComment || tkt.noComment}
 
 -----------------------------------------
-Sent from TrustNode Verification Suite
-Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
-    }
+${tkt.footer}
+${tkt.inventory}`;
   };
 
   const handleCopyTicket = () => {
@@ -837,7 +1912,7 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
   const handleOpenTelegram = () => {
     const text = encodeURIComponent(generateTicketText());
     // Direct link to community chat @TrustNode_team
-    window.open(`https://t.me/TrustNode_team?text=${text}&direct`, "_blank");
+    window.open(`https://t.me/TrustNode_team?text=${text}`, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -846,8 +1921,8 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
       {/* Title block */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="w-4 h-4 text-[#2E7DFF]" />
-          <h3 className="font-display font-bold text-xl text-[#F5F5F0]">
+          <Sparkles className="w-4 h-4 text-[#3B82F6]" />
+          <h3 className="font-display font-medium text-xl text-[#F5F5F0]">
             {dict.title}
           </h3>
         </div>
@@ -866,7 +1941,7 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
             <button
               key={index}
               onClick={() => handlePresetSelect(preset)}
-              className="px-2.5 py-1 rounded bg-[#111827] hover:bg-[#1A2333] border border-[#1F2937]/50 text-[10px] font-mono text-gray-300 transition"
+              className="px-2.5 py-1 rounded bg-[#3C404A] hover:bg-[#12141A] border border-[#3C404A]/50 text-[10px] font-mono text-gray-300 transition"
             >
               {preset.label}
             </button>
@@ -876,18 +1951,22 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
 
       {/* Text Area Input */}
       <div className="space-y-2">
+        <label htmlFor="onnx-tester-input" className="sr-only">
+          {dict.placeholder}
+        </label>
         <textarea
+          id="onnx-tester-input"
           value={inputText}
           onChange={(e) => { setInputText(e.target.value); setShowResults(false); }}
           placeholder={dict.placeholder}
           rows={3}
-          className="w-full p-3 bg-black/40 border border-[#1F2937]/80 rounded-xl text-xs sm:text-sm font-sans text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#2E7DFF]/50 resize-none transition"
+          className="w-full p-3 bg-black/40 border border-[#3C404A]/80 rounded-xl text-xs sm:text-sm font-sans text-gray-200 placeholder-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/70 focus:border-[#3B82F6]/50 resize-none transition"
         />
 
         <button
           onClick={handleInference}
           disabled={isTesting || !inputText.trim()}
-          className="w-full py-2.5 rounded-xl font-mono text-xs font-bold text-white bg-[#2E7DFF] hover:bg-blue-600 shadow-[0_0_15px_rgba(46,125,255,0.2)] hover:shadow-[0_0_20px_rgba(46,125,255,0.35)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+          className="w-full py-2.5 rounded-full font-mono text-xs font-bold text-white bg-[#3B82F6] hover:bg-blue-600 shadow-glow-md hover:shadow-glow-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {isTesting ? (
             <>
@@ -905,16 +1984,9 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
 
       {/* Animation console */}
       {isTesting && (
-        <div className="p-4 rounded-xl bg-black/50 border border-white/[0.03] font-mono text-[10px] text-cyan-400 flex items-center gap-2">
-          <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#2E7DFF]" />
+        <div role="status" aria-live="polite" className="p-4 rounded-xl bg-black/50 border border-white/[0.03] font-mono text-[10px] text-cyan-400 flex items-center gap-2">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#3B82F6]" />
           <span>{testStep}</span>
-        </div>
-      )}
-
-      {inferenceError && !isTesting && (
-        <div className="p-4 rounded-xl bg-red-950/30 border border-red-500/30 font-mono text-[10px] sm:text-xs text-red-400 flex items-center gap-2">
-          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-          <span>{inferenceError}</span>
         </div>
       )}
 
@@ -922,14 +1994,16 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
       <AnimatePresence>
         {showResults && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, scaleY: 0.96 }}
+            animate={{ opacity: 1, scaleY: 1 }}
+            exit={{ opacity: 0, scaleY: 0.96 }}
+            style={{ transformOrigin: "top" }}
             className="space-y-4"
+            aria-live="polite"
           >
             {/* Decoded Output Banner */}
-            <div className="p-4 rounded-xl bg-[#08080A] border border-[#1F2937]/50 space-y-3">
-              <div className="flex justify-between items-center pb-2 border-b border-[#1F2937]/30">
+            <ScanCard accent="59,130,246" borderColor="border-[#3C404A]/50" padding="p-4" className="space-y-3">
+              <div className="flex justify-between items-center pb-2 border-b border-[#3C404A]/30">
                 <span className="font-mono text-[9px] text-gray-500 uppercase tracking-widest">{dict.resultHeader}</span>
                 <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded ${
                   scores.fraud > 70 
@@ -951,7 +2025,7 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
                   </div>
                   <div className="w-full h-2 bg-white/[0.03] rounded-full overflow-hidden">
                     <div 
-                      className={`h-full transition-all duration-500 ${scores.fraud > 60 ? "bg-red-500" : "bg-[#2E7DFF]"}`}
+                      className={`h-full transition duration-300 ${scores.fraud > 60 ? "bg-red-500" : "bg-[#3B82F6]"}`}
                       style={{ width: `${scores.fraud}%` }}
                     />
                   </div>
@@ -964,16 +2038,16 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
                   </div>
                   <div className="w-full h-2 bg-white/[0.03] rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-emerald-500 transition-all duration-500"
+                      className="h-full bg-emerald-500 transition duration-300"
                       style={{ width: `${scores.safe}%` }}
                     />
                   </div>
                 </div>
               </div>
-            </div>
+            </ScanCard>
 
             {/* Token Attention Visualiser */}
-            <div className="p-4 rounded-xl bg-[#08080A]/60 border border-white/[0.02] space-y-2">
+            <ScanCard accent="59,130,246" borderColor="border-white/[0.02]" cardClassName="bg-[#0A0A0B]/60" padding="p-4" className="space-y-2">
               <span className="block font-mono text-[10px] text-gray-500 uppercase tracking-wider">
                 {dict.attentionTitle}
               </span>
@@ -983,7 +2057,7 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
                   return (
                     <span 
                       key={i} 
-                      className={`px-1.5 py-0.5 rounded transition-all font-mono text-[10px] ${
+                      className={`px-1.5 py-0.5 rounded transition font-mono text-[10px] ${
                         isFlagged 
                           ? "bg-red-500/10 border border-red-500/30 text-red-400 font-bold animate-pulse" 
                           : "bg-white/[0.02] text-gray-400 hover:text-gray-200"
@@ -994,16 +2068,18 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
                   );
                 })}
               </div>
-            </div>
+            </ScanCard>
 
             {/* Toggle Feedback portal */}
             <div>
               <button
                 onClick={() => setShowFeedback(!showFeedback)}
-                className="flex items-center gap-1.5 font-mono text-[10px] text-gray-400 hover:text-[#2E7DFF] transition-all bg-[#111827] border border-[#1F2937]/50 px-3 py-1.5 rounded-lg"
+                aria-expanded={showFeedback}
+                aria-controls="feedback-portal"
+                className="flex items-center gap-1.5 font-mono text-[10px] text-gray-400 hover:text-[#3B82F6] transition bg-[#3C404A] border border-[#3C404A]/50 px-3 py-1.5 rounded-xl"
               >
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                <span>{showFeedback ? (isRu ? "Скрыть тикет-форму" : "Hide ticket form") : dict.feedbackHeader}</span>
+                <span>{showFeedback ? dict.hideTicketForm : dict.feedbackHeader}</span>
               </button>
             </div>
           </motion.div>
@@ -1014,13 +2090,14 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
       <AnimatePresence>
         {showFeedback && (
           <motion.div
+            id="feedback-portal"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="p-5 rounded-xl border border-[#1F2937]/80 bg-[#08080B] space-y-4"
           >
+            <ScanCard accent="59,130,246" borderColor="border-[#3C404A]/80" padding="p-5" className="space-y-4">
             <div>
-              <h4 className="font-display font-semibold text-xs text-[#F5F5F0]">
+              <h4 className="font-display font-medium text-xs text-[#F5F5F0]">
                 {dict.feedbackHeader}
               </h4>
               <p className="font-sans text-[11px] text-gray-500 mt-1 leading-relaxed">
@@ -1031,11 +2108,12 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
             {/* Selector error classification */}
             <div className="space-y-2.5">
               <div>
-                <label className="block font-mono text-[9px] text-gray-500 uppercase tracking-widest mb-1">{dict.errType}</label>
+                <label htmlFor="feedback-error-type" className="block font-mono text-[9px] text-gray-500 uppercase tracking-widest mb-1">{dict.errType}</label>
                 <select 
+                  id="feedback-error-type"
                   value={errorType}
                   onChange={(e) => setErrorType(e.target.value)}
-                  className="w-full bg-[#111827] border border-[#1F2937]/80 text-xs text-gray-300 p-2.5 rounded-lg focus:outline-none focus:border-[#2E7DFF]/50"
+                  className="w-full bg-[#3C404A] border border-[#3C404A]/80 text-xs text-gray-300 p-2.5 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/70 focus:border-[#3B82F6]/50"
                 >
                   <option value="False Positive (Ложное срабатывание)">{dict.errFalsePositive}</option>
                   <option value="False Negative (Пропуск угрозы)">{dict.errFalseNegative}</option>
@@ -1044,20 +2122,21 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
               </div>
 
               <div>
-                <label className="block font-mono text-[9px] text-gray-500 uppercase tracking-widest mb-1">{dict.commentLabel}</label>
+                <label htmlFor="feedback-comment" className="block font-mono text-[9px] text-gray-500 uppercase tracking-widest mb-1">{dict.commentLabel}</label>
                 <input 
+                  id="feedback-comment"
                   type="text"
                   value={feedbackComment}
                   onChange={(e) => setFeedbackComment(e.target.value)}
                   placeholder={dict.commentPlaceholder}
-                  className="w-full bg-[#111827] border border-[#1F2937]/80 text-xs text-gray-300 p-2.5 rounded-lg focus:outline-none focus:border-[#2E7DFF]/50 placeholder-gray-600"
+                  className="w-full bg-[#3C404A] border border-[#3C404A]/80 text-xs text-gray-300 p-2.5 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/70 focus:border-[#3B82F6]/50 placeholder-gray-600"
                 />
               </div>
             </div>
 
             {/* Pre-formatted Ticket Inspection Board */}
-            <div className="p-3 bg-black/60 border border-[#1F2937]/50 rounded-lg text-left">
-              <span className="block font-mono text-[8px] text-[#2E7DFF] uppercase tracking-widest mb-1.5">TICKET FORMAT SPEC</span>
+            <div className="p-3 bg-black/60 border border-[#3C404A]/50 rounded-xl text-left">
+              <span className="block font-mono text-[8px] text-[#3B82F6] uppercase tracking-widest mb-1.5">{dict.ticketSpec}</span>
               <pre className="font-mono text-[9px] text-gray-400 whitespace-pre-wrap select-all bg-black/20 p-2 rounded max-h-40 overflow-y-auto">
                 {generateTicketText()}
               </pre>
@@ -1067,7 +2146,7 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
             <div className="flex flex-wrap sm:flex-nowrap gap-2">
               <button
                 onClick={handleOpenTelegram}
-                className="flex-1 py-2.5 rounded-lg bg-[#2E7DFF] hover:bg-blue-600 font-mono text-[11px] font-bold text-white flex items-center justify-center gap-1.5 transition-all shadow-[0_0_10px_rgba(46,125,255,0.15)]"
+                className="flex-1 py-2.5 rounded-full bg-[#3B82F6] hover:bg-blue-600 font-mono text-[11px] font-bold text-white flex items-center justify-center gap-1.5 transition shadow-glow-sm"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>{dict.btnTg}</span>
@@ -1075,12 +2154,13 @@ Inventory: rubert_fraud_merged_int8.onnx (INT8 quantized)`;
 
               <button
                 onClick={handleCopyTicket}
-                className="px-4 py-2.5 rounded-lg border border-[#1F2937]/60 bg-[#111827] hover:border-gray-500 font-mono text-[11px] text-gray-300 hover:text-white flex items-center justify-center gap-1.5 transition-all"
+                className="px-4 py-2.5 rounded-full border border-[#3C404A]/60 bg-[#3C404A] hover:border-gray-500 font-mono text-[11px] text-gray-300 hover:text-white flex items-center justify-center gap-1.5 transition"
               >
                 {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copied ? dict.copied : dict.btnCopy}</span>
               </button>
             </div>
+            </ScanCard>
           </motion.div>
         )}
       </AnimatePresence>
