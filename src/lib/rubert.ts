@@ -1,14 +1,13 @@
 import * as ort from "onnxruntime-web/wasm";
 
 const BASE = typeof import.meta !== "undefined" ? import.meta.env.BASE_URL : "/";
-// Model is served by the Cloudflare assets worker (trustnode-assets) in prod.
-// In dev (no VITE_ASSETS_URL) it falls back to the local public/models copy.
-const ASSETS_URL = (typeof import.meta !== "undefined" ? (import.meta.env.VITE_ASSETS_URL as string | undefined) : undefined)
-  ?.replace(/\/+$/, "");
-const VOCAB_URL = ASSETS_URL ? `${ASSETS_URL}/models/vocab.txt` : `${BASE}models/vocab.txt`;
-const MODEL_URL = ASSETS_URL
-  ? `${ASSETS_URL}/models/rubert_fraud_merged_int8.onnx`
-  : `${BASE}models/rubert_fraud_merged_int8.onnx`;
+// Model is served from the SAME origin (public/models in the repo → GH Pages
+// serves it at /models/...). Serving it from the Cloudflare worker
+// (*.workers.dev) proved unreliable: some mobile ISPs block HTTP/3 (QUIC)
+// and intercept *.workers.dev with 404s. Same-origin has no CORS, no QUIC,
+// no third-party domain — the repo is public, so it always loads.
+const VOCAB_URL = `${BASE}models/vocab.txt`;
+const MODEL_URL = `${BASE}models/rubert_fraud_merged_int8.onnx`;
 
 const MAX_SEQ_LEN = 512;
 const TOKEN_PAD = "[PAD]";
