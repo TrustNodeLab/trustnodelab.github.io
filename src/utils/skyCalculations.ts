@@ -154,86 +154,16 @@ const SMALL_BODY_TARGETS = [
 ];
 
 /**
- * Fetches orbital elements from NASA JPL Small-Body Database API.
- * Uses rate-controlled fetching (max 4 concurrent) and falls back to static SMALL_BODIES on failure.
+ * Orbital elements for small bodies (asteroids/comets).
+ *
+ * NOTE: direct browser fetches to ssd-api.jpl.nasa.gov are DISABLED — the API
+ * does not send Access-Control-Allow-Origin, so every call fails in the browser
+ * with a CORS error (console noise, fallback used anyway). We serve the static
+ * catalog SMALL_BODIES instead. If live elements are ever wanted again, proxy
+ * sbdb.api through the Cloudflare assets worker (server-side fetch, no CORS).
  */
 export async function fetchSmallBodyElements(): Promise<SmallBodyDef[]> {
-  const results: SmallBodyDef[] = [];
-  const concurrency = 4;
-
-  for (let i = 0; i < SMALL_BODY_TARGETS.length; i += concurrency) {
-    const batch = SMALL_BODY_TARGETS.slice(i, i + concurrency);
-    const batchPromises = batch.map(async (target) => {
-      const fallback = SMALL_BODIES.find((b) => b.id === target.fallbackId) || SMALL_BODIES[0];
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4500);
-        const res = await fetch(
-          `https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=${encodeURIComponent(target.query)}&discovery=false`,
-          { signal: controller.signal }
-        );
-        clearTimeout(timeoutId);
-
-        if (!res.ok) return fallback;
-        const data = await res.json();
-        const elements = data?.orbit?.elements;
-        if (!Array.isArray(elements)) return fallback;
-
-        const getVal = (name: string): number => {
-          const el = elements.find((x: any) => x.name && x.name.toLowerCase() === name.toLowerCase());
-          return el && el.value !== undefined ? parseFloat(el.value) : NaN;
-        };
-
-        const a = getVal("a");
-        const e = getVal("e");
-        const iDeg = getVal("i");
-        const OmegaDeg = getVal("om");
-        const omegaDeg = getVal("w");
-        let M0Deg = getVal("ma");
-        if (isNaN(M0Deg)) M0Deg = fallback.M0Deg;
-
-        let periodYears = getVal("per_y");
-        if (isNaN(periodYears)) {
-          const per = getVal("per");
-          if (!isNaN(per)) {
-            // Check if period is in days
-            periodYears = per > 100 ? per / 365.25 : per;
-          } else {
-            const n = getVal("n");
-            if (!isNaN(n) && n > 0) {
-              periodYears = 360 / (n * 365.25);
-            } else if (!isNaN(a)) {
-              periodYears = Math.pow(a, 1.5);
-            }
-          }
-        }
-
-        if (isNaN(a) || isNaN(e) || isNaN(iDeg) || isNaN(OmegaDeg) || isNaN(omegaDeg) || isNaN(periodYears)) {
-          return fallback;
-        }
-
-        return {
-          id: target.fallbackId,
-          nameEn: data.object?.fullname?.trim() || target.nameEn,
-          type: target.type,
-          a,
-          e,
-          iDeg,
-          OmegaDeg,
-          omegaDeg,
-          M0Deg,
-          periodYears
-        };
-      } catch {
-        return fallback;
-      }
-    });
-
-    const batchResults = await Promise.all(batchPromises);
-    results.push(...batchResults);
-  }
-
-  return results;
+  return SMALL_BODIES;
 }
 
 const DEG2RAD = Math.PI / 180;

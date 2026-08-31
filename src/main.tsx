@@ -6,6 +6,7 @@ import { EcoModeProvider } from './context/EcoModeContext';
 import { SeniorModeProvider } from './context/SeniorModeContext';
 import { CookieBannerProvider } from './context/CookieBannerContext';
 import { DepthProvider } from './context/DepthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import App from './App.tsx';
 import './index.css';
 
@@ -32,7 +33,9 @@ createRoot(document.getElementById('root')!).render(
           <SeniorModeProvider>
             <CookieBannerProvider>
               <DepthProvider>
-                <App />
+                <ErrorBoundary>
+                  <App />
+                </ErrorBoundary>
               </DepthProvider>
             </CookieBannerProvider>
           </SeniorModeProvider>

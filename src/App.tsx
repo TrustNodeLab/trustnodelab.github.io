@@ -59,6 +59,7 @@ import ScamQuizSection from "./components/ScamQuizSection";
 import HelpChecklistSection from "./components/HelpChecklistSection";
 import SearchModal from "./components/SearchModal";
 import ReadingProgress from "./components/ReadingProgress";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 import DamageCalculator from "./components/DamageCalculator";
 import FaqSection from "./components/FaqSection";
@@ -810,7 +811,8 @@ export default function App() {
         className="relative z-10 w-full flex flex-col"
         tabIndex={-1}
       >
-        <AnimatePresence mode="wait">
+        <ErrorBoundary>
+        <AnimatePresence mode="wait" initial={false}>
           <MotionConfig reducedMotion={prefersReducedMotion || ecoMode ? "always" : "user"}>
           {activePage === "home" && (
             <motion.div
@@ -1380,6 +1382,7 @@ export default function App() {
           )}
           </MotionConfig>
         </AnimatePresence>
+        </ErrorBoundary>
       </main>
 
       {/* Legal documents and FZ-152 Cookie Consent modules */}
