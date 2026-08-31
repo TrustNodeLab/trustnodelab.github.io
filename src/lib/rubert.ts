@@ -46,9 +46,12 @@ export function getLoadProgress(): number {
 async function fetchTextWithProgress(url: string, onStep?: (done: number) => void): Promise<string> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  if (!res.body) return "";
   const total = Number(res.headers.get("content-length") || 0);
-  const reader = res.body?.getReader();
-  if (!reader || !total) return await res.text();
+  // NOTE: never call res.text()/res.arrayBuffer() after getReader() — the
+  // stream is locked and the call throws "body stream is locked". Always
+  // accumulate chunks from the reader and decode the Blob instead.
+  const reader = res.body.getReader();
   const chunks: Uint8Array[] = [];
   let received = 0;
   for (;;) {
@@ -57,11 +60,10 @@ async function fetchTextWithProgress(url: string, onStep?: (done: number) => voi
     if (value) {
       chunks.push(value);
       received += value.length;
-      onStep?.(received / total);
+      if (total > 0) onStep?.(received / total);
     }
   }
-  const blob = new Blob(chunks);
-  return await blob.text();
+  return await new Blob(chunks).text();
 }
 
 async function loadVocab(): Promise<Map<string, number>> {
@@ -88,13 +90,11 @@ async function getSession(): Promise<ort.InferenceSession> {
       loadProgress = 0.3;
       const res = await fetch(MODEL_URL);
       if (!res.ok) throw new Error(`HTTP ${res.status} for model`);
+      if (!res.body) throw new Error("Model response has no body");
       const total = Number(res.headers.get("content-length") || 0);
-      const reader = res.body?.getReader();
-      if (!reader || !total) {
-        const buf = await res.arrayBuffer();
-        loadProgress = 1;
-        return ort.InferenceSession.create(buf, { executionProviders: ["wasm"] });
-      }
+      // Same rule as fetchTextWithProgress: read ONLY through the reader —
+      // res.arrayBuffer() on a locked stream throws "body stream is locked".
+      const reader = res.body.getReader();
       const chunks: Uint8Array[] = [];
       let received = 0;
       for (;;) {
@@ -103,7 +103,7 @@ async function getSession(): Promise<ort.InferenceSession> {
         if (value) {
           chunks.push(value);
           received += value.length;
-          loadProgress = 0.3 + (received / total) * 0.65;
+          if (total > 0) loadProgress = 0.3 + (received / total) * 0.65;
         }
       }
       const blob = new Blob(chunks);
