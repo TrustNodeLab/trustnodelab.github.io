@@ -1,9 +1,8 @@
 /* TrustNode service worker — network-first for pages, stale-while-revalidate for assets. */
-const VERSION = "v1.0.1";
+const VERSION = "v1.0.2";
 const CACHE = "trustnode-" + VERSION;
 const PRECACHE = [
   "/",
-  "/ru/",
   "/manifest.webmanifest",
   "/icons/icon.svg",
   "/icons/icon-192.svg",
@@ -62,7 +61,7 @@ self.addEventListener("fetch", (event) => {
           if (cached) return cached;
           const offline = await caches.match("/offline.html");
           if (offline) return offline;
-          return caches.match("/ru/");
+          return caches.match("/");
         }),
     );
     return;

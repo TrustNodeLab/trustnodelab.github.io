@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { LanguageCode, detectBrowserLanguage } from './languages';
 import { translations } from './translations';
 import { pageNames } from './dicts/pageNames';
@@ -14,13 +14,26 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Captured during init: 404.html stores the original deep path in
+  // sessionStorage.redirect and lands on "/". NavigationContext (child)
+  // consumes + removes that key during ITS init, so we must stash it here
+  // (parent initializer runs first) for the URL-restore effect below.
+  const redirectPathRef = useRef<string | null>(null);
   const [language, setLanguageState] = useState<LanguageCode>(() => {
     // 1. URL prefix wins (shareable links).
     const urlLang = parseAppPath(window.location.pathname).lang;
     if (urlLang) return urlLang;
+    // 1b. Deep-link reload via 404.html → "/" redirect: restore the
+    // language that was in the original path.
+    const saved = sessionStorage.getItem("redirect");
+    if (saved) {
+      redirectPathRef.current = saved;
+      const redirectLang = parseAppPath(saved).lang;
+      if (redirectLang) return redirectLang;
+    }
     // 2. localStorage.
-    const saved = localStorage.getItem('trustnode_lang') as LanguageCode;
-    if (saved && translations[saved]) return saved;
+    const savedLang = localStorage.getItem('trustnode_lang') as LanguageCode;
+    if (savedLang && translations[savedLang]) return savedLang;
     // 3. Browser detection.
     return detectBrowserLanguage();
   });
@@ -36,7 +49,13 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // so / becomes /ru/ and /research becomes /ru/research.
     const parsed = parseAppPath(window.location.pathname);
     if (!parsed.lang) {
-      const slug = pageSlug(parsed.page);
+      // If we arrived via the 404.html redirect, restore the REAL deep
+      // path (page + language) so the URL matches the content and a
+      // subsequent reload stays stable.
+      const source = redirectPathRef.current
+        ? parseAppPath(redirectPathRef.current)
+        : parsed;
+      const slug = pageSlug(source.page);
       const newPath = slug
         ? `/${language}/${slug}`
         : `/${language}/`;

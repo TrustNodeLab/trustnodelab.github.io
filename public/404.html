@@ -9,11 +9,11 @@
       var p = window.location.pathname;
       var q = window.location.search;
       sessionStorage.setItem("redirect", p + q);
-      /* Detect language prefix from the URL (e.g. /en/research → /en/).
-         If present, redirect to /{lang}/ so the SPA keeps the language.
-         Otherwise fall back to /. */
-      var m = p.match(/^\/([a-z]{2})(?:\/|$)/);
-      window.location.replace(m ? "/" + m[1] + "/" : "/");
+      /* GitHub Pages has NO SPA fallback: /{lang}/ and every deep path
+         return 404 (this page) again. The only real file is root
+         index.html, so we MUST land there. The SPA restores the original
+         page + language from sessionStorage.redirect. */
+      window.location.replace("/");
     })();
   </script>
   <style>

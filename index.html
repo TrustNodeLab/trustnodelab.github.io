@@ -9,19 +9,18 @@
 
     <!--
       Static-hosted security headers (GitHub Pages sends no custom HTTP headers).
-      NOTE: X-Frame-Options / frame-ancestors cannot be enforced via <meta> —
-      clickjacking protection for a static host without server headers is
-      objectively unachievable and is tracked as a known limitation.
+      X-Frame-Options / frame-ancestors cannot be enforced via <meta> (browsers
+      ignore frame-ancestors in meta CSP — see console warning), so clickjacking
+      protection is unachievable on this host and tracked as a known limitation.
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.telesco.pe https://*.userapi.com https://*.workers.dev; font-src 'self'; connect-src 'self' blob: https://*.workers.dev; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.telesco.pe https://*.userapi.com https://*.workers.dev; font-src 'self'; connect-src 'self' blob: https://*.workers.dev https://celestrak.org https://ssd-api.jpl.nasa.gov; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
     />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
 
-    <link rel="preload" href="textures/earth_daymap.webp" as="fetch" crossorigin />
     <meta name="theme-color" content="#0A0A0B" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
