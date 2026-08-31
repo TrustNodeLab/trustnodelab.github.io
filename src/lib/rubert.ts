@@ -59,7 +59,7 @@ async function fetchTextWithProgress(url: string, onStep?: (done: number) => voi
     if (value) {
       chunks.push(value);
       received += value.length;
-      if (total > 0) onStep?.(received / total);
+      if (total > 0) onStep?.(Math.min(1, received / total));
     }
   }
   return await new Blob(chunks).text();
@@ -102,7 +102,7 @@ async function getSession(): Promise<ort.InferenceSession> {
         if (value) {
           chunks.push(value);
           received += value.length;
-          if (total > 0) loadProgress = 0.3 + (received / total) * 0.65;
+          if (total > 0) loadProgress = 0.3 + Math.min(1, received / total) * 0.65;
         }
       }
       const blob = new Blob(chunks);

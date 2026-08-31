@@ -65,7 +65,7 @@ import DamageCalculator from "./components/DamageCalculator";
 import FaqSection from "./components/FaqSection";
 import HomePersonalBlocks from "./components/HomePersonalBlocks";
 import { acquireScrollLock, releaseScrollLock } from "./lib/scrollLock";
-import { motion, MotionConfig, AnimatePresence } from "motion/react";
+import { motion, MotionConfig } from "motion/react";
 import { useTranslation } from "./i18n/LanguageContext";
 import { useNavigation, PageId, homeIntroSkipSignal } from "./navigation/NavigationContext";
 import { useEcoMode } from "./context/EcoModeContext";
@@ -812,7 +812,6 @@ export default function App() {
         tabIndex={-1}
       >
         <ErrorBoundary>
-        <AnimatePresence mode="wait" initial={false}>
           <MotionConfig reducedMotion={prefersReducedMotion || ecoMode ? "always" : "user"}>
           {activePage === "home" && (
             <motion.div
@@ -1381,7 +1380,6 @@ export default function App() {
             </motion.div>
           )}
           </MotionConfig>
-        </AnimatePresence>
         </ErrorBoundary>
       </main>
 
