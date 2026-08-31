@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigation, type PageId } from "../navigation/NavigationContext";
 import { useTranslation } from "../i18n/LanguageContext";
+import { LanguageCode } from "../i18n/languages";
 import { Download } from "lucide-react";
 
 /* ============================================================================
@@ -67,6 +68,20 @@ export const GROUP_CAPTIONS: Record<NavGroupKey, Record<string, string>> = {
 const cap = (key: NavGroupKey, lang: string) =>
   GROUP_CAPTIONS[key][lang] || GROUP_CAPTIONS[key].en;
 
+const CTA_SUB: Record<LanguageCode, string> = {
+  ru: "Android 7.0+ · Бесплатно",
+  en: "Android 7.0+ · Free",
+  es: "Android 7.0+ · Gratis",
+  zh: "Android 7.0+ · 免费",
+  tr: "Android 7.0+ · Ücretsiz",
+  hi: "Android 7.0+ · मुफ़्त",
+  ar: "Android 7.0+ · مجانًا",
+  pt: "Android 7.0+ · Grátis",
+  fr: "Android 7.0+ · Gratuit",
+  de: "Android 7.0+ · Kostenlos",
+  ja: "Android 7.0+ · 無料",
+};
+
 /* ----------------------------------------------------------------------------
    DownloadCTA — «Скачать» не является разделом навигации: это действие.
    Микро-текст содержит только проверяемые факты проекта.
@@ -79,7 +94,7 @@ export function DownloadCTA({
   className?: string;
 }) {
   const { navigateTo } = useNavigation();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const sizes = {
     sm: "px-3 py-1.5 text-xs rounded-lg",
     md: "px-5 py-2.5 text-sm rounded-xl",
@@ -96,7 +111,7 @@ export function DownloadCTA({
         {t.header.rustore}
       </span>
       <span className="text-[10px] font-mono font-normal opacity-80 leading-none">
-        Android 7.0+ · Бесплатно
+        {CTA_SUB[language] || CTA_SUB.en}
       </span>
     </button>
   );

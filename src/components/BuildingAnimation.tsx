@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { useTranslation } from "../i18n/LanguageContext";
+import { LanguageCode } from "../i18n/languages";
 
 /* ============================================================================
    BuildingAnimation — «сборка логотипа» как в первоначальной интро-анимации:
@@ -8,11 +10,23 @@ import { motion, AnimatePresence } from "motion/react";
    персонализации маршрута, не имитация AI-генерации.
    ========================================================================== */
 
-const STATUS_RU = ["Анализирую ситуацию...", "Подбираю разделы...", "Готово"];
-const STATUS_EN = ["Analyzing your situation...", "Picking sections...", "Done"];
+const STATUS_BY_LANG: Record<LanguageCode, string[]> = {
+  ru: ["Анализирую ситуацию...", "Подбираю разделы...", "Готово"],
+  en: ["Analyzing your situation...", "Picking sections...", "Done"],
+  es: ["Analizando tu situación...", "Seleccionando secciones...", "Listo"],
+  zh: ["正在分析你的情况…", "正在挑选栏目…", "完成"],
+  tr: ["Durumunuz analiz ediliyor...", "Bölümler seçiliyor...", "Tamam"],
+  hi: ["आपकी स्थिति का विश्लेषण...", "अनुभाग चुने जा रहे हैं...", "तैयार"],
+  ar: ["جارٍ تحليل حالتك...", "جارٍ اختيار الأقسام...", "تم"],
+  pt: ["Analisando sua situação...", "Selecionando seções...", "Pronto"],
+  fr: ["Analyse de votre situation...", "Sélection des sections...", "Prêt"],
+  de: ["Analysiere deine Situation...", "Abschnitte werden ausgewählt...", "Fertig"],
+  ja: ["状況を分析中…", "セクションを選択中…", "完了"],
+};
 
 export default function BuildingAnimation({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState(0);
+  const { language } = useTranslation();
 
   useEffect(() => {
     const timers = [
@@ -23,7 +37,7 @@ export default function BuildingAnimation({ onDone }: { onDone: () => void }) {
     return () => timers.forEach(clearTimeout);
   }, [onDone]);
 
-  const statuses = navigator.language?.startsWith("ru") ? STATUS_RU : STATUS_EN;
+  const statuses = STATUS_BY_LANG[language] || STATUS_BY_LANG.en;
   const logo = `${import.meta.env.BASE_URL}frame1.svg`;
 
   return (

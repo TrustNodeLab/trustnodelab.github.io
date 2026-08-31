@@ -34,9 +34,11 @@ const ModelTesterSection: React.FC = () => {
     try {
       await preloadRubert();
       setPhase("ready");
-    } catch {
+    } catch (e) {
       setPhase("error");
       startedRef.current = false;
+      const msg = e instanceof Error ? e.message : String(e);
+      setErrorMsg(msg || d.errLoad);
     }
   }, []);
 
@@ -279,7 +281,12 @@ const ModelTesterSection: React.FC = () => {
                 {phase === "error" && (
                   <div className="mt-4 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/[0.06] p-3">
                     <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-                    <p className="font-sans text-xs text-red-300 flex-1">{d.errLoad}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-sans text-xs text-red-300">{d.errLoad}</p>
+                      {errorMsg && (
+                        <p className="mt-1 font-mono text-[10px] text-red-400/80 break-words">{errorMsg}</p>
+                      )}
+                    </div>
                     <button
                       onClick={handleRetry}
                       className="flex items-center gap-1.5 rounded-lg border border-white/[0.1] bg-[#12141A] px-3 py-1.5 font-mono text-[11px] text-gray-300 hover:text-[#6FB1FF] transition-colors"
