@@ -1,12 +1,12 @@
 /* TrustNode service worker — network-first for pages, stale-while-revalidate for assets. */
-const VERSION = "v1.0.4";
+const VERSION = "v1.0.5";
 const CACHE = "trustnode-" + VERSION;
 const PRECACHE = [
   "/",
   "/manifest.webmanifest",
-  "/icons/icon.svg",
-  "/icons/icon-192.svg",
-  "/icons/icon-512.svg",
+  "/favicon.svg",
+  "/icons/logo-192.png",
+  "/icons/logo-512.png",
   "/offline.html",
 ];
 
