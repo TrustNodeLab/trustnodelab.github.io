@@ -47,6 +47,7 @@ const QUESTIONS: QDef[] = [
       { ru: "Ссылки в сообщениях", en: "Links in messages" },
       { ru: "QR-коды и оплаты", en: "QR codes and payments" },
       { ru: "Мои личные данные", en: "My personal data" },
+      { ru: "Всё выше перечисленное", en: "All of the above" },
     ],
   },
   {
@@ -93,6 +94,7 @@ function buildRoute(a: Record<string, number>): { ids: any[]; softCta: boolean }
   if (a.fear === 0) push("how-it-works");
   else if (a.fear === 1 || a.fear === 2) push("features");
   else if (a.fear === 3) push("privacy-architecture");
+  else if (a.fear === 4) push("how-it-works", "features", "privacy-architecture"); // «всё выше перечисленное»
 
   push("how-it-works");
   push("features");

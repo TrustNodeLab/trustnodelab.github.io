@@ -65,6 +65,7 @@ import DamageCalculator from "./components/DamageCalculator";
 import FaqSection from "./components/FaqSection";
 import HomePersonalBlocks from "./components/HomePersonalBlocks";
 import { DownloadCTA } from "./components/Navigation";
+import { Phone, Link2, QrCode, UserRound } from "lucide-react";
 import { acquireScrollLock, releaseScrollLock } from "./lib/scrollLock";
 import { motion, MotionConfig } from "motion/react";
 import { useTranslation } from "./i18n/LanguageContext";
@@ -90,6 +91,25 @@ export default function App() {
     de: "Schutz vor Telefonbetrug: Anrufe, Links, QR-Codes und Zahlungen – direkt auf Ihrem Telefon.",
     ja: "電話詐欺から守る：通話・リンク・QRコード・送金を、スマホ本体でブロック。",
   };
+
+  // Лендинг-блок «от чего защищаем»: 4 коротких пункта вместо стены текста.
+  // Квиз персональной навигации спрятан за кнопкой — не барьер для обычного
+  // пользователя, но фишка (персонализация) остаётся доступной.
+  const THREATS_BY_LANG: Record<string, { badge: string; items: [string, string, string, string]; toggle: string; note: string }> = {
+    ru: { badge: "От чего защищаем", items: ["Звонки и голосовые", "Ссылки в сообщениях", "QR-коды и оплаты", "Личные данные"], toggle: "Персонализировать сайт под себя", note: "3 вопроса — и сайт соберётся под вас" },
+    en: { badge: "What we protect against", items: ["Calls and voice", "Links in messages", "QR codes & payments", "Personal data"], toggle: "Personalize the site", note: "3 questions — and the site adapts to you" },
+    es: { badge: "Contra qué protegemos", items: ["Llamadas y voz", "Enlaces en mensajes", "Códigos QR y pagos", "Datos personales"], toggle: "Personalizar el sitio", note: "3 preguntas — y el sitio se adapta a ti" },
+    zh: { badge: "我们防护什么", items: ["电话和语音", "消息中的链接", "二维码和支付", "个人数据"], toggle: "个性化网站", note: "3 个问题 — 网站将为您定制" },
+    tr: { badge: "Nelerden koruruz", items: ["Aramalar ve ses", "Mesajlardaki bağlantılar", "QR kodlar ve ödemeler", "Kişisel veriler"], toggle: "Siteyi kişiselleştir", note: "3 soru — site size göre şekillenir" },
+    hi: { badge: "हम किससे बचाते हैं", items: ["कॉल और आवाज़", "मैसेज में लिंक", "QR कोड और भुगतान", "व्यक्तिगत डेटा"], toggle: "साइट को निजीकृत करें", note: "3 सवाल — साइट आपके लिए बनेगी" },
+    ar: { badge: "مما نحميك", items: ["المكالمات والصوت", "الروابط في الرسائل", "رموز QR والمدفوعات", "البيانات الشخصية"], toggle: "خصص الموقع", note: "3 أسئلة — وسيتكيف الموقع معك" },
+    pt: { badge: "Do que protegemos", items: ["Chamadas e voz", "Links em mensagens", "Códigos QR e pagamentos", "Dados pessoais"], toggle: "Personalizar o site", note: "3 perguntas — e o site se adapta a você" },
+    fr: { badge: "Contre quoi nous protégeons", items: ["Appels et voix", "Liens dans les messages", "Codes QR et paiements", "Données personnelles"], toggle: "Personnaliser le site", note: "3 questions — et le site s'adapte à vous" },
+    de: { badge: "Wovor wir schützen", items: ["Anrufe und Stimme", "Links in Nachrichten", "QR-Codes und Zahlungen", "Persönliche Daten"], toggle: "Website personalisieren", note: "3 Fragen — und die Website passt sich dir an" },
+    ja: { badge: "何から守るか", items: ["電話と音声", "メッセージ内のリンク", "QRコードと支払い", "個人データ"], toggle: "サイトをカスタマイズ", note: "3つの質問 — サイトがあなた向けに" },
+  };
+  const THREAT_ICONS = [Phone, Link2, QrCode, UserRound];
+  const [quizOpen, setQuizOpen] = useState(false);
   const { activePage } = useNavigation();
   const { ecoMode, toggleEcoMode } = useEcoMode();
   const [windowHeight, setWindowHeight] = useState(0);
@@ -1090,11 +1110,51 @@ export default function App() {
                 {/* Квиз сразу после кинематик-анимации Земли — вместо плашек «как это устроено» */}
       {!cinematicEnabled && (
         <div data-snap-section className="relative">
-          {/* Живой созвездие-фон позади квиза (сам квиз прозрачный, контент в z-10) */}
+          {/* Живой созвездие-фон позади блока (контент в z-10) */}
           <div className="absolute inset-0 z-0 opacity-70" aria-hidden="true">
             <ConstellationField />
           </div>
-          <QuizFlow />
+          {/* Лендинг-блок: от чего защищаем + скачать. Квиз не барьер —
+              спрятан за кнопкой «Персонализировать» (фишка остаётся). */}
+          <section className="relative z-10 w-full py-14 sm:py-20 px-4" id="landing-threats">
+            <div className="max-w-3xl mx-auto flex flex-col items-center text-center">
+              <span className="font-mono text-[11px] tracking-[0.25em] text-[#3B82F6] uppercase font-bold">
+                {THREATS_BY_LANG[language]?.badge || THREATS_BY_LANG.en.badge}
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full mt-8">
+                {THREATS_BY_LANG[language]?.items.map((label, i) => {
+                  const Icon = THREAT_ICONS[i];
+                  return (
+                    <div
+                      key={i}
+                      className="flex flex-col items-center gap-2.5 rounded-xl border border-white/[0.06] bg-[#0E0F12]/70 px-4 py-5"
+                    >
+                      <Icon className="w-6 h-6 text-[#3B82F6]" />
+                      <span className="font-sans text-sm text-[#F5F5F0]/90 leading-snug">{label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-10"><DownloadCTA size="lg" /></div>
+              <button
+                onClick={() => setQuizOpen((v) => !v)}
+                className="mt-6 inline-flex items-center gap-2 text-sm text-gray-300 underline decoration-gray-600 underline-offset-4 hover:text-[#3B82F6] hover:decoration-[#3B82F6]/60 transition-colors cursor-pointer"
+                aria-expanded={quizOpen}
+              >
+                {quizOpen ? "✕" : "▸"} {THREATS_BY_LANG[language]?.toggle || THREATS_BY_LANG.en.toggle}
+              </button>
+              {!quizOpen && (
+                <p className="mt-2 text-xs font-mono text-gray-500">
+                  {THREATS_BY_LANG[language]?.note || THREATS_BY_LANG.en.note}
+                </p>
+              )}
+              {quizOpen && (
+                <div className="mt-8 w-full">
+                  <QuizFlow />
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       )}
                 {/* Сборка главной по блокам: только разделы из персонального маршрута квиза */}
