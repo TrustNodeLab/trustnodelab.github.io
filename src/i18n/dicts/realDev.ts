@@ -252,7 +252,7 @@ export const graphDetails: Record<LanguageCode, { title: string, subtitle: strin
 export const onnxDetails: Record<LanguageCode, { title: string, filename: string, size: string, format: string, desc: string, badge: string }> = {
   ru: {
     title: "Реальная нейросетевая модель",
-    filename: "rubert_fraud_4m_v4_int8.onnx",
+    filename: "rubert_fraud_4m_v8_int8.onnx",
     size: "28.4 MB",
     format: "ONNX Runtime (INT8 quantized)",
     desc: "В корне проекта интегрирован реальный бинарный слепок сжатой языковой модели ruBERT, квантованной в целочисленный формат INT8. Модель оптимизирована для сверхбыстрого инференса на CPU мобильных устройств и полностью работает в локальном RAM.",
@@ -260,7 +260,7 @@ export const onnxDetails: Record<LanguageCode, { title: string, filename: string
   },
   en: {
     title: "Production Neural Network Model",
-    filename: "rubert_fraud_4m_v4_int8.onnx",
+    filename: "rubert_fraud_4m_v8_int8.onnx",
     size: "28.4 MB",
     format: "ONNX Runtime (INT8 quantized)",
     desc: "A real binary weights file of the highly optimized ruBERT language model quantized to the INT8 integer format is integrated in the project root. The model is fine-tuned for ultra-fast CPU inference on mobile devices and executes 100% locally in RAM.",
@@ -268,7 +268,7 @@ export const onnxDetails: Record<LanguageCode, { title: string, filename: string
   },
   tr: {
     title: "Üretim Yapay Sinir Ağı Modeli",
-    filename: "rubert_fraud_4m_v4_int8.onnx",
+    filename: "rubert_fraud_4m_v8_int8.onnx",
     size: "28.4 MB",
     format: "ONNX Runtime (INT8 kuantize)",
     desc: "Proje kökünde, INT8 tam sayı formatına kuantize edilmiş son derece optimize edilmiş ruBERT dil modelinin gerçek bir ikili ağırlık dosyası entegre edilmiştir. Model, mobil cihazlarda ultra hızlı CPU çıkarımı için ince ayarlanmıştır ve %100 yerel olarak RAM üzerinde yürütülür.",
@@ -276,7 +276,7 @@ export const onnxDetails: Record<LanguageCode, { title: string, filename: string
   },
   es: {
     title: "Modelo de Red Neuronal de Producción",
-    filename: "rubert_fraud_4m_v4_int8.onnx",
+    filename: "rubert_fraud_4m_v8_int8.onnx",
     size: "28.4 MB",
     format: "ONNX Runtime (cuantizado en INT8)",
     desc: "Se integra en la raíz del proyecto un archivo de pesos binarios reales del modelo de lenguaje ruBERT altamente optimizado y cuantizado al formato entero INT8. El modelo está ajustado para una inferencia ultra rápida en CPU en dispositivos móviles y se ejecuta 100% localmente en RAM.",
@@ -284,7 +284,7 @@ export const onnxDetails: Record<LanguageCode, { title: string, filename: string
   },
   zh: {
     title: "生产级神经网络模型",
-    filename: "rubert_fraud_4m_v4_int8.onnx",
+    filename: "rubert_fraud_4m_v8_int8.onnx",
     size: "28.4 MB",
     format: "ONNX Runtime (INT8 量化)",
     desc: "项目根目录中集成了一个高度优化的 ruBERT 语言模型的真实二进制权重文件，该文件已量化为 INT8 整数格式。该模型针对移动设备上的超快速 CPU 推理进行了微调，并在内存中 100% 本地执行。",
@@ -292,7 +292,7 @@ export const onnxDetails: Record<LanguageCode, { title: string, filename: string
   },
   hi: {
     title: "उत्पादन न्यूरल नेटवर्क मॉडल",
-    filename: "rubert_fraud_4m_v4_int8.onnx",
+    filename: "rubert_fraud_4m_v8_int8.onnx",
     size: "28.4 MB",
     format: "ONNX रनटाइम (INT8 क्वांटाइज़्ड)",
     desc: "परियोजना के रूट में अत्यधिक अनुकूलित ruBERT भाषा मॉडल का एक वास्तविक बाइनरी वेट फ़ाइल एकीकृत है जो INT8 पूर्णांक प्रारूप में क्वांटाइज़्ड है। मॉडल को मोबाइल उपकरणों पर अल्ट्रा-फास्ट सीपीयू अनुमान के लिए फाइन-ट्यून किया गया है और यह रैम में 100% स्थानीय रूप से निष्पादित होता है।",
@@ -300,7 +300,7 @@ export const onnxDetails: Record<LanguageCode, { title: string, filename: string
   },
   ar: {
     title: "نموذج الشبكة العصبية للإنتاج",
-    filename: "rubert_fraud_4m_v4_int8.onnx",
+    filename: "rubert_fraud_4m_v8_int8.onnx",
     size: "28.4 ميكابايت",
     format: "ONNX Runtime (INT8 كمي)",
     desc: "تم دمج ملف أوزان ثنائي حقيقي لنموذج اللغة ruBERT المحسن للغاية والمكمم إلى تنسيق 정수 INT8 في جذر المشروع. تم ضبط النموذج بدقة لزمن استجابة فائق السرعة على وحدة المعالجة المركزية (CPU) للأجهزة المحمولة ويعمل محليًا بنسبة 100% في ذاكرة الوصول العشوائي.",
@@ -308,7 +308,7 @@ export const onnxDetails: Record<LanguageCode, { title: string, filename: string
   },
   pt: {
     title: "Modelo de Rede Neural de Produção",
-    filename: "rubert_fraud_4m_v4_int8.onnx",
+    filename: "rubert_fraud_4m_v8_int8.onnx",
     size: "28.4 MB",
     format: "ONNX Runtime (quantizado em INT8)",
     desc: "Um arquivo real de pesos binários do modelo de linguagem ruBERT altamente otimizado, quantizado para o formato inteiro INT8, está integrado na raiz do projeto. O modelo é ajustado para inferência ultra-rápida em CPU de dispositivos móveis e executa 100% localmente na memória RAM.",
@@ -316,7 +316,7 @@ export const onnxDetails: Record<LanguageCode, { title: string, filename: string
   },
   fr: {
     title: "Modèle de Réseau Neuronal de Production",
-    filename: "rubert_fraud_4m_v4_int8.onnx",
+    filename: "rubert_fraud_4m_v8_int8.onnx",
     size: "28.4 Mo",
     format: "ONNX Runtime (quantifié en INT8)",
     desc: "Un véritable fichier de poids binaires du modèle de langage hautement optimisé ruBERT, quantifié au format entier INT8, est intégré à la racine du projet. Le modèle est affiné pour une inférence CPU ultra-rapide sur les appareils mobiles et s'exécute à 100 % localement dans la RAM.",
@@ -324,7 +324,7 @@ export const onnxDetails: Record<LanguageCode, { title: string, filename: string
   },
   de: {
     title: "Produktions-Neuronales Netzwerk-Modell",
-    filename: "rubert_fraud_4m_v4_int8.onnx",
+    filename: "rubert_fraud_4m_v8_int8.onnx",
     size: "28.4 MB",
     format: "ONNX-Runtime (INT8 quantisiert)",
     desc: "Eine echte binäre Gewichtsdatei des hochoptimierten ruBERT-Sprachmodells, das in das ganzzahlige INT8-Format quantisiert wurde, ist im Projekt-Root integriert. Das Modell is für ultraschnelle CPU-Inferenz auf Mobilgeräten feingetunt und wird zu 100 % lokal im RAM ausgeführt.",
@@ -332,7 +332,7 @@ export const onnxDetails: Record<LanguageCode, { title: string, filename: string
   },
   ja: {
     title: "プロダクション仕様ニューラルネットワークモデル",
-    filename: "rubert_fraud_4m_v4_int8.onnx",
+    filename: "rubert_fraud_4m_v8_int8.onnx",
     size: "28.4 MB",
     format: "ONNX Runtime (INT8 量子化済)",
     desc: "INT8 整数形式に量子化された、高度に最適化された ruBERT 言語モデルの実バイナリウェイトファイルがプロジェクトルートに統合されています。このモデルはモバイルデバイスの CPU 上での超高速推論のために微調整されており、RAM 上で100%ローカルに実行されます。",

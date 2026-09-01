@@ -915,7 +915,7 @@ interface OnnxDictType {
 const ONNX_DICT: Record<LanguageCode, OnnxDictType> = {
   ru: {
     title: "Интерактивная Лаборатория Тестирования RuBERT",
-    subtitle: "Оцените локальный инференс весов модели rubert_fraud_4m_v4_int8.onnx в реальном времени.",
+    subtitle: "Оцените локальный инференс весов модели rubert_fraud_4m_v8_int8.onnx в реальном времени.",
     placeholder: "Введите текст подозрительного диалога или СМС для анализа...",
     btnRun: "Запустить инференс модели",
     btnRunning: "Вычисление весов...",
@@ -949,7 +949,7 @@ const ONNX_DICT: Record<LanguageCode, OnnxDictType> = {
   },
   en: {
     title: "Interactive RuBERT ONNX Test Lab",
-    subtitle: "Evaluate real-time local inference of the rubert_fraud_4m_v4_int8.onnx model weights.",
+    subtitle: "Evaluate real-time local inference of the rubert_fraud_4m_v8_int8.onnx model weights.",
     placeholder: "Enter suspicious dialogue text or SMS for safety classification...",
     btnRun: "Run Model Inference",
     btnRunning: "Running Weights...",
@@ -983,7 +983,7 @@ const ONNX_DICT: Record<LanguageCode, OnnxDictType> = {
   },
   tr: {
     title: "Etkileşimli RuBERT ONNX Test Laboratuvarı",
-    subtitle: "rubert_fraud_4m_v4_int8.onnx model ağırlıklarının gerçek zamanlı yerel çıkarımını değerlendirin.",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx model ağırlıklarının gerçek zamanlı yerel çıkarımını değerlendirin.",
     placeholder: "Analiz için şüpheli diyalog veya SMS metnini girin...",
     btnRun: "Model Çıkarımını Başlat",
     btnRunning: "Çıkarım Yapılıyor...",
@@ -1017,7 +1017,7 @@ const ONNX_DICT: Record<LanguageCode, OnnxDictType> = {
   },
   es: {
     title: "Laboratorio de pruebas interactivo RuBERT ONNX",
-    subtitle: "Evalúa la inferencia local en tiempo real de los pesos del modelo rubert_fraud_4m_v4_int8.onnx.",
+    subtitle: "Evalúa la inferencia local en tiempo real de los pesos del modelo rubert_fraud_4m_v8_int8.onnx.",
     placeholder: "Introduce texto de diálogo sospechoso o SMS para la clasificación de seguridad...",
     btnRun: "Ejecutar inferencia del modelo",
     btnRunning: "Calculando pesos...",
@@ -1051,7 +1051,7 @@ const ONNX_DICT: Record<LanguageCode, OnnxDictType> = {
   },
   zh: {
     title: "交互式 RuBERT ONNX 测试实验室",
-    subtitle: "评估 rubert_fraud_4m_v4_int8.onnx 模型权重的实时本地推理。",
+    subtitle: "评估 rubert_fraud_4m_v8_int8.onnx 模型权重的实时本地推理。",
     placeholder: "输入可疑对话文本或短信，进行安全分类...",
     btnRun: "运行模型推理",
     btnRunning: "正在计算权重...",
@@ -1085,7 +1085,7 @@ const ONNX_DICT: Record<LanguageCode, OnnxDictType> = {
   },
   hi: {
     title: "इंटरैक्टिव RuBERT ONNX टेस्ट लैब",
-    subtitle: "rubert_fraud_4m_v4_int8.onnx मॉडल के वज़न की वास्तविक समय में स्थानीय इन्फ़रेंस का मूल्यांकन करें।",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx मॉडल के वज़न की वास्तविक समय में स्थानीय इन्फ़रेंस का मूल्यांकन करें।",
     placeholder: "सुरक्षा वर्गीकरण के लिए संदिग्ध संवाद पाठ या SMS दर्ज करें...",
     btnRun: "मॉडल इन्फ़रेंस चलाएँ",
     btnRunning: "वज़न की गणना हो रही है...",
@@ -1119,7 +1119,7 @@ const ONNX_DICT: Record<LanguageCode, OnnxDictType> = {
   },
   ar: {
     title: "مختبر اختبار RuBERT ONNX التفاعلي",
-    subtitle: "قيّم الاستدلال المحلي في الوقت الفعلي لأوزان نموذج rubert_fraud_4m_v4_int8.onnx.",
+    subtitle: "قيّم الاستدلال المحلي في الوقت الفعلي لأوزان نموذج rubert_fraud_4m_v8_int8.onnx.",
     placeholder: "أدخل نص حوار مشبوه أو رسالة SMS لتصنيف الأمان...",
     btnRun: "تشغيل استدلال النموذج",
     btnRunning: "جارٍ حساب الأوزان...",
@@ -1153,7 +1153,7 @@ const ONNX_DICT: Record<LanguageCode, OnnxDictType> = {
   },
   pt: {
     title: "Laboratório de Teste Interativo RuBERT ONNX",
-    subtitle: "Avalie a inferência local em tempo real dos pesos do modelo rubert_fraud_4m_v4_int8.onnx.",
+    subtitle: "Avalie a inferência local em tempo real dos pesos do modelo rubert_fraud_4m_v8_int8.onnx.",
     placeholder: "Digite texto de diálogo suspeito ou SMS para classificação de segurança...",
     btnRun: "Executar inferência do modelo",
     btnRunning: "Calculando pesos...",
@@ -1187,7 +1187,7 @@ const ONNX_DICT: Record<LanguageCode, OnnxDictType> = {
   },
   fr: {
     title: "Laboratoire de test interactif RuBERT ONNX",
-    subtitle: "Évaluez l'inférence locale en temps réel des poids du modèle rubert_fraud_4m_v4_int8.onnx.",
+    subtitle: "Évaluez l'inférence locale en temps réel des poids du modèle rubert_fraud_4m_v8_int8.onnx.",
     placeholder: "Saisissez un texte de dialogue suspect ou un SMS pour la classification de sécurité...",
     btnRun: "Exécuter l'inférence du modèle",
     btnRunning: "Calcul des poids...",
@@ -1221,7 +1221,7 @@ const ONNX_DICT: Record<LanguageCode, OnnxDictType> = {
   },
   de: {
     title: "Interaktives RuBERT-ONNX-Testlabor",
-    subtitle: "Bewerten Sie die lokale Echtzeit-Inferenz der Gewichte des Modells rubert_fraud_4m_v4_int8.onnx.",
+    subtitle: "Bewerten Sie die lokale Echtzeit-Inferenz der Gewichte des Modells rubert_fraud_4m_v8_int8.onnx.",
     placeholder: "Geben Sie verdächtigen Dialogtext oder SMS zur Sicherheitsklassifizierung ein...",
     btnRun: "Modell-Inferenz ausführen",
     btnRunning: "Gewichte werden berechnet...",
@@ -1255,7 +1255,7 @@ const ONNX_DICT: Record<LanguageCode, OnnxDictType> = {
   },
   ja: {
     title: "インタラクティブ RuBERT ONNX テストラボ",
-    subtitle: "rubert_fraud_4m_v4_int8.onnx モデルの重みのリアルタイムローカル推論を評価します。",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx モデルの重みのリアルタイムローカル推論を評価します。",
     placeholder: "安全分類のため、疑わしい対話テキストまたは SMS を入力してください...",
     btnRun: "モデル推論を実行",
     btnRunning: "重みを計算中...",
@@ -1664,7 +1664,7 @@ const ONNX_TICKET: Record<LanguageCode, OnnxTicketType> = {
     commentLabel: "Комментарий тестировщика:",
     noComment: "Без комментария.",
     footer: "Отправлено из системы верификации TrustNode",
-    inventory: "Инвентарь: rubert_fraud_4m_v4_int8.onnx (INT8 quantized)",
+    inventory: "Инвентарь: rubert_fraud_4m_v8_int8.onnx (INT8 quantized)",
   },
   en: {
     id: "Ticket ID:",
@@ -1677,7 +1677,7 @@ const ONNX_TICKET: Record<LanguageCode, OnnxTicketType> = {
     commentLabel: "Tester Feedback Comments:",
     noComment: "No comment provided.",
     footer: "Sent from TrustNode Verification Suite",
-    inventory: "Inventory: rubert_fraud_4m_v4_int8.onnx (INT8 quantized)",
+    inventory: "Inventory: rubert_fraud_4m_v8_int8.onnx (INT8 quantized)",
   },
   tr: {
     id: "Bilet Kimliği:",
@@ -1690,7 +1690,7 @@ const ONNX_TICKET: Record<LanguageCode, OnnxTicketType> = {
     commentLabel: "Test Uzmanı Geri Bildirimi:",
     noComment: "Yorum yapılmadı.",
     footer: "TrustNode Doğrulama Paketinden gönderildi",
-    inventory: "Envanter: rubert_fraud_4m_v4_int8.onnx (INT8 quantized)",
+    inventory: "Envanter: rubert_fraud_4m_v8_int8.onnx (INT8 quantized)",
   },
   es: {
     id: "ID del Ticket:",
@@ -1703,7 +1703,7 @@ const ONNX_TICKET: Record<LanguageCode, OnnxTicketType> = {
     commentLabel: "Comentarios del evaluador:",
     noComment: "Sin comentarios.",
     footer: "Enviado desde el conjunto de verificación TrustNode",
-    inventory: "Inventario: rubert_fraud_4m_v4_int8.onnx (INT8 cuantizado)",
+    inventory: "Inventario: rubert_fraud_4m_v8_int8.onnx (INT8 cuantizado)",
   },
   zh: {
     id: "票证 ID：",
@@ -1716,7 +1716,7 @@ const ONNX_TICKET: Record<LanguageCode, OnnxTicketType> = {
     commentLabel: "测试者反馈评论：",
     noComment: "未提供评论。",
     footer: "由 TrustNode 验证套件发送",
-    inventory: "库存：rubert_fraud_4m_v4_int8.onnx（INT8 量化）",
+    inventory: "库存：rubert_fraud_4m_v8_int8.onnx（INT8 量化）",
   },
   hi: {
     id: "टिकट ID:",
@@ -1729,7 +1729,7 @@ const ONNX_TICKET: Record<LanguageCode, OnnxTicketType> = {
     commentLabel: "परीक्षक प्रतिक्रिया टिप्पणियाँ:",
     noComment: "कोई टिप्पणी नहीं दी गई।",
     footer: "TrustNode सत्यापन सुइट से भेजा गया",
-    inventory: "इन्वेंटरी: rubert_fraud_4m_v4_int8.onnx (INT8 क्वांटाइज़्ड)",
+    inventory: "इन्वेंटरी: rubert_fraud_4m_v8_int8.onnx (INT8 क्वांटाइज़्ड)",
   },
   ar: {
     id: "معرف التذكرة:",
@@ -1742,7 +1742,7 @@ const ONNX_TICKET: Record<LanguageCode, OnnxTicketType> = {
     commentLabel: "تعليقات المختبِر:",
     noComment: "لا يوجد تعليق.",
     footer: "أُرسل من مجموعة التحقق TrustNode",
-    inventory: "المخزون: rubert_fraud_4m_v4_int8.onnx (INT8 مكمّم)",
+    inventory: "المخزون: rubert_fraud_4m_v8_int8.onnx (INT8 مكمّم)",
   },
   pt: {
     id: "ID do Ticket:",
@@ -1755,7 +1755,7 @@ const ONNX_TICKET: Record<LanguageCode, OnnxTicketType> = {
     commentLabel: "Comentários do Testador:",
     noComment: "Nenhum comentário.",
     footer: "Enviado do pacote de verificação TrustNode",
-    inventory: "Inventário: rubert_fraud_4m_v4_int8.onnx (INT8 quantizado)",
+    inventory: "Inventário: rubert_fraud_4m_v8_int8.onnx (INT8 quantizado)",
   },
   fr: {
     id: "ID du ticket :",
@@ -1768,7 +1768,7 @@ const ONNX_TICKET: Record<LanguageCode, OnnxTicketType> = {
     commentLabel: "Commentaires du testeur :",
     noComment: "Aucun commentaire.",
     footer: "Envoyé depuis la suite de vérification TrustNode",
-    inventory: "Inventaire : rubert_fraud_4m_v4_int8.onnx (quantifié INT8)",
+    inventory: "Inventaire : rubert_fraud_4m_v8_int8.onnx (quantifié INT8)",
   },
   de: {
     id: "Ticket-ID:",
@@ -1781,7 +1781,7 @@ const ONNX_TICKET: Record<LanguageCode, OnnxTicketType> = {
     commentLabel: "Feedback-Kommentare des Testers:",
     noComment: "Kein Kommentar.",
     footer: "Gesendet von der TrustNode-Verifizierungssuite",
-    inventory: "Inventar: rubert_fraud_4m_v4_int8.onnx (INT8-quantisiert)",
+    inventory: "Inventar: rubert_fraud_4m_v8_int8.onnx (INT8-quantisiert)",
   },
   ja: {
     id: "チケットID:",
@@ -1794,7 +1794,7 @@ const ONNX_TICKET: Record<LanguageCode, OnnxTicketType> = {
     commentLabel: "テスターのフィードバックコメント:",
     noComment: "コメントはありません。",
     footer: "TrustNode 検証スイートから送信",
-    inventory: "在庫: rubert_fraud_4m_v4_int8.onnx（INT8 量子化）",
+    inventory: "在庫: rubert_fraud_4m_v8_int8.onnx（INT8 量子化）",
   },
 };
 export function OnnxInteractiveTester({ language }: { language: string }) {

@@ -7,7 +7,7 @@ const BASE = typeof import.meta !== "undefined" ? import.meta.env.BASE_URL : "/"
 // and intercept *.workers.dev with 404s. Same-origin has no CORS, no QUIC,
 // no third-party domain — the repo is public, so it always loads.
 const VOCAB_URL = `${BASE}models/vocab.txt`;
-const MODEL_URL = `${BASE}models/rubert_fraud_merged_int8.onnx`;
+const MODEL_URL = `${BASE}models/rubert_fraud_4m_v8_int8.onnx`;
 
 const MAX_SEQ_LEN = 512;
 const TOKEN_PAD = "[PAD]";

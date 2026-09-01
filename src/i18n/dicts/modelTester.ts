@@ -50,7 +50,7 @@ export const MODEL_TESTER_DICT: Record<LanguageCode, ModelTesterDict> = {
   ru: {
     badge: "ТЕСТ МОДЕЛИ // ЛОКАЛЬНЫЙ ИНФЕРЕНС",
     title: "Реальная модель в вашем браузере",
-    subtitle: "rubert_fraud_merged_int8.onnx · 29 МБ · INT8",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx · 29 МБ · INT8",
     body: "Это не демо-формула: страница загружает настоящий бинарный файл модели TrustNode и выполняет инференс прямо на устройстве через ONNX Runtime (WASM). Ваш текст никуда не отправляется — всё считается локально в браузере.",
     entryTriggerTitle: "Список триггерных слов",
     entryTriggerIntro: "FraudSignalGate.kt — сигнальные слова и стемы, участвующие в оценке:",
@@ -95,7 +95,7 @@ export const MODEL_TESTER_DICT: Record<LanguageCode, ModelTesterDict> = {
   en: {
     badge: "MODEL TEST // LOCAL INFERENCE",
     title: "A real model inside your browser",
-    subtitle: "rubert_fraud_merged_int8.onnx · 29 MB · INT8",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx · 29 MB · INT8",
     body: "This is not a demo formula: the page downloads the actual TrustNode model binary and runs inference on-device via ONNX Runtime (WASM). Your text never leaves the device — everything is computed locally in the browser.",
     entryTriggerTitle: "Trigger word list",
     entryTriggerIntro: "FraudSignalGate.kt — signal words and stems used in scoring:",
@@ -140,7 +140,7 @@ export const MODEL_TESTER_DICT: Record<LanguageCode, ModelTesterDict> = {
   tr: {
     badge: "MODEL TESTİ // YEREL ÇIKARIM",
     title: "Tarayıcınızda gerçek bir model",
-    subtitle: "rubert_fraud_merged_int8.onnx · 29 MB · INT8",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx · 29 MB · INT8",
     body: "Bu bir demo formülü değil: sayfa gerçek TrustNode model dosyasını indirir ve ONNX Runtime (WASM) ile cihazda çıkarım yapar. Metniniz hiçbir yere gönderilmez — her şey tarayıcıda yerel olarak hesaplanır.",
     entryTriggerTitle: "Tetikleyici kelime listesi",
     entryTriggerIntro: "FraudSignalGate.kt — puanlamada kullanılan sinyal kelimeleri ve kökler:",
@@ -185,7 +185,7 @@ export const MODEL_TESTER_DICT: Record<LanguageCode, ModelTesterDict> = {
   es: {
     badge: "PRUEBA DEL MODELO // INFERENCIA LOCAL",
     title: "Un modelo real en tu navegador",
-    subtitle: "rubert_fraud_merged_int8.onnx · 29 MB · INT8",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx · 29 MB · INT8",
     body: "No es una fórmula de demostración: la página descarga el binario real del modelo TrustNode y ejecuta la inferencia en el dispositivo mediante ONNX Runtime (WASM). Tu texto no sale de tu equipo: todo se calcula localmente en el navegador.",
     entryTriggerTitle: "Lista de palabras disparadoras",
     entryTriggerIntro: "FraudSignalGate.kt — palabras y raíces de señal usadas en la puntuación:",
@@ -230,7 +230,7 @@ export const MODEL_TESTER_DICT: Record<LanguageCode, ModelTesterDict> = {
   zh: {
     badge: "模型测试 // 本地推理",
     title: "浏览器中的真实模型",
-    subtitle: "rubert_fraud_merged_int8.onnx · 29 MB · INT8",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx · 29 MB · INT8",
     body: "这不是演示公式：页面会下载真实的 TrustNode 模型文件，并通过 ONNX Runtime（WASM）在设备端进行推理。您的文本不会发送到任何地方——所有计算都在浏览器本地完成。",
     entryTriggerTitle: "触发词列表",
     entryTriggerIntro: "FraudSignalGate.kt —— 参与评分的信号词与词干：",
@@ -275,7 +275,7 @@ export const MODEL_TESTER_DICT: Record<LanguageCode, ModelTesterDict> = {
   ar: {
     badge: "اختبار النموذج // الاستدلال المحلي",
     title: "نموذج حقيقي داخل متصفحك",
-    subtitle: "rubert_fraud_merged_int8.onnx · 29 م.ب · INT8",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx · 29 م.ب · INT8",
     body: "هذه ليست معادلة تجريبية: الصفحة تُحمّل ملف النموذج الحقيقي لـ TrustNode وتُنفّذ الاستدلال على الجهاز عبر ONNX Runtime (WASM). نصّك لا يُرسَل إلى أي مكان — كل شيء يُحسب محلياً في المتصفح.",
     entryTriggerTitle: "قائمة الكلمات المثيّرة",
     entryTriggerIntro: "FraudSignalGate.kt — الكلمات والجذور المُستخدمة في التقييم:",
@@ -320,7 +320,7 @@ export const MODEL_TESTER_DICT: Record<LanguageCode, ModelTesterDict> = {
   fr: {
     badge: "TEST DU MODÈLE // INFÉRENCE LOCALE",
     title: "Un vrai modèle dans votre navigateur",
-    subtitle: "rubert_fraud_merged_int8.onnx · 29 Mo · INT8",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx · 29 Mo · INT8",
     body: "Ce n'est pas une formule de démonstration : la page télécharge le vrai binaire du modèle TrustNode et exécute l'inférence sur l'appareil via ONNX Runtime (WASM). Votre texte ne part nulle part — tout est calculé localement dans le navigateur.",
     entryTriggerTitle: "Liste des mots déclencheurs",
     entryTriggerIntro: "FraudSignalGate.kt — mots et racines de signal utilisés dans le score :",
@@ -365,7 +365,7 @@ export const MODEL_TESTER_DICT: Record<LanguageCode, ModelTesterDict> = {
   de: {
     badge: "MODELTEST // LOKALE INFERENZ",
     title: "Ein echtes Modell in Ihrem Browser",
-    subtitle: "rubert_fraud_merged_int8.onnx · 29 MB · INT8",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx · 29 MB · INT8",
     body: "Das ist keine Demo-Formel: Die Seite lädt die echte TrustNode-Modelldatei herunter und führt die Inferenz direkt auf dem Gerät über ONNX Runtime (WASM) aus. Ihr Text verlässt nie Ihr Gerät — alles wird lokal im Browser berechnet.",
     entryTriggerTitle: "Liste der Triggerwörter",
     entryTriggerIntro: "FraudSignalGate.kt — Signalwörter und Wortstämme für die Bewertung:",
@@ -410,7 +410,7 @@ export const MODEL_TESTER_DICT: Record<LanguageCode, ModelTesterDict> = {
   pt: {
     badge: "TESTE DO MODELO // INFERÊNCIA LOCAL",
     title: "Um modelo real no seu navegador",
-    subtitle: "rubert_fraud_merged_int8.onnx · 29 MB · INT8",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx · 29 MB · INT8",
     body: "Não é uma fórmula de demonstração: a página baixa o binário real do modelo TrustNode e executa a inferência no dispositivo via ONNX Runtime (WASM). Seu texto não vai para lugar nenhum — tudo é calculado localmente no navegador.",
     entryTriggerTitle: "Lista de palavras-gatilho",
     entryTriggerIntro: "FraudSignalGate.kt — palavras e radicais de sinal usados na pontuação:",
@@ -455,7 +455,7 @@ export const MODEL_TESTER_DICT: Record<LanguageCode, ModelTesterDict> = {
   hi: {
     badge: "मॉडल टेस्ट // स्थानीय इन्फ्रेंस",
     title: "आपके ब्राउज़र में एक असली मॉडल",
-    subtitle: "rubert_fraud_merged_int8.onnx · 29 MB · INT8",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx · 29 MB · INT8",
     body: "यह कोई डेमो फॉर्मूला नहीं है: पेज असली TrustNode मॉडल फ़ाइल डाउनलोड करता है और ONNX Runtime (WASM) के ज़रिए डिवाइस पर ही इन्फ्रेंस चलाता है। आपका टेक्स्ट कहीं नहीं जाता — सब कुछ ब्राउज़र में स्थानीय रूप से गणना होती है।",
     entryTriggerTitle: "ट्रिगर शब्दों की सूची",
     entryTriggerIntro: "FraudSignalGate.kt — स्कोरिंग में उपयोग होने वाले सिग्नल शब्द और मूल शब्द:",
@@ -500,7 +500,7 @@ export const MODEL_TESTER_DICT: Record<LanguageCode, ModelTesterDict> = {
   ja: {
     badge: "モデルテスト // ローカル推論",
     title: "ブラウザの中の本物のモデル",
-    subtitle: "rubert_fraud_merged_int8.onnx · 29 MB · INT8",
+    subtitle: "rubert_fraud_4m_v8_int8.onnx · 29 MB · INT8",
     body: "これはデモ用の数式ではありません。ページは実際の TrustNode モデルファイルをダウンロードし、ONNX Runtime（WASM）でデバイス上で推論を実行します。テキストはどこにも送信されず、すべてブラウザ内でローカルに計算されます。",
     entryTriggerTitle: "トリガーワード一覧",
     entryTriggerIntro: "FraudSignalGate.kt — スコアリングに使われるシグナル語と語幹:",

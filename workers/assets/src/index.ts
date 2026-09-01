@@ -29,9 +29,9 @@ interface Env {
   MODEL_BUCKET?: R2Bucket;
 }
 
-const MODEL_FILES = new Set(["rubert_fraud_merged_int8.onnx", "vocab.txt"]);
+const MODEL_FILES = new Set(["rubert_fraud_4m_v8_int8.onnx", "vocab.txt"]);
 const CONTENT_TYPES: Record<string, string> = {
-  "rubert_fraud_merged_int8.onnx": "application/octet-stream",
+  "rubert_fraud_4m_v8_int8.onnx": "application/octet-stream",
   "vocab.txt": "text/plain; charset=utf-8",
 };
 
@@ -201,7 +201,7 @@ export default {
         });
       }
 
-      // Model — /models/rubert_fraud_merged_int8.onnx | /models/vocab.txt
+      // Model — /models/rubert_fraud_4m_v8_int8.onnx | /models/vocab.txt
       const modelMatch = pathname.match(/^\/models\/([^/]+)$/);
       if (modelMatch && MODEL_FILES.has(modelMatch[1])) {
         return await cachedResponse(request, 86400, () => fetchModel(env, modelMatch[1]));
