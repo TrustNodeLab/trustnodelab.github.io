@@ -64,6 +64,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import DamageCalculator from "./components/DamageCalculator";
 import FaqSection from "./components/FaqSection";
 import HomePersonalBlocks from "./components/HomePersonalBlocks";
+import { DownloadCTA } from "./components/Navigation";
 import { acquireScrollLock, releaseScrollLock } from "./lib/scrollLock";
 import { motion, MotionConfig } from "motion/react";
 import { useTranslation } from "./i18n/LanguageContext";
@@ -73,6 +74,22 @@ import { useSectionSnap } from "./hooks/useSectionSnap";
 
 export default function App() {
   const { t, language } = useTranslation();
+
+  // Простая строка ценности для hero: обычному пользователю достаточно знать,
+  // от чего защищаем и где скачать (отзыв целевой аудитории, 40+).
+  const PROTECT_LINE: Record<string, string> = {
+    ru: "Защищаем от телефонных мошенников: звонки, ссылки, QR-коды и переводы — прямо на вашем телефоне.",
+    en: "Protection from phone scammers: calls, links, QR codes and payments — right on your phone.",
+    es: "Protección contra estafas telefónicas: llamadas, enlaces, códigos QR y pagos, en su teléfono.",
+    zh: "防范电话诈骗：来电、链接、二维码与付款——就在您的手机上。",
+    tr: "Telefon dolandırıcılığına karşı koruma: aramalar, bağlantılar, QR kodları ve ödemeler — telefonunuzda.",
+    hi: "फ़ोन धोखेबाज़ी से सुरक्षा: कॉल, लिंक, QR कोड और भुगतान — आपके फ़ोन पर ही।",
+    ar: "حماية من المحتالين عبر الهاتف: المكالمات والروابط ورموز QR والمدفوعات — على هاتفك مباشرة.",
+    pt: "Proteção contra golpes telefônicos: ligações, links, QR codes e pagamentos — no seu telefone.",
+    fr: "Protection contre les arnaques téléphoniques : appels, liens, QR codes et paiements — sur votre téléphone.",
+    de: "Schutz vor Telefonbetrug: Anrufe, Links, QR-Codes und Zahlungen – direkt auf Ihrem Telefon.",
+    ja: "電話詐欺から守る：通話・リンク・QRコード・送金を、スマホ本体でブロック。",
+  };
   const { activePage } = useNavigation();
   const { ecoMode, toggleEcoMode } = useEcoMode();
   const [windowHeight, setWindowHeight] = useState(0);
@@ -886,6 +903,16 @@ export default function App() {
                       >
                         {t.hero.titleSub}
                       </p>
+                      )}
+
+                      {/* Простая ценность + главная кнопка: минимум чтения, сразу польза */}
+                      {!cinematicEnabled && (
+                      <div className="mt-8 flex flex-col items-center gap-4 pointer-events-auto" id="hero-value-cta">
+                        <p className="font-sans text-sm sm:text-lg text-[#F5F5F0]/90 max-w-xl text-center leading-snug px-2">
+                          {PROTECT_LINE[language] || PROTECT_LINE.en}
+                        </p>
+                        <DownloadCTA size="lg" />
+                      </div>
                       )}
 
                     </motion.div>

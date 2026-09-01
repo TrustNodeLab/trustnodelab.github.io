@@ -10,9 +10,10 @@ import { acquireScrollLock, releaseScrollLock } from "../lib/scrollLock";
 import { LayoutGrid, ChevronRight, RotateCcw } from "lucide-react";
 
 /* ============================================================================
-   QuizFlow — 5 простых вопросов вместо «рассказа за 1 минуту». По ответам
+   QuizFlow — 3 коротких вопроса (минимум контента, максимум пользы). По ответам
    собираем персональный набор разделов (макс. 8) и сохраняем его: весь сайт
-   показывает только их. Полный список — по ссылке «Показать все разделы».
+   показывает только их. Полный список — по ссылке «Показать все разделы»,
+   либо кнопка «Пропустить» — дефолтный маршрут без вопросов.
    ========================================================================== */
 
 function useScrollLock(locked: boolean) {
@@ -30,17 +31,8 @@ type QDef = { id: string; q: Opt; opts: Opt[] };
 
 const QUESTIONS: QDef[] = [
   {
-    id: "who",
-    q: { ru: "Кто ты?", en: "Who are you?" },
-    opts: [
-      { ru: "Обычный пользователь", en: "Regular user" },
-      { ru: "Защищаю родителей или детей", en: "Protecting parents or kids" },
-      { ru: "Разработчик или исследователь", en: "Developer or researcher" },
-    ],
-  },
-  {
     id: "met",
-    q: { ru: "Сталкивался ли ты уже с мошенниками?", en: "Have you dealt with scammers before?" },
+    q: { ru: "Сталкивались ли вы уже с мошенниками?", en: "Have you dealt with scammers before?" },
     opts: [
       { ru: "Да, недавно", en: "Yes, recently" },
       { ru: "Нет, но хочу подстраховаться", en: "No, but I want to stay safe" },
@@ -59,30 +51,23 @@ const QUESTIONS: QDef[] = [
   },
   {
     id: "depth",
-    q: { ru: "Насколько глубоко копнуть?", en: "How deep should we go?" },
+    q: { ru: "Как объяснять?", en: "How should we explain things?" },
     opts: [
-      { ru: "Объясните просто, без терминов", en: "Keep it simple, no jargon" },
-      { ru: "Хочу технические подробности", en: "I want technical details" },
-    ],
-  },
-  {
-    id: "cta",
-    q: { ru: "Скачать приложение сейчас?", en: "Install the app now?" },
-    opts: [
-      { ru: "Да, покажите где скачать", en: "Yes, show me where" },
-      { ru: "Сначала почитаю про защиту", en: "Let me read about protection first" },
+      { ru: "Просто, без терминов", en: "Simply, no jargon" },
+      { ru: "С техническими подробностями", en: "With technical details" },
     ],
   },
 ];
 
 const COPY = {
-  badge: { ru: "Подберём для тебя", en: "Let's tailor this for you" },
+  badge: { ru: "3 коротких вопроса — и готово", en: "3 quick questions and you're set" },
   resultTitle: { ru: "Мы собрали для тебя", en: "We picked this for you" },
   resultNote: {
     ru: "Только то, что тебе нужно. Остальное всегда доступно в разделе «Все разделы».",
     en: "Only what you need. Everything else stays in \u201CAll sections\u201D.",
   },
   showAll: { ru: "Показать все разделы", en: "Show all sections" },
+  skip: { ru: "Пропустить — просто показать сайт", en: "Skip — just show the site" },
   retake: { ru: "Изменить ответы", en: "Change answers" },
   softNote: {
     ru: "Приложение бесплатное — вернёмся к нему в конце.",
@@ -185,6 +170,12 @@ export default function QuizFlow() {
     setBuilding(false);
   };
 
+  // Пропуск квиза: дефолтный маршрут (how-it-works + features) и простые объяснения.
+  const skip = () => {
+    setAnswers({});
+    setDone(true);
+  };
+
   /* ------------------------------ Квиз ------------------------------ */
   return (
     <section ref={quizRef} className="relative w-full py-14 sm:py-20 px-4 bg-transparent" aria-label="Quiz navigation">
@@ -231,6 +222,13 @@ export default function QuizFlow() {
               >
                 <LayoutGrid className="w-4 h-4" />
                 {pick(COPY.showAll, language)}
+              </button>
+
+              <button
+                onClick={skip}
+                className="mt-3 block text-xs text-gray-500 hover:text-[#3B82F6] transition-colors cursor-pointer"
+              >
+                {pick(COPY.skip, language)}
               </button>
             </motion.div>
           </>
