@@ -189,7 +189,9 @@ export async function classifyText(text: string): Promise<RubertResult> {
   const latencyMs = performance.now() - t0;
 
   const logits = output.logits.data as Float32Array;
-  const raw = Array.from(logits);
+  // Санитизация: не-finite лог-иты (NaN/Infinity от модели в OOD-паттернах)
+  // превращаем в -Infinity -> exp() = 0 -> класс получает 0%, не NaN%.
+  const raw = Array.from(logits).map((v) => (Number.isFinite(v) ? v : -Infinity));
   const max = Math.max(...raw);
   const exps = raw.map((v) => Math.exp(v - max));
   const sum = exps.reduce((a, b) => a + b, 0);

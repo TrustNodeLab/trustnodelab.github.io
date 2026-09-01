@@ -342,16 +342,16 @@ const ModelTesterSection: React.FC = () => {
                               {row.label}
                             </span>
                             <span className="font-mono text-xs font-bold" style={{ color: row.c }}>
-                              {(row.v * 100).toFixed(1)}%
+                              {(Number.isFinite(row.v) ? row.v * 100 : 0).toFixed(1)}%
                             </span>
                           </div>
                           <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                             <div
                               className="h-full rounded-full transition-[width] duration-500"
                               style={{
-                                width: `${(row.v / maxProb) * 100}%`,
+                                width: `${Math.max(0, Number.isFinite(row.v) ? (row.v / maxProb) * 100 : 0)}%`,
                                 backgroundColor: row.c,
-                                opacity: row.v === maxProb ? 1 : 0.45,
+                                opacity: Number.isFinite(row.v) && row.v === maxProb ? 1 : 0.45,
                               }}
                             />
                           </div>
