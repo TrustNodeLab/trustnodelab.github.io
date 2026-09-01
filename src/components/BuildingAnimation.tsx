@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { LanguageCode } from "../i18n/languages";
 
@@ -97,17 +97,14 @@ export default function BuildingAnimation({ onDone }: { onDone: () => void }) {
 
       {/* Сменяющийся статус */}
       <div className="relative z-10 h-6 mt-6 font-mono text-xs sm:text-sm text-gray-300 tracking-wider">
-        <AnimatePresence mode="wait">
           <motion.span
             key={step}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
           >
             {statuses[step] ?? statuses[statuses.length - 1]}
           </motion.span>
-        </AnimatePresence>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { LanguageCode } from "../i18n/languages";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { Shield, Award, Cpu, Network, FileCode, CheckCircle2, Copy, ExternalLink, Sparkles, Send, AlertTriangle, RefreshCw, AlertCircle, Play, Info, ShieldCheck, Milestone } from "lucide-react";
 import { SiTelegram, SiVk, SiGithub } from "react-icons/si";
 import { useEcoMode } from "../context/EcoModeContext";
@@ -385,7 +385,6 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
 
         {/* Tab Display Area */}
         <div className="relative w-full">
-          <AnimatePresence mode="wait">
             
             {/* TAB 1: AWARDS & CERTIFICATES */}
             {activeTab === "awards" && (
@@ -393,7 +392,6 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                 key="awards-tab"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
                 className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
               >
@@ -465,7 +463,6 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                 key="graph-tab"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
                 className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
               >
@@ -531,7 +528,6 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                 key="onnx-tab"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
                 className="space-y-8"
               >
@@ -620,7 +616,6 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
                 key="roadmap-tab"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
                 className="space-y-12"
               >
@@ -890,7 +885,6 @@ export default function RealDevelopmentSection({ onlyRoadmap = false }: { onlyRo
               </motion.div>
             )}
 
-          </AnimatePresence>
         </div>
 
       </div>
@@ -1991,12 +1985,10 @@ ${tkt.inventory}`;
       )}
 
       {/* Interactive results mapping */}
-      <AnimatePresence>
         {showResults && (
           <motion.div
             initial={{ opacity: 0, scaleY: 0.96 }}
             animate={{ opacity: 1, scaleY: 1 }}
-            exit={{ opacity: 0, scaleY: 0.96 }}
             style={{ transformOrigin: "top" }}
             className="space-y-4"
             aria-live="polite"
@@ -2084,16 +2076,13 @@ ${tkt.inventory}`;
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
 
       {/* Feedback ticket creator block */}
-      <AnimatePresence>
         {showFeedback && (
           <motion.div
             id="feedback-portal"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
           >
             <ScanCard accent="59,130,246" borderColor="border-[#3C404A]/80" padding="p-5" className="space-y-4">
             <div>
@@ -2163,7 +2152,6 @@ ${tkt.inventory}`;
             </ScanCard>
           </motion.div>
         )}
-      </AnimatePresence>
 
     </div>
   );

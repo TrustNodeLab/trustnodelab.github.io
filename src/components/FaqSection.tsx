@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { HelpCircle, ChevronDown } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { useEcoMode } from "../context/EcoModeContext";
 import ScanCard from "./ScanCard";
@@ -55,14 +55,12 @@ export default function FaqSection() {
                     className={`w-5 h-5 shrink-0 transition-transform duration-300 text-[#3B82F6] ${isOpen ? "rotate-180" : ""}`}
                   />
                 </button>
-                <AnimatePresence initial={false}>
                   {isOpen && (
                     <motion.div
                       id={`faq-panel-${index}`}
                       key="content"
                       initial={ecoMode ? false : { height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
-                      exit={ecoMode ? undefined : { height: 0, opacity: 0 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
                       className="overflow-hidden"
                     >
@@ -71,7 +69,6 @@ export default function FaqSection() {
                       </p>
                     </motion.div>
                   )}
-                </AnimatePresence>
               </ScanCard>
             );
           })}

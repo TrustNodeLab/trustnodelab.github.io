@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, AlertTriangle } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { useEcoMode } from "../context/EcoModeContext";
 import type { LanguageCode } from "../i18n/languages";
@@ -1024,13 +1024,11 @@ export default function HelpChecklistSection() {
                   </div>
 
                   {/* Expandable content */}
-                  <AnimatePresence initial={false}>
                     {isExpanded && (
                       <motion.div
                         key="content"
                         initial={ecoMode ? false : { height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
-                        exit={ecoMode ? undefined : { height: 0, opacity: 0 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
                         className="overflow-hidden"
                       >
@@ -1049,7 +1047,6 @@ export default function HelpChecklistSection() {
                         </div>
                       </motion.div>
                     )}
-                  </AnimatePresence>
                 </ScanCard>
               </motion.div>
             );
@@ -1085,12 +1082,10 @@ export default function HelpChecklistSection() {
         </motion.div>
 
         {/* All done message */}
-        <AnimatePresence>
           {allDone && (
             <motion.div
               initial={ecoMode ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={ecoMode ? undefined : { opacity: 0, y: -10 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="mt-6 text-center"
             >
@@ -1099,7 +1094,6 @@ export default function HelpChecklistSection() {
               </p>
             </motion.div>
           )}
-        </AnimatePresence>
       </div>
     </section>
   );
