@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Mic, Bot, Phone, PhoneOff, AlertTriangle, ShieldCheck, Play, RotateCcw, Cpu, Terminal } from "lucide-react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { LanguageCode } from "../i18n/languages";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import SectionBadge from "./SectionBadge";
 import ScanCard from "./ScanCard";
 
@@ -1231,17 +1231,14 @@ const rafTypingRef = useRef<number | null>(null);
           <ScanCard accent="59,130,246" cardClassName="lg:col-span-5 shadow-2xl min-h-[500px]" className="flex-col justify-between" padding="p-6 sm:p-8">
             
             {/* Flashing Intrusion Danger Ambient Cover */}
-            <AnimatePresence>
               {threatLevel >= 75 && (
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: [0, 0.4, 0.1, 0.4, 0] }}
-                  exit={{ opacity: 0 }}
                   transition={{ duration: 2, repeat: Infinity }}
                   className="absolute inset-0 bg-[#EF4444]/15 pointer-events-none z-[15]"
                 />
               )}
-            </AnimatePresence>
 
             {/* Simulated Phone UI Header */}
             <div className="flex items-center justify-between z-10">
@@ -1322,12 +1319,10 @@ const rafTypingRef = useRef<number | null>(null);
             </div>
 
             {/* Assistant Real-time Threat Overlay Box */}
-            <AnimatePresence>
               {threatLevel >= 75 && (
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
                   className="mt-4 p-4 rounded-xl bg-[#7F1D1D]/40 border border-[#EF4444]/40 flex items-center gap-3 z-10"
                 >
                   <AlertTriangle className="w-5 h-5 text-[#EF4444] shrink-0 animate-bounce" />
@@ -1341,7 +1336,6 @@ const rafTypingRef = useRef<number | null>(null);
                   </div>
                 </motion.div>
               )}
-            </AnimatePresence>
 
             {/* Simulation Controls Footer */}
             <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3 mt-6 z-10">

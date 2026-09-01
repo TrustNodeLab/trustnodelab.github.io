@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import * as THREE from "three";
 import * as satellite from "satellite.js";
 import * as Astronomy from "astronomy-engine";
@@ -1381,11 +1381,9 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
     <>
       {/* static poster behind the canvas: dark void + faint starfield, shown
           only until the first real WebGL frame replaces it */}
-      <AnimatePresence>
         {!hasFrame && (
           <motion.div
             className="fixed inset-0 w-full h-full pointer-events-none z-0 overflow-hidden"
-            exit={{ opacity: 0 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
             aria-hidden="true"
           >
@@ -1408,7 +1406,6 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
             />
           </motion.div>
         )}
-      </AnimatePresence>
       <div ref={containerRef} className="fixed inset-0 w-full h-full pointer-events-none z-0" />
     </>
   );
