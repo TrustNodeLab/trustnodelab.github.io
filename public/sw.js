@@ -1,5 +1,5 @@
 /* TrustNode service worker — network-first for pages, stale-while-revalidate for assets. */
-const VERSION = "v1.0.3";
+const VERSION = "v1.0.4";
 const CACHE = "trustnode-" + VERSION;
 const PRECACHE = [
   "/",

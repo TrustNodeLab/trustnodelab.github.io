@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { motion } from "motion/react";
 import AssembledLogo from "./AssembledLogo";
 import ScanCard from "./ScanCard";
-import QuizFlow from "./QuizFlow";
+import LandingQuizGate from "./LandingQuizGate";
 import { UNLOCK_SCROLL_EVENT } from "../lib/personalRoute";
 import { acquireScrollLock, releaseScrollLock } from "../lib/scrollLock";
 import { useTranslation } from "../i18n/LanguageContext";
@@ -185,8 +185,8 @@ export default function CinematicOverlays({ progressRef, heroRef, onEnterDome, s
         </div>
       </div>
 
-      {/* Квиз персональной навигации — ТОЛЬКО после завершения автоплея
-          (и никогда при якорном deep-link: пользователь идёт к блоку) */}
+      {/* Лендинг-финал: от чего защищаем + скачать + квиз за кнопкой.
+          ТОЛЬКО после завершения автоплея (и никогда при якорном deep-link) */}
       {introDone && !suppressQuiz && (
       <motion.div
         initial={{ opacity: 0, y: 28 }}
@@ -194,8 +194,8 @@ export default function CinematicOverlays({ progressRef, heroRef, onEnterDome, s
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         className="absolute inset-x-0 top-0 flex flex-col items-center px-4 pt-[10vh] sm:pt-[12vh] pb-[18vh] pointer-events-auto"
       >
-        <div className="w-full max-w-3xl bg-[#0A0A0B]/55 backdrop-blur-md rounded-2xl border border-white/[0.05] pointer-events-auto">
-          <QuizFlow />
+        <div className="w-full max-w-3xl max-h-[76vh] overflow-y-auto bg-[#0A0A0B]/55 backdrop-blur-md rounded-2xl border border-white/[0.05] px-4 py-6 sm:px-6 pointer-events-auto">
+          <LandingQuizGate compact />
         </div>
       </motion.div>
       )}
