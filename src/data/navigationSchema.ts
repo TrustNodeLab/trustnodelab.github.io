@@ -31,7 +31,7 @@ export const NAV_SECTIONS: NavSection[] = [
     id: "features",
     title: "Возможности",
     description:
-      "8 работающих функций — от текстового анализа с F1 = 0.9930 до удаления данных из 30 хранилищ. Плюс честный статус того, что ещё в разработке.",
+      "8 работающих функций — от текстового анализа с F1 = 0.9975 до удаления данных из 30 хранилищ. Плюс честный статус того, что ещё в разработке.",
     colorAccent: "#1D4ED8",
     group: "start",
     path: "/features",
@@ -40,7 +40,7 @@ export const NAV_SECTIONS: NavSection[] = [
     id: "tech",
     title: "Технологии",
     description:
-      "ruBERT V4 (~28 МБ, ONNX INT8), SQLCipher, RASP fail-closed — технические детали защиты и доказательства реальной разработки.",
+      "ruBERT V8 (~29 МБ, ONNX INT8), SQLCipher, RASP fail-closed — технические детали защиты и доказательства реальной разработки.",
     colorAccent: "#1D4ED8",
     group: "start",
     path: "/tech",
@@ -76,7 +76,7 @@ export const NAV_SECTIONS: NavSection[] = [
     id: "research",
     title: "Исследования",
     description:
-      "Ручная разметка 140 логов (F1 = 0.9930, один прогон, не кросс-валидация), сквозной стенд TTS→STT→ML и внешняя валидация проекта.",
+      "Независимый eval-сет 18 502 строк (F1 = 0.9975), сквозной стенд TTS→STT→ML и внешняя валидация проекта.",
     colorAccent: "#EF4444",
     group: "deeper",
     path: "/research",

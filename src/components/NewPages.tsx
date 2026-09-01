@@ -11,7 +11,7 @@ const FEATURES: L = {
     title: "Возможности TrustNode", sub: "Только то, что реально работает в приложении сегодня — без приукрашивания",
     badge: "ПРОВЕРЕНО ПО КОДУ TN1",
     cards: [
-      { i: "cpu", t: "Текстовый анализ ruBERT V4", s: "ruBERT — лёгкая языковая модель; ONNX — формат для быстрой работы на телефоне.", d: "F1 = 0.9930 на 140 вручную размеченных логах (один прогон, не кросс-валидация), recall 1.0 — ни одной пропущенной угрозы. Модель ~28 МБ." },
+      { i: "cpu", t: "Текстовый анализ ruBERT V8", s: "ruBERT — лёгкая языковая модель; ONNX — формат для быстрой работы на телефоне.", d: "F1 = 0.9975 на независимом eval-сете 18 502 строк, recall 0.9955. Модель ~29 МБ." },
       { i: "mic", t: "Защита звонков", s: "Распознавание речи на устройстве — в дорожной карте (оценка Vosk / W2V BERT).", d: "Разговор переводится в текст прямо на устройстве; конвейер ищет признаки давления и показывает полноэкранный алерт. Статус: Roadmap · оценка вариантов, пока не в MVP." },
       { i: "link", t: "Проверка ссылок", d: "Офлайн-анализ на фишинг: поддельные домены, гомоглифы (буквы-двойники), вредоносные URL." },
       { i: "qr", t: "QR-сканер", d: "Проверяет QR-коды офлайн до перехода по ссылке — платежные реквизиты и фишинговые страницы распознаются заранее." },
@@ -33,7 +33,7 @@ const FEATURES: L = {
     title: "TrustNode Features", sub: "Only what actually works in the app today — no embellishment",
     badge: "VERIFIED AGAINST TN1 CODE",
     cards: [
-      { i: "cpu", t: "ruBERT V4 text analysis", s: "ruBERT is a lightweight language model; ONNX is a format for fast on-phone inference.", d: "F1 = 0.9930 on 140 hand-labeled logs (single pass, no cross-validation), recall 1.0 — zero missed threats. ~28 MB model." },
+      { i: "cpu", t: "ruBERT V8 text analysis", s: "ruBERT is a lightweight language model; ONNX is a format for fast on-phone inference.", d: "F1 = 0.9975 on an independent eval set of 18,502 rows, recall 0.9955. ~29 MB model." },
       { i: "mic", t: "Call protection", s: "On-device speech recognition — on the roadmap (evaluating Vosk / W2V BERT).", d: "The call is transcribed on-device; the pipeline detects pressure patterns and shows a full-screen alert. Status: Roadmap · evaluating options, not yet in MVP." },
       { i: "link", t: "Link checking", d: "Offline phishing analysis: fake domains, homoglyphs (look-alike letters), malicious URLs." },
       { i: "qr", t: "QR scanner", d: "Checks QR codes offline before you follow them — payment details and phishing pages are recognized in advance." },
@@ -298,10 +298,10 @@ const FEATURES: L = {
 const RESEARCH: L = {
   ru: {
     title: "Исследования и признание", sub: "Метрики, методология и внешняя валидация проекта", badge: "ФАКТЫ // ЦИФРЫ",
-    mTitle: "Тест модели v4", mSub: "140 вручную размеченных логов (один прогон, не кросс-валидация)",
-    metrics: [["Accuracy", "0.9930"], ["Precision", "0.9928"], ["Recall", "1.0 — ни одной пропущенной угрозы"], ["F1", "0.9930"], ["Пропуски (FN)", "0"], ["Разметка", "140 логов, ручная"]],
-    tokTitle: "Почему метрика изменилась",
-    tokDesc: "Ранние метрики были на автоматически размеченном датасете (20 000 сообщений). Новые метрики — на 140 вручную размеченных логах (один прогон). F1 вырос до 0.9930 за счёт честной ручной разметки и исправления токенизатора.",
+    mTitle: "Тест модели v8", mSub: "Независимый eval-сет 18 502 строк",
+    metrics: [["F1 (macro)", "0.9975"], ["Recall", "0.9955"], ["Точность (raw, @0.5)", "FN/FP 0/0"], ["Пропуски (FN, @0.97)", "3"], ["Eval-сет", "18 502 строки"], ["Мегадатасет", "6,6 млн строк (5 источников)"]],
+    tokTitle: "Почему метрика выросла",
+    tokDesc: "Модель v8 дообучена на мегадатасете 6,6 млн строк (5 источников, без утечки eval) поверх v4. Независимый eval-сет — 18 502 строки. Ложные блокировки на 69 реальных скриншотах: 31 → 3.",
     benchTitle: "Стендовые прогоны",
     bench: [
       ["TTS → STT → ML (сквозной голосовой стенд)", "12/12 мошеннических семплов детектированы"],
@@ -309,14 +309,14 @@ const RESEARCH: L = {
       ["Ограничение", "Метрики получены на Python-стенде, не на живом устройстве"]
     ],
     nirTitle: "НИР-конкурс", nirDesc: "I место — региональный этап НИР, секция «Информационные технологии». Приглашение на всероссийский федеральный финал, Москва, сентябрь 2026.",
-    note: "Все цифры на странице взяты из отчётов репозитория (independent_metrics.json, acceptance_report_v4.json). Мы публикуем и ограничения — это часть доверия."
+    note: "Все цифры на странице взяты из отчётов репозитория. Мы публикуем и ограничения — это часть доверия."
   },
   en: {
     title: "Research & Recognition", sub: "Metrics, methodology and external validation", badge: "FACTS // NUMBERS",
-    mTitle: "v4 model test", mSub: "140 hand-labeled logs (single pass, no cross-validation)",
-    metrics: [["Accuracy", "0.9930"], ["Precision", "0.9928"], ["Recall", "1.0 — zero missed threats"], ["F1", "0.9930"], ["Misses (FN)", "0"], ["Dataset", "140 logs, hand-labeled"]],
-    tokTitle: "Why the metric changed",
-    tokDesc: "Early metrics used an automatically labeled dataset (20,000 messages). New metrics are on 140 hand-labeled logs (single pass). F1 improved to 0.9930 through honest hand-labeling and tokenizer fixes.",
+    mTitle: "v8 model test", mSub: "Independent eval set of 18,502 rows",
+    metrics: [["F1 (macro)", "0.9975"], ["Recall", "0.9955"], ["Accuracy (raw, @0.5)", "FN/FP 0/0"], ["Misses (FN, @0.97)", "3"], ["Eval set", "18,502 rows"], ["Mega-dataset", "6.6M rows (5 sources)"]],
+    tokTitle: "Why the metric grew",
+    tokDesc: "Model v8 was fine-tuned on a 6.6M-row mega-dataset (5 sources, no eval leakage) on top of v4. Independent eval set: 18,502 rows. False blocks on 69 real screenshots: 31 → 3.",
     benchTitle: "Bench runs",
     bench: [
       ["TTS → STT → ML (end-to-end voice bench)", "12/12 fraud samples detected"],
@@ -324,14 +324,14 @@ const RESEARCH: L = {
       ["Limitation", "Metrics were measured on a Python bench, not on a live device"]
     ],
     nirTitle: "Research competition", nirDesc: "1st place — regional NIR stage, Information Technology track. Invitation to the national super-final, Moscow, September 2026.",
-    note: "Every number here comes from repository reports (independent_metrics.json, acceptance_report_v4.json). We publish limitations too — that is part of trust."
+    note: "Every number here comes from repository reports. We publish limitations too — that is part of trust."
   },
   simpleRu: {
     title: "Исследования и признание", sub: "Результаты тестирования и оценка экспертов", badge: "ФАКТЫ // ЦИФРЫ",
-    mTitle: "Тест модели", mSub: "140 вручную размеченных логов (один прогон)",
-    metrics: [["Точность", "99.3%"], ["Верно определены мошенники", "100%"], ["Пропуски угроз", "0"], ["Разметка", "140 логов, ручная"]],
+    mTitle: "Тест модели", mSub: "Независимый eval-сет 18 502 строк",
+    metrics: [["Точность", "99.75%"], ["Верно определены мошенники", "99.55%"], ["Ложные блокировки", "31 → 3"], ["Eval-сет", "18 502 строки"]],
     tokTitle: "Как считались метрики",
-    tokDesc: "Метрики получены на 140 вручную размеченных логах (один прогон, не кросс-валидация). Честные цифры без завышения.",
+    tokDesc: "Метрики получены на независимом eval-сете 18 502 строк (мегадатасет 6,6 млн). Ложные блокировки на 69 реальных скриншотах: 31 → 3.",
     benchTitle: "Тесты на реальных данных",
     bench: [
       ["Голосовые сценарии (12 шт.)", "Все 12 мошеннических сценариев распознаны"],
@@ -343,10 +343,10 @@ const RESEARCH: L = {
   },
   simpleEn: {
     title: "Research & Recognition", sub: "Test results and expert evaluation", badge: "FACTS // NUMBERS",
-    mTitle: "Model test", mSub: "140 hand-labeled logs (single pass)",
-    metrics: [["Accuracy", "99.3%"], ["Fraud detected", "100%"], ["Threats missed", "0"], ["Dataset", "140 logs, hand-labeled"]],
+    mTitle: "Model test", mSub: "Independent eval set of 18,502 rows",
+    metrics: [["Accuracy", "99.75%"], ["Fraud detected", "99.55%"], ["False blocks", "31 → 3"], ["Eval set", "18,502 rows"]],
     tokTitle: "How metrics were computed",
-    tokDesc: "Metrics are based on 140 hand-labeled logs (single pass, no cross-validation). Honest numbers, no inflation.",
+    tokDesc: "Metrics are based on an independent eval set of 18,502 rows (mega-dataset 6.6M). False blocks on 69 real screenshots: 31 → 3.",
     benchTitle: "Real-world tests",
     bench: [
       ["Voice scenarios (12 total)", "All 12 scam scenarios detected"],
@@ -358,10 +358,10 @@ const RESEARCH: L = {
   },
   simpleTr: {
     title: "Araştırma ve Tanınma", sub: "Test sonuçları ve uzman değerlendirmesi", badge: "GERÇEKLER // RAKAMLAR",
-    mTitle: "Bağımsız model testi", mSub: "140 elle etiketlenmiş kayıt (tek geçiş)",
-    metrics: [["Doğruluk", "%99.3"], ["Tespit edilen dolandırıcılık", "%100"], ["Kaçırılan tehditler", "0"], ["Veri seti", "140 kayıt, elle etiketlenmiş"]],
+    mTitle: "Bağımsız model testi", mSub: "Bağımsız değerlendirme seti 18.502 satır",
+    metrics: [["Doğruluk", "%99.75"], ["Tespit edilen dolandırıcılık", "%99.55"], ["Yanlış engelleme", "31 → 3"], ["Değerlendirme seti", "18.502 satır"]],
     tokTitle: "Metrikler nasıl hesaplandı",
-    tokDesc: "Metrikler 140 elle etiketlenmiş kayıta dayanmaktadır (tek geçiş, çapraz doğrulama yok). Dürüst rakamlar, şişirme yok.",
+    tokDesc: "Metrikler bağımsız değerlendirme setine (18.502 satır, mega veri seti 6,6M) dayanmaktadır. 69 gerçek ekran görüntüsünde yanlış engelleme: 31 → 3.",
     benchTitle: "Gerçek dünya testleri",
     bench: [
       ["Ses senaryoları (12 toplam)", "12 dolandırıcılık senaryosunun tamamı tespit edildi"],
@@ -373,10 +373,10 @@ const RESEARCH: L = {
   },
   simpleEs: {
     title: "Investigación y Reconocimiento", sub: "Resultados de pruebas y evaluación de expertos", badge: "HECHOS // NÚMEROS",
-    mTitle: "Prueba independiente del modelo", mSub: "140 registros etiquetados manualmente (una ejecución)",
-    metrics: [["Precisión", "99.3%"], ["Fraude detectado", "100%"], ["Amenazas perdidas", "0"], ["Conjunto", "140 registros, etiquetado manual"]],
+    mTitle: "Prueba independiente del modelo", mSub: "Conjunto de evaluación independiente de 18 502 filas",
+    metrics: [["Precisión", "99.75%"], ["Fraude detectado", "99.55%"], ["Bloqueos falsos", "31 → 3"], ["Conjunto de evaluación", "18 502 filas"]],
     tokTitle: "Cómo se calcularon las métricas",
-    tokDesc: "Las métricas se basan en 140 registros etiquetados manualmente (una ejecución, sin validación cruzada). Cifras honestas, sin inflación.",
+    tokDesc: "Las métricas se basan en un conjunto de evaluación independiente de 18 502 filas (megadataset 6,6 M). Bloqueos falsos en 69 capturas reales: 31 → 3.",
     benchTitle: "Pruebas del mundo real",
     bench: [
       ["Escenarios de voz (12 total)", "Los 12 escenarios de fraude detectados"],
@@ -388,10 +388,10 @@ const RESEARCH: L = {
   },
   simpleZh: {
     title: "研究与认可", sub: "测试结果和专家评估", badge: "事实 // 数据",
-    mTitle: "独立模型测试", mSub: "140 条人工标注的日志（单次运行）",
-    metrics: [["准确率", "99.3%"], ["欺诈检出率", "100%"], ["漏报数", "0"], ["数据集", "140 条日志，人工标注"]],
+    mTitle: "独立模型测试", mSub: "独立评估集 18,502 行",
+    metrics: [["准确率", "99.75%"], ["欺诈检出率", "99.55%"], ["误拦截", "31 → 3"], ["评估集", "18,502 行"]],
     tokTitle: "指标如何计算",
-    tokDesc: "指标基于 140 条人工标注的日志（单次运行，非交叉验证）。诚实的数字，无虚高。",
+    tokDesc: "指标基于独立评估集 18,502 行（百万级数据集 660 万）。69 张真实截图中的误拦截：31 → 3。",
     benchTitle: "真实场景测试",
     bench: [
       ["语音场景（共 12 个）", "12 个诈骗场景全部检出"],
@@ -403,10 +403,10 @@ const RESEARCH: L = {
   },
   simpleHi: {
     title: "अनुसंधान और मान्यता", sub: "परीक्षण परिणाम और विशेषज्ञ मूल्यांकन", badge: "तथ्य // आंकड़े",
-    mTitle: "स्वतंत्र मॉडल परीक्षण", mSub: "140 हस्त-चिह्नित लॉग (एक बार)",
-    metrics: [["सटीकता", "99.3%"], ["पकड़ी गई धोखाधड़ी", "100%"], ["छूटी धमकियाँ", "0"], ["डेटासेट", "140 लॉग, हस्त-चिह्नित"]],
+    mTitle: "स्वतंत्र मॉडल परीक्षण", mSub: "स्वतंत्र मूल्यांकन सेट 18,502 पंक्तियाँ",
+    metrics: [["सटीकता", "99.75%"], ["पकड़ी गई धोखाधड़ी", "99.55%"], ["गलत ब्लॉक", "31 → 3"], ["मूल्यांकन सेट", "18,502 पंक्तियाँ"]],
     tokTitle: "मेट्रिक्स कैसे गणना की गई",
-    tokDesc: "मेट्रिक्स 140 हस्त-चिह्नित लॉग पर आधारित हैं (एक बार, कोई क्रॉस-वैलिडेशन नहीं)। ईमानदार आंकड़े, कोई बढ़ावा नहीं।",
+    tokDesc: "मेट्रिक्स स्वतंत्र मूल्यांकन सेट (18,502 पंक्तियाँ, मेगा-डेटासेट 6.6M) पर आधारित हैं। 69 वास्तविक स्क्रीनशॉट पर गलत ब्लॉक: 31 → 3।",
     benchTitle: "वास्तविक परीक्षण",
     bench: [
       ["आवाज़ परिदृश्य (कुल 12)", "12 में से सभी 12 धोखाधड़ी परिदृश्य पकड़े गए"],
@@ -418,10 +418,10 @@ const RESEARCH: L = {
   },
   simpleAr: {
     title: "البحث والاعتراف", sub: "نتائج الاختبار وتقييم الخبراء", badge: "حقائق // أرقام",
-    mTitle: "اختبار مستقل للنموذج", mSub: "140 سجلًا مُصنّفًا يدويًا (تشغيل واحد)",
-    metrics: [["الدقة", "99.3%"], ["الاحتيال المكتشف", "100%"], ["التهديدات الفائتة", "0"], ["مجموعة البيانات", "140 سجلًا، تصنيف يدوي"]],
+    mTitle: "اختبار مستقل للنموذج", mSub: "مجموعة تقييم مستقلة من 18,502 صفًا",
+    metrics: [["الدقة", "99.75%"], ["الاحتيال المكتشف", "99.55%"], ["الحظر الخاطئ", "31 → 3"], ["مجموعة التقييم", "18,502 صفًا"]],
     tokTitle: "كيف حُسبت المقاييس",
-    tokDesc: "تعتمد المقاييس على 140 سجلًا مُصنّفًا يدويًا (تشغيل واحد، بدون تحقق متقاطع). أرقام صادقة، بدون تضخيم.",
+    tokDesc: "تعتمد المقاييس على مجموعة تقييم مستقلة من 18,502 صفًا (مجموعة بيانات ضخمة 6.6 مليون). عمليات حظر خاطئة على 69 لقطة حقيقية: 31 → 3.",
     benchTitle: "اختبارات عالمية حقيقية",
     bench: [
       ["سيناريوهات صوتية (12 إجمالاً)", "تم اكتشاف جميع سيناريوهات الاحтиال الـ 12"],
@@ -433,10 +433,10 @@ const RESEARCH: L = {
   },
   simplePt: {
     title: "Pesquisa e Reconhecimento", sub: "Resultados de testes e avaliação de especialistas", badge: "FATOS // NÚMEROS",
-    mTitle: "Teste independente do modelo", mSub: "140 registros rotulados manualmente (uma execução)",
-    metrics: [["Precisão", "99.3%"], ["Fraude detectado", "100%"], ["Ameaças perdidas", "0"], ["Conjunto", "140 registros, rotulagem manual"]],
+    mTitle: "Teste independente do modelo", mSub: "Conjunto de avaliação independente de 18.502 linhas",
+    metrics: [["Precisão", "99.75%"], ["Fraude detectado", "99.55%"], ["Bloqueios falsos", "31 → 3"], ["Conjunto de avaliação", "18.502 linhas"]],
     tokTitle: "Como as métricas foram calculadas",
-    tokDesc: "As métricas baseiam-se em 140 registros rotulados manualmente (uma execução, sem validação cruzada). Números honestos, sem inflação.",
+    tokDesc: "As métricas baseiam-se num conjunto de avaliação independente de 18.502 linhas (megadataset 6,6M). Bloqueios falsos em 69 capturas reais: 31 → 3.",
     benchTitle: "Testes do mundo real",
     bench: [
       ["Cenários de voz (12 total)", "Todos os 12 cenários de fraude detectados"],
@@ -448,10 +448,10 @@ const RESEARCH: L = {
   },
   simpleFr: {
     title: "Recherche et Reconnaissance", sub: "Résultats de tests et évaluation d'experts", badge: "FAITS // CHIFFRES",
-    mTitle: "Test indépendant du modèle", mSub: "140 journaux étiquetés manuellement (une exécution)",
-    metrics: [["Précision", "99.3%"], ["Fraude détectée", "100%"], ["Menaces manquées", "0"], ["Ensemble", "140 journaux, étiquetage manuel"]],
+    mTitle: "Test indépendant du modèle", mSub: "Ensemble d'évaluation indépendant de 18 502 lignes",
+    metrics: [["Précision", "99.75%"], ["Fraude détectée", "99.55%"], ["Faux blocages", "31 → 3"], ["Ensemble d'évaluation", "18 502 lignes"]],
     tokTitle: "Comment les métriques ont été calculées",
-    tokDesc: "Les métriques reposent sur 140 journaux étiquetés manuellement (une exécution, pas de validation croisée). Chiffres honnêtes, sans gonflage.",
+    tokDesc: "Les métriques reposent sur un ensemble d'évaluation indépendant de 18 502 lignes (mégadataset 6,6 M). Faux blocages sur 69 captures réelles : 31 → 3.",
     benchTitle: "Tests en conditions réelles",
     bench: [
       ["Scénarios vocaux (12 au total)", "Les 12 scénarios de fraude détectés"],
@@ -463,10 +463,10 @@ const RESEARCH: L = {
   },
   simpleDe: {
     title: "Forschung und Anerkennung", sub: "Testergebnisse und Expertenbewertung", badge: "FAKTA // ZAHLEN",
-    mTitle: "Unabhängiger Modelltest", mSub: "140 manuell gekennzeichnete Logs (einfacher Durchlauf)",
-    metrics: [["Genauigkeit", "99.3%"], ["Erkannter Betrug", "100%"], ["Verpasste Bedrohungen", "0"], ["Datensatz", "140 Logs, manuell gekennzeichnet"]],
+    mTitle: "Unabhängiger Modelltest", mSub: "Unabhängiges Evaluierungsset mit 18.502 Zeilen",
+    metrics: [["Genauigkeit", "99.75%"], ["Erkannter Betrug", "99.55%"], ["Falschblockierungen", "31 → 3"], ["Evaluierungsset", "18.502 Zeilen"]],
     tokTitle: "Wie die Metriken berechnet wurden",
-    tokDesc: "Die Metriken basieren auf 140 manuell gekennzeichneten Logs (einfacher Durchlauf, kein Cross-Validation). Ehrliche Zahlen, keine Aufblähung.",
+    tokDesc: "Die Metriken basieren auf einem unabhängigen Evaluierungsset mit 18.502 Zeilen (Megadataset 6,6 M). Falschblockierungen bei 69 echten Screenshots: 31 → 3.",
     benchTitle: "Tests aus der Praxis",
     bench: [
       ["Sprachszenarien (12 gesamt)", "Alle 12 Betrugsszenarien erkannt"],
@@ -478,10 +478,10 @@ const RESEARCH: L = {
   },
   simpleJa: {
     title: "研究と評価", sub: "テスト結果と専門家の評価", badge: "事実 // 数値",
-    mTitle: "独立したモデルテスト", mSub: "140件の手動ラベル付きログ（1回の実行）",
-    metrics: [["精度", "99.3%"], ["詐欺検出率", "100%"], ["漏れ", "0"], ["データセット", "140件のログ、手動ラベル"]],
+    mTitle: "独立したモデルテスト", mSub: "独立評価セット 18,502 行",
+    metrics: [["精度", "99.75%"], ["詐欺検出率", "99.55%"], ["誤ブロック", "31 → 3"], ["評価セット", "18,502 行"]],
     tokTitle: "指標の計算方法",
-    tokDesc: "指標は140件の手動ラベル付きログに基づいています（1回の実行、交差検証なし）。正直な数字、水増しなし。",
+    tokDesc: "指標は独立評価セット 18,502 行（メガデータセット 660万）に基づいています。69件の実スクリーンショットでの誤ブロック：31 → 3。",
     benchTitle: "実際のテスト",
     bench: [
       ["音声シナリオ（全 12 件）", "12 件の詐欺シナリオすべてを検出"],

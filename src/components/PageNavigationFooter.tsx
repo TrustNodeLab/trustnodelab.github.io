@@ -32,9 +32,9 @@ export const PAGE_DESCRIPTIONS: Record<PageId, Record<string, string>> = {
 
   research: {
 
-    ru: "Метрики F1 = 0.9930 (ручная разметка 140 логов), методология и НИР",
+    ru: "Метрики F1 = 0.9975 (независимый eval-сет 18 502 строк), методология и НИР",
 
-    en: "F1 = 0.9930 metrics (140 hand-labeled logs), methodology and research award",
+    en: "F1 = 0.9975 metrics (independent eval set of 18,502 rows), methodology and research award",
 
   },
 

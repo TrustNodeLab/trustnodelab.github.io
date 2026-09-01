@@ -15,7 +15,7 @@ import { announce } from "../i18n/Announcer";
 
 export const PRODUCT_RADAR_URL = "https://productradar.ru/product/trustnode/";
 export const RUSTORE_URL = "https://www.rustore.ru/catalog/app/com.frauddetector.app";
-export const GITHUB_APK_URL = "https://github.com/TrustNodeLab/trustnodelab.github.io/releases/download/1.2.0/app-arm64-v8a-release.apk";
+export const GITHUB_APK_URL = "https://github.com/TrustNodeLab/TrustNode/releases/download/v1.2.0/app-arm64-v8a-release.apk";
 
 // The four "main" sections (big items in the overlay) + four secondary pages
 // (small items, including Download as the 8th), per the reference layout.
