@@ -359,14 +359,15 @@ export default function CinematicScene({ progress = 0, progressRef, phases, acti
       antialias: false,
       powerPreference: "high-performance"
     });
-    // Adaptive rendering: phones get 1x pixel ratio and no MSAA (the biggest
-    // mobile fill-rate win), tablets a middle tier. Desktops are capped at 1.5x
-    // (not 2x): the shot is mostly additive-blended overlays (stars, satellites,
-    // the night-lights shell, clouds) that redraw the same pixels several times,
-    // so every DPR point costs that many overdraws — 1.5x keeps it crisp while
-    // cutting the fragment workload ~44% vs 2x, which is what keeps the corridor
-    // at 60fps instead of spilling frames late in the approach.
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.5);
+    // Adaptive rendering: every tier starts at 1.5x pixel ratio (phones included)
+    // and the render loop steps DOWN to 1.25/1.0/0.75 only if the frame time
+    // drifts past ~50fps — so capable phones get a crisp Earth instead of a 1x
+    // upscaled blur, and weak GPUs still keep the flight smooth. 1.5x (not 2x)
+    // is chosen because the shot is mostly additive-blended overlays (stars,
+    // satellites, the night-lights shell, clouds) that redraw the same pixels
+    // several times: 1.5x cuts the fragment workload ~44% vs 2x while reading
+    // crisper than a 1x buffer on any DPR>=2 screen.
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
     renderer.setPixelRatio(pixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x04050a, 1);
@@ -490,9 +491,10 @@ export default function CinematicScene({ progress = 0, progressRef, phases, acti
     // Textures are pre-scaled at build time (WebP): the daymap ships at 2560
     // and the support maps at 1536 — exactly the caps below — so the runtime
     // decode is a straight pass-through with NO downscale work on the client.
-    // Phones still decode at 1024 (a downscale, but from a 2560/1536 WebP that
-    // is ~20x lighter than the old 8K JPGs, so it's far cheaper than before).
-    const mobileTexCap = isMobile ? 1024 : 2560;
+    // Phones decode at 2048: the Earth fills most of the screen in the finale,
+    // and a 1024 map read at 1.5x pixel ratio looked visibly soft on DPR>=2
+    // phones; 2048 halves that loss for a modest decode/upload delta.
+    const mobileTexCap = isMobile ? 2048 : 2560;
     // Support maps (normal/spec/night/clouds) are subtle per-pixel modifiers on
     // a planet that fills under 1000px on screen — 1536 keeps each synchronous
     // upload+mipmap ~1.5x smaller than the daymap with no visible loss, and the
@@ -1328,8 +1330,7 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
     const onResize = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const onMobile = w < 768;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, onMobile ? 1 : 1.5));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
