@@ -13,17 +13,25 @@ interface Props {
 
 interface State {
   error: Error | null;
+  stack: string;
 }
 
 export default class ErrorBoundary extends React.Component<Props, State> {
-  state: State = { error: null };
+  state: State = { error: null, stack: "" };
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { error };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[ErrorBoundary]", error, info.componentStack);
+    this.setState({ stack: info.componentStack || "" });
+    try {
+      (window as unknown as Record<string, unknown>).__tnErrorStack =
+        info.componentStack || "";
+    } catch {
+      /* ignore */
+    }
   }
 
   handleReload = () => {
@@ -86,6 +94,28 @@ export default class ErrorBoundary extends React.Component<Props, State> {
             >
               {String(this.state.error.message || this.state.error)}
             </p>
+          )}
+          {this.state.stack && (
+            <pre
+              style={{
+                fontSize: 9,
+                color: "#F87171",
+                fontFamily: "monospace",
+                maxWidth: 560,
+                maxHeight: 180,
+                overflowY: "auto",
+                textAlign: "left",
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                margin: 0,
+                padding: 8,
+                border: "1px solid rgba(239,68,68,0.3)",
+                borderRadius: 8,
+                background: "rgba(239,68,68,0.05)",
+              }}
+            >
+              {this.state.stack.split("\n").slice(0, 35).join("\n")}
+            </pre>
           )}
         </div>
       );
