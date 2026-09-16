@@ -4,7 +4,6 @@ import * as THREE from "three";
 import * as Astronomy from "astronomy-engine";
 import { REAL_STARS } from "../data/realStarCatalog";
 import { useSkyActivation } from "../hooks/useSkyActivation";
-import { useTranslation } from "../i18n/LanguageContext";
 import { isWebGLAvailable, type CinematicPhases } from "./cinematicShared";
 
 export { isWebGLAvailable };
@@ -312,33 +311,6 @@ const EARTH_R = 170;
 const MOON_R = EARTH_R * 0.2727;
 const MOON_DIST = EARTH_R * 60.3;
 
-// Tagline reveal: the exact hero phrase («TrustNode защищает твой телефон от
-// обманщиков») answers the flight as a floating billboard above Earth. It is a
-// world-space sprite that starts INSIDE the planet (hidden by the sphere's depth
-// test) and slides up past the top limb exactly as the camera settles on the
-// final framing — the words literally come out from behind the planet. The
-// second line is the landing hero subtitle in every language, so the 3D finale
-// hands off seamlessly to the page below.
-const TAGLINE_TEXT: Record<string, string> = {
-  ru: "защищает твой телефон от обманщиков",
-  en: "keeps your phone safe from tricksters",
-  es: "protege tu teléfono de los estafadores",
-  zh: "保护你的手机不受骗子侵害",
-  tr: "telefonunu dolandırıcılardan korur",
-  hi: "आपके फ़ोन को ठगों से बचाता है",
-  ar: "يحمي هاتفك من المحتالين",
-  pt: "protege seu celular de golpistas",
-  fr: "protège ton téléphone des arnaqueurs",
-  de: "schützt dein Handy vor Betrügern",
-  ja: "スマホを詐欺師から守ります",
-};
-// Start inside the planet's disc (y=95 is within the sphere: |95-(-45)|<170),
-// end well above the top limb (125) so it floats freely over the held shot.
-const TAGLINE_START_Y = 95;
-const TAGLINE_END_Y = 262;
-const TAGLINE_W = 300;
-const TAGLINE_H = TAGLINE_W * (768 / 2048);
-
 interface Keyframe {
   p: number;
   pos: THREE.Vector3;
@@ -349,7 +321,6 @@ export default function CinematicScene({ progress = 0, progressRef, phases, acti
   const containerRef = useRef<HTMLDivElement>(null);
   const progressRefInternal = useRef(progress);
   const activeRef = useRef(active);
-  const { language } = useTranslation();
   // Poster: replaced by the first real WebGL frame, so the ~100-300ms spent
   // creating the GL context + compiling shaders never shows a blank/black view.
   const [hasFrame, setHasFrame] = useState(false);
@@ -358,13 +329,6 @@ export default function CinematicScene({ progress = 0, progressRef, phases, acti
   // the first WebGL frame, so using it inside the short-circuited JSX below would
   // change the hook order on that re-render and crash the whole app.
   const reducedMotion = useReducedMotion();
-  // Tagline sprite refs: canvas texture + scene sprite are created once inside the
-  // WebGL effect; this ref lets a per-language effect redraw when language changes.
-  const tagCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const tagTextureRef = useRef<THREE.Texture | null>(null);
-  const tagSpriteRef = useRef<THREE.Sprite | null>(null);
-  const tagMatRef = useRef<THREE.SpriteMaterial | null>(null);
-  const redrawTagRef = useRef<(lang: string) => void>(() => {});
 
   useEffect(() => {
     progressRefInternal.current = progress;
@@ -881,60 +845,6 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
     runDecodeQueue(decodes, TEX_DECODE_DELAY_MS);
     runDecodeQueue(lateDecodes, TEX_LATE_DELAY_MS);
 
-    // Tagline billboard: the hero phrase drawn to a canvas (2048×768 for a crisp
-    // 2× supersample), shown as a world-space sprite at the planet's depth so the
-    // sphere's depth test hides it while it sits inside the disc. It rises past
-    // the top limb as the flight settles — the words come out from behind Earth.
-    const tagCanvas = document.createElement("canvas");
-    tagCanvasRef.current = tagCanvas;
-    const tagTex = new THREE.CanvasTexture(tagCanvas);
-    tagTex.colorSpace = THREE.SRGBColorSpace;
-    tagTextureRef.current = tagTex;
-    const tagMat = new THREE.SpriteMaterial({
-      map: tagTex,
-      transparent: true,
-      opacity: 0,
-      depthTest: true,
-      depthWrite: false
-    });
-    tagMatRef.current = tagMat;
-    const tagline = new THREE.Sprite(tagMat);
-    tagline.position.set(0, TAGLINE_START_Y, EARTH_POS.z);
-    tagline.scale.set(TAGLINE_W, TAGLINE_H, 1);
-    tagline.renderOrder = 6;
-    tagline.visible = false;
-    scene.add(tagline);
-    tagSpriteRef.current = tagline;
-    const drawTag = (lang: string) => {
-      const text = TAGLINE_TEXT[lang] || TAGLINE_TEXT.ru;
-      const W = 2048;
-      const H = 768;
-      tagCanvas.width = W;
-      tagCanvas.height = H;
-      const ctx = tagCanvas.getContext("2d");
-      if (!ctx) return;
-      ctx.clearRect(0, 0, W, H);
-      ctx.textBaseline = "middle";
-      const stack = '"Exo 2", "Jura", system-ui, -apple-system, "Segoe UI", "Noto Sans", sans-serif';
-      ctx.textAlign = "left";
-      ctx.font = `700 300px ${stack}`;
-      const trustW = ctx.measureText("Trust").width;
-      const nodeW = ctx.measureText("Node").width;
-      let x0 = (W - (trustW + nodeW)) / 2;
-      ctx.fillStyle = "#F5F5F0";
-      ctx.fillText("Trust", x0, 252);
-      x0 += trustW;
-      ctx.fillStyle = "#3B82F6";
-      ctx.fillText("Node", x0, 252);
-      ctx.textAlign = "center";
-      ctx.font = `500 118px ${stack}`;
-      ctx.fillStyle = "#9CA3AF";
-      ctx.fillText(text, W / 2, 452);
-      tagTex.needsUpdate = true;
-    };
-    redrawTagRef.current = drawTag;
-    drawTag(language);
-
     // Camera keyframes. Choreography: ONE single straight push-in. The flight
     // starts in deep space with NO Earth on screen (Earth fades in far ahead at
     // p≈0.82), and the camera flies forward along a fixed axis while the look
@@ -1131,22 +1041,6 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
         camera.rotateZ(lateralVel * 0.07 * dyn);
       }
 
-      // Tagline: the hero phrase rises from BEHIND the planet as the camera
-      // settles on the final framing. It starts inside the sphere (occluded by
-      // depth), crosses the top limb while fading in, and floats above Earth at
-      // the held shot. Reduced motion: fade-only, no drift.
-      if (p > 0.88) {
-        tagline.visible = true;
-        const tagT = smooth(0.925, 0.995, p);
-        tagMat.opacity = tagT;
-        tagline.position.y = reducedMotion
-          ? TAGLINE_END_Y
-          : lerp(TAGLINE_START_Y, TAGLINE_END_Y, smooth(0.925, 0.99, p));
-      } else {
-        tagline.visible = false;
-        tagMat.opacity = 0;
-      }
-
       renderer.render(scene, camera);
 
       // First real frame drawn: retire the static poster behind the canvas.
@@ -1248,32 +1142,12 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
       sunHaloTex.dispose();
       moonGlowTex.dispose();
       moonTex.dispose();
-      tagTex.dispose();
-      tagMat.dispose();
-      tagCanvasRef.current = null;
-      tagTextureRef.current = null;
-      tagSpriteRef.current = null;
-      tagMatRef.current = null;
       renderer.dispose();
       if (renderer.domElement.parentElement === container) {
         container.removeChild(renderer.domElement);
       }
     };
   }, [phases]);
-
-  // Redraw the tagline billboard when the UI language changes, and once fonts
-  // are ready (the first draw may have run before "Exo 2" finished loading, so
-  // this guarantees the display font is actually used on the canvas).
-  useEffect(() => {
-    redrawTagRef.current(language);
-    if (tagTextureRef.current) tagTextureRef.current.needsUpdate = true;
-    if (typeof document !== "undefined" && document.fonts?.ready) {
-      document.fonts.ready.then(() => {
-        redrawTagRef.current(language);
-        if (tagTextureRef.current) tagTextureRef.current.needsUpdate = true;
-      });
-    }
-  }, [language]);
 
   return (
     <>
