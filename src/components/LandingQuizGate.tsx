@@ -2,99 +2,216 @@ import { useState } from "react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { DownloadCTA } from "./Navigation";
 import QuizFlow from "./QuizFlow";
+import { Phone, Link2, QrCode, ShieldCheck } from "lucide-react";
 
 /**
- * LandingQuizGate — короткая главная: одно простое предложение о пользе +
- * кнопка скачать + квиз-персонализация за кнопкой.
+ * LandingQuizGate — ПОЛНОЦЕННАЯ КОРОТКАЯ ГЛАВНАЯ (лендинг-страница).
+ * Всё супер кратко, сжато и простыми словами — буквально для пятилетнего
+ * ребёнка: одна мысль на строку, никакой технической терминологии.
+ *
+ * Структура (полный режим):
+ *  1. hero: бейдж TrustNode + заголовок + 1-2 предложения + Скачать + квиз
+ *  2. «Что делает» — 4 карточки по одной простой фразе
+ *  3. «Как это работает» — 3 шага
+ * Квиз-персонализация не барьер, а опция за кнопкой «Персонализировать».
+ *
  * Используется в ДВУХ местах:
- *  1) App.tsx — обычный путь главной (без кинематика);
- *  2) CinematicOverlays.tsx — финал кинематик-интро (compact).
- * Идея: всё чётко, кратко и простыми словами — никаких карточек.
- * Квиз не барьер, а опция: «Персонализировать сайт под себя».
+ *  1) App.tsx — обычный путь главной (без кинематика) → полная страница;
+ *  2) CinematicOverlays.tsx — финал кинематик-интро (compact → только hero).
  */
 
-const COPY_BY_LANG: Record<
-  string,
-  { badge: string; title: string; sub: string; toggle: string; note: string }
-> = {
+type Copy = {
+  badge: string;
+  title: string;
+  sub: string;
+  whatTitle: string;
+  items: [string, string, string, string];
+  howTitle: string;
+  steps: [string, string, string];
+  toggle: string;
+  note: string;
+};
+
+const COPY_BY_LANG: Record<string, Copy> = {
   ru: {
     badge: "TrustNode",
-    title: "Защита от телефонных мошенников — прямо на вашем телефоне",
-    sub: "TrustNode проверяет звонки, ссылки, QR-коды и переводы, пока вы их не открыли. Всё работает локально: ваши данные никуда не уходят.",
-    toggle: "Персонализировать сайт под себя",
-    note: "3 вопроса — и сайт соберётся под вас",
+    title: "TrustNode защищает твой телефон от обманщиков",
+    sub: "Плохие звонки, плохие ссылки, плохие коды — TrustNode их останавливает.",
+    whatTitle: "Что он делает",
+    items: [
+      "Плохой звонок? Остановит.",
+      "Плохая ссылка? Заблокирует.",
+      "Плохой QR-код? Проверит.",
+      "Деньги обманщику? Не даст.",
+    ],
+    howTitle: "Как это работает",
+    steps: ["Скачай TrustNode", "Он следит за всем сам", "Ты спокоен"],
+    toggle: "Подобрать сайт под себя",
+    note: "3 вопроса — и сайт станет твоим",
   },
   en: {
     badge: "TrustNode",
-    title: "Protection from phone scammers — right on your phone",
-    sub: "TrustNode checks calls, links, QR codes and transfers before you open them. Everything runs on your device: your data never leaves it.",
-    toggle: "Personalize the site",
-    note: "3 questions — and the site adapts to you",
+    title: "TrustNode keeps your phone safe from tricksters",
+    sub: "Bad calls, bad links, bad codes — TrustNode stops them.",
+    whatTitle: "What it does",
+    items: [
+      "Bad call? Stopped.",
+      "Bad link? Blocked.",
+      "Bad QR code? Checked.",
+      "Money to a trickster? Blocked.",
+    ],
+    howTitle: "How it works",
+    steps: ["Get TrustNode", "It watches for you", "You are safe"],
+    toggle: "Make this site yours",
+    note: "3 questions — and the site becomes yours",
   },
   es: {
     badge: "TrustNode",
-    title: "Protección contra estafas telefónicas — en tu teléfono",
-    sub: "TrustNode revisa llamadas, enlaces, códigos QR y pagos antes de que los abras. Todo funciona en tu dispositivo: tus datos no salen de él.",
-    toggle: "Personalizar el sitio",
-    note: "3 preguntas — y el sitio se adapta a ti",
+    title: "TrustNode protege tu teléfono de los estafadores",
+    sub: "Llamadas malas, enlaces malos, códigos malos — TrustNode los detiene.",
+    whatTitle: "Qué hace",
+    items: [
+      "¿Llamada mala? Detenida.",
+      "¿Enlace malo? Bloqueado.",
+      "¿QR malo? Revisado.",
+      "¿Pago a un estafador? Bloqueado.",
+    ],
+    howTitle: "Cómo funciona",
+    steps: ["Descarga TrustNode", "Él vigila por ti", "Estás a salvo"],
+    toggle: "Haz este sitio tuyo",
+    note: "3 preguntas — y el sitio será tuyo",
   },
   zh: {
     badge: "TrustNode",
-    title: "防范电话诈骗 — 就在您的手机上",
-    sub: "TrustNode 在您打开之前检查来电、链接、二维码和转账。一切都在设备本地运行：您的数据不会离开设备。",
-    toggle: "个性化网站",
-    note: "3 个问题 — 网站将为您定制",
+    title: "TrustNode 保护你的手机不受骗子侵害",
+    sub: "坏电话、坏链接、坏二维码 — TrustNode 都会拦下。",
+    whatTitle: "它能做什么",
+    items: [
+      "坏电话？拦下。",
+      "坏链接？屏蔽。",
+      "坏二维码？检查。",
+      "转钱给骗子？阻止。",
+    ],
+    howTitle: "怎么用",
+    steps: ["下载 TrustNode", "它帮你盯着", "你就安全了"],
+    toggle: "让这个网站属于你",
+    note: "3 个问题 — 网站就会变成你的",
   },
   tr: {
     badge: "TrustNode",
-    title: "Telefon dolandırıcılarına karşı koruma — telefonunuzda",
-    sub: "TrustNode, aramaları, bağlantıları, QR kodları ve ödemeleri açmadan önce kontrol eder. Her şey cihazınızda çalışır: verileriniz asla dışarı çıkmaz.",
-    toggle: "Siteyi kişiselleştir",
-    note: "3 soru — site size göre şekillenir",
+    title: "TrustNode telefonunu dolandırıcılardan korur",
+    sub: "Kötü aramalar, kötü linkler, kötü kodlar — TrustNode hepsini durdurur.",
+    whatTitle: "Ne yapar",
+    items: [
+      "Kötü arama mı? Durdurulur.",
+      "Kötü link mi? Engellenir.",
+      "Kötü QR mu? Kontrol edilir.",
+      "Dolandırıcıya para mı? Engellenir.",
+    ],
+    howTitle: "Nasıl çalışır",
+    steps: ["TrustNode'u indir", "Senin için izler", "Güvendesin"],
+    toggle: "Bu siteyi sana göre yap",
+    note: "3 soru — site senin olur",
   },
   hi: {
     badge: "TrustNode",
-    title: "फ़ोन धोखेबाज़ों से सुरक्षा — सीधे आपके फ़ोन पर",
-    sub: "TrustNode कॉल, लिंक, QR कोड और भुगतान को खोलने से पहले जाँचता है। सब कुछ आपके डिवाइस पर चलता है: आपका डेटा कहीं नहीं जाता।",
-    toggle: "साइट को निजीकृत करें",
-    note: "3 सवाल — साइट आपके लिए बनेगी",
+    title: "TrustNode आपके फ़ोन को ठगों से बचाता है",
+    sub: "खराब कॉल, खराब लिंक, खराब कोड — TrustNode उन्हें रोकता है।",
+    whatTitle: "यह क्या करता है",
+    items: [
+      "खराब कॉल? रुकी।",
+      "खराब लिंक? ब्लॉक।",
+      "खराब QR? जाँचा।",
+      "ठग को पैसे? रुके।",
+    ],
+    howTitle: "यह कैसे काम करता है",
+    steps: ["TrustNode डाउनलोड करें", "यह आपके लिए देखता है", "आप सुरक्षित हैं"],
+    toggle: "इस साइट को अपना बनाएं",
+    note: "3 सवाल — साइट आपकी होगी",
   },
   ar: {
     badge: "TrustNode",
-    title: "حماية من محتالي الهاتف — على هاتفك مباشرة",
-    sub: "يفحص TrustNode المكالمات والروابط ورموز QR والمدفوعات قبل فتحها. كل شيء يعمل على جهازك: بياناتك لا تغادره أبدًا.",
-    toggle: "خصص الموقع",
-    note: "3 أسئلة — وسيتكيف الموقع معك",
+    title: "TrustNode يحمي هاتفك من المحتالين",
+    sub: "مكالمات سيئة، روابط سيئة، رموز سيئة — TrustNode يوقفها كلها.",
+    whatTitle: "ماذا يفعل",
+    items: [
+      "مكالمة سيئة؟ موقوفة.",
+      "رابط سيء؟ محجوب.",
+      "رمز QR سيء؟ مفحوص.",
+      "دفع لمحتال؟ ممنوع.",
+    ],
+    howTitle: "كيف يعمل",
+    steps: ["حمّل TrustNode", "يراقب عنك", "أنت بأمان"],
+    toggle: "اجعل هذا الموقع لك",
+    note: "3 أسئلة — وسيصبح الموقع لك",
   },
   pt: {
     badge: "TrustNode",
-    title: "Proteção contra golpes por telefone — no seu celular",
-    sub: "TrustNode verifica chamadas, links, QR codes e pagamentos antes de você abri-los. Tudo roda no seu aparelho: seus dados nunca saem dele.",
-    toggle: "Personalizar o site",
-    note: "3 perguntas — e o site se adapta a você",
+    title: "TrustNode protege seu celular de golpistas",
+    sub: "Chamadas ruins, links ruins, códigos ruins — TrustNode bloqueia todos.",
+    whatTitle: "O que ele faz",
+    items: [
+      "Chamada ruim? Bloqueada.",
+      "Link ruim? Bloqueado.",
+      "QR ruim? Verificado.",
+      "Pix para golpista? Bloqueado.",
+    ],
+    howTitle: "Como funciona",
+    steps: ["Baixe o TrustNode", "Ele vigia por você", "Você está seguro"],
+    toggle: "Faça este site seu",
+    note: "3 perguntas — e o site será seu",
   },
   fr: {
     badge: "TrustNode",
-    title: "Protection contre les arnaques téléphoniques — sur votre téléphone",
-    sub: "TrustNode vérifie appels, liens, QR codes et paiements avant que vous ne les ouvriez. Tout fonctionne sur votre appareil : vos données ne le quittent jamais.",
-    toggle: "Personnaliser le site",
-    note: "3 questions — et le site s'adapte à vous",
+    title: "TrustNode protège ton téléphone des arnaqueurs",
+    sub: "Mauvais appels, mauvais liens, mauvais codes — TrustNode les arrête.",
+    whatTitle: "Ce qu'il fait",
+    items: [
+      "Mauvais appel ? Arrêté.",
+      "Mauvais lien ? Bloqué.",
+      "Mauvais QR ? Vérifié.",
+      "Paiement à un arnaqueur ? Bloqué.",
+    ],
+    howTitle: "Comment ça marche",
+    steps: ["Télécharge TrustNode", "Il veille pour toi", "Tu es en sécurité"],
+    toggle: "Fais de ce site le tien",
+    note: "3 questions — et le site est à toi",
   },
   de: {
     badge: "TrustNode",
-    title: "Schutz vor Telefonbetrug – direkt auf Ihrem Telefon",
-    sub: "TrustNode prüft Anrufe, Links, QR-Codes und Überweisungen, bevor Sie sie öffnen. Alles läuft auf Ihrem Gerät: Ihre Daten verlassen es nie.",
-    toggle: "Website personalisieren",
-    note: "3 Fragen — und die Website passt sich dir an",
+    title: "TrustNode schützt dein Handy vor Betrügern",
+    sub: "Schlechte Anrufe, schlechte Links, schlechte Codes — TrustNode stoppt sie.",
+    whatTitle: "Was es tut",
+    items: [
+      "Schlechter Anruf? Gestoppt.",
+      "Schlechter Link? Blockiert.",
+      "Schlechter QR? Geprüft.",
+      "Geld an einen Betrüger? Blockiert.",
+    ],
+    howTitle: "So funktioniert's",
+    steps: ["Hol dir TrustNode", "Es passt für dich auf", "Du bist sicher"],
+    toggle: "Mach diese Seite zu deiner",
+    note: "3 Fragen — und die Seite gehört dir",
   },
   ja: {
     badge: "TrustNode",
-    title: "電話詐欺から守る — あなたのスマホで",
-    sub: "TrustNode は、開く前に通話・リンク・QRコード・送金をチェックします。すべて端末内で完結し、データが外に出ることはありません。",
-    toggle: "サイトをカスタマイズ",
-    note: "3つの質問 — サイトがあなた向けに",
+    title: "TrustNode はスマホを詐欺師から守ります",
+    sub: "悪い電話、悪いリンク、悪いコード — TrustNode が全部止めます。",
+    whatTitle: "できること",
+    items: [
+      "悪い電話？止めた。",
+      "悪いリンク？ブロック。",
+      "悪いQR？チェック。",
+      "詐欺師への送金？阻止。",
+    ],
+    howTitle: "使い方",
+    steps: ["TrustNode をダウンロード", "あなたの代わりに見張る", "あなたは安心"],
+    toggle: "このサイトを自分仕様に",
+    note: "3つの質問 — サイトがあなたのものに",
   },
 };
+
+const ICONS = [Phone, Link2, QrCode, ShieldCheck];
 
 export default function LandingQuizGate({ compact = false }: { compact?: boolean }) {
   const { language } = useTranslation();
@@ -102,38 +219,90 @@ export default function LandingQuizGate({ compact = false }: { compact?: boolean
   const d = COPY_BY_LANG[language] || COPY_BY_LANG.ru;
 
   return (
-    <div className={`w-full text-center ${compact ? "" : "max-w-3xl mx-auto"}`}>
-      <span className="font-mono text-[11px] tracking-[0.25em] text-[#3B82F6] uppercase font-bold">
-        {d.badge}
-      </span>
-      <h2
-        className={`font-display font-semibold tracking-tight text-[#F5F5F0] ${
-          compact ? "text-xl sm:text-2xl mt-3" : "text-2xl sm:text-4xl mt-4"
-        }`}
-      >
-        {d.title}
-      </h2>
-      <p
-        className={`font-sans text-[#9CA3AF] leading-relaxed ${
-          compact ? "text-sm mt-3" : "text-base sm:text-lg mt-4 max-w-2xl mx-auto"
-        }`}
-      >
-        {d.sub}
-      </p>
-      <div className={compact ? "mt-6" : "mt-8"}>
-        <DownloadCTA size={compact ? "md" : "lg"} />
+    <div className="w-full">
+      {/* ============ HERO ============ */}
+      <div className={`w-full text-center ${compact ? "" : "max-w-3xl mx-auto"}`}>
+        <span className="font-mono text-[11px] tracking-[0.25em] text-[#3B82F6] uppercase font-bold">
+          {d.badge}
+        </span>
+        <h2
+          className={`font-display font-semibold tracking-tight text-[#F5F5F0] ${
+            compact ? "text-xl sm:text-2xl mt-3" : "text-2xl sm:text-4xl mt-4"
+          }`}
+        >
+          {d.title}
+        </h2>
+        <p
+          className={`font-sans text-[#9CA3AF] leading-relaxed ${
+            compact ? "text-sm mt-3" : "text-base sm:text-lg mt-4 max-w-2xl mx-auto"
+          }`}
+        >
+          {d.sub}
+        </p>
+        <div className={compact ? "mt-6" : "mt-8"}>
+          <DownloadCTA size={compact ? "md" : "lg"} />
+        </div>
+        <button
+          onClick={() => setQuizOpen((v) => !v)}
+          className="mt-6 inline-flex items-center gap-2 text-sm text-gray-300 underline decoration-gray-600 underline-offset-4 hover:text-[#3B82F6] hover:decoration-[#3B82F6]/60 transition-colors cursor-pointer"
+          aria-expanded={quizOpen}
+        >
+          {quizOpen ? "✕" : "▸"} {d.toggle}
+        </button>
+        {!quizOpen && <p className="mt-2 text-xs font-mono text-gray-500">{d.note}</p>}
+        {quizOpen && (
+          <div className={`${compact ? "mt-6" : "mt-8"} w-full`}>
+            <QuizFlow />
+          </div>
+        )}
       </div>
-      <button
-        onClick={() => setQuizOpen((v) => !v)}
-        className="mt-6 inline-flex items-center gap-2 text-sm text-gray-300 underline decoration-gray-600 underline-offset-4 hover:text-[#3B82F6] hover:decoration-[#3B82F6]/60 transition-colors cursor-pointer"
-        aria-expanded={quizOpen}
-      >
-        {quizOpen ? "✕" : "▸"} {d.toggle}
-      </button>
-      {!quizOpen && <p className="mt-2 text-xs font-mono text-gray-500">{d.note}</p>}
-      {quizOpen && (
-        <div className={`${compact ? "mt-6" : "mt-8"} w-full`}>
-          <QuizFlow />
+
+      {/* ============ WHAT IT DOES — 4 простые карточки ============ */}
+      {!compact && (
+        <div className="mt-14 sm:mt-20 max-w-4xl mx-auto">
+          <h3 className="font-display font-semibold text-xl sm:text-2xl text-[#F5F5F0] tracking-tight text-center">
+            {d.whatTitle}
+          </h3>
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {d.items.map((line, i) => {
+              const Icon = ICONS[i];
+              return (
+                <div
+                  key={i}
+                  className="rounded-2xl border border-white/[0.06] bg-[#0E0F12]/90 backdrop-blur-sm p-5 text-center hover:border-[#3B82F6]/40 transition-colors"
+                >
+                  <Icon className="w-6 h-6 mx-auto text-[#3B82F6]" strokeWidth={1.8} />
+                  <p className="mt-3 text-sm sm:text-base text-[#F5F5F0] font-medium leading-snug">
+                    {line}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ============ HOW IT WORKS — 3 шага ============ */}
+      {!compact && (
+        <div className="mt-12 sm:mt-16 max-w-3xl mx-auto">
+          <h3 className="font-display font-semibold text-xl sm:text-2xl text-[#F5F5F0] tracking-tight text-center">
+            {d.howTitle}
+          </h3>
+          <ol className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            {d.steps.map((step, i) => (
+              <li
+                key={i}
+                className="flex sm:flex-col items-center sm:items-center gap-3 sm:gap-4 rounded-2xl border border-white/[0.06] bg-[#0E0F12]/90 backdrop-blur-sm p-4 sm:p-5 text-center"
+              >
+                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/40 text-[#3B82F6] font-mono text-sm font-bold shrink-0">
+                  {i + 1}
+                </span>
+                <span className="text-sm sm:text-base text-[#F5F5F0] font-medium leading-snug">
+                  {step}
+                </span>
+              </li>
+            ))}
+          </ol>
         </div>
       )}
     </div>
