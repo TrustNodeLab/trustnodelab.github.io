@@ -219,9 +219,39 @@ export default function LandingQuizGate({ compact = false }: { compact?: boolean
   const d = COPY_BY_LANG[language] || COPY_BY_LANG.ru;
 
   return (
-    <div className="w-full">
+    <div className="relative w-full">
+      {/* ============ PLANET DECO (non-compact only) ============
+          The same Earth from the cinematic finale becomes the hero backdrop of
+          the main page: a pure-CSS globe (lit limb + night shadow + atmosphere
+          halo) painted once behind the headline, so the 3D shot hands off into
+          the page. Zero animation, zero JS. */}
+      {!compact && (
+        <>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none select-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#3B82F6]/[0.07] to-transparent"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none select-none absolute left-1/2 top-[-120px] sm:top-[-160px] -translate-x-1/2 w-[min(92vw,540px)] h-[min(92vw,540px)] sm:w-[660px] sm:h-[660px] rounded-full"
+            style={{
+              background: [
+                // atmosphere halo
+                "radial-gradient(circle at 50% 50%, rgba(59,130,246,0) 57%, rgba(59,130,246,0.16) 61%, rgba(59,130,246,0) 67%)",
+                // night shadow (dark side, bottom-left)
+                "radial-gradient(circle at 62% 40%, rgba(9,12,18,0) 0%, rgba(9,12,18,0.42) 48%, rgba(8,10,16,0.94) 68%)",
+                // lit limb + faint continents
+                "radial-gradient(circle at 63% 36%, rgba(125,211,252,0.30) 0%, rgba(59,130,246,0.16) 30%, rgba(45,212,191,0.08) 50%, rgba(8,11,16,0) 68%)",
+                // ocean disc
+                "radial-gradient(circle at 50% 50%, #111A28 0%, #0B101A 58%, #070A11 100%)",
+              ].join(","),
+            }}
+          />
+        </>
+      )}
+
       {/* ============ HERO ============ */}
-      <div className={`w-full text-center ${compact ? "" : "max-w-3xl mx-auto"}`}>
+      <div className={`relative z-10 w-full text-center ${compact ? "" : "max-w-3xl mx-auto"}`}>
         <span className="font-mono text-[11px] tracking-[0.25em] text-[#3B82F6] uppercase font-bold">
           {d.badge}
         </span>
@@ -259,7 +289,7 @@ export default function LandingQuizGate({ compact = false }: { compact?: boolean
 
       {/* ============ WHAT IT DOES — 4 простые карточки ============ */}
       {!compact && (
-        <div className="mt-14 sm:mt-20 max-w-4xl mx-auto">
+        <div className="relative z-10 mt-14 sm:mt-20 max-w-4xl mx-auto">
           <h3 className="font-display font-semibold text-xl sm:text-2xl text-[#F5F5F0] tracking-tight text-center">
             {d.whatTitle}
           </h3>
@@ -284,7 +314,7 @@ export default function LandingQuizGate({ compact = false }: { compact?: boolean
 
       {/* ============ HOW IT WORKS — 3 шага ============ */}
       {!compact && (
-        <div className="mt-12 sm:mt-16 max-w-3xl mx-auto">
+        <div className="relative z-10 mt-12 sm:mt-16 max-w-3xl mx-auto">
           <h3 className="font-display font-semibold text-xl sm:text-2xl text-[#F5F5F0] tracking-tight text-center">
             {d.howTitle}
           </h3>
