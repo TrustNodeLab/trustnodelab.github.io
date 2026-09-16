@@ -62,7 +62,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 
 import DamageCalculator from "./components/DamageCalculator";
 import FaqSection from "./components/FaqSection";
-import HomePersonalBlocks from "./components/HomePersonalBlocks";
 import { DownloadCTA } from "./components/Navigation";
 import LandingQuizGate from "./components/LandingQuizGate";
 import { acquireScrollLock, releaseScrollLock } from "./lib/scrollLock";
@@ -1105,8 +1104,6 @@ export default function App() {
             <LandingQuizGate />
           </section>
         </div>
-                {/* Сборка главной по блокам: только разделы из персонального маршрута квиза */}
-                <HomePersonalBlocks />
                 <Footer />
               </div>
             </motion.div>
