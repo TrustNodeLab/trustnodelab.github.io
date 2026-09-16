@@ -1,62 +1,126 @@
 import { useState } from "react";
-import { Phone, Link2, QrCode, UserRound } from "lucide-react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { DownloadCTA } from "./Navigation";
 import QuizFlow from "./QuizFlow";
 
 /**
- * LandingQuizGate — «от чего защищаем» + скачать + квиз за кнопкой.
+ * LandingQuizGate — короткая главная: одно простое предложение о пользе +
+ * кнопка скачать + квиз-персонализация за кнопкой.
  * Используется в ДВУХ местах:
  *  1) App.tsx — обычный путь главной (без кинематика);
  *  2) CinematicOverlays.tsx — финал кинематик-интро (compact).
- * Идея: обычный пользователь сразу видит пользу (защита + скачать),
- * квиз-персонализация не барьер, а опция.
+ * Идея: всё чётко, кратко и простыми словами — никаких карточек.
+ * Квиз не барьер, а опция: «Персонализировать сайт под себя».
  */
 
-const THREATS_BY_LANG: Record<
+const COPY_BY_LANG: Record<
   string,
-  { badge: string; items: [string, string, string, string]; toggle: string; note: string }
+  { badge: string; title: string; sub: string; toggle: string; note: string }
 > = {
-  ru: { badge: "От чего защищаем", items: ["Звонки и голосовые", "Ссылки в сообщениях", "QR-коды и оплаты", "Личные данные"], toggle: "Персонализировать сайт под себя", note: "3 вопроса — и сайт соберётся под вас" },
-  en: { badge: "What we protect against", items: ["Calls and voice", "Links in messages", "QR codes & payments", "Personal data"], toggle: "Personalize the site", note: "3 questions — and the site adapts to you" },
-  es: { badge: "Contra qué protegemos", items: ["Llamadas y voz", "Enlaces en mensajes", "Códigos QR y pagos", "Datos personales"], toggle: "Personalizar el sitio", note: "3 preguntas — y el sitio se adapta a ti" },
-  zh: { badge: "我们防护什么", items: ["电话和语音", "消息中的链接", "二维码和支付", "个人数据"], toggle: "个性化网站", note: "3 个问题 — 网站将为您定制" },
-  tr: { badge: "Nelerden koruruz", items: ["Aramalar ve ses", "Mesajlardaki bağlantılar", "QR kodlar ve ödemeler", "Kişisel veriler"], toggle: "Siteyi kişiselleştir", note: "3 soru — site size göre şekillenir" },
-  hi: { badge: "हम किससे बचाते हैं", items: ["कॉल और आवाज़", "मैसेज में लिंक", "QR कोड और भुगतान", "व्यक्तिगत डेटा"], toggle: "साइट को निजीकृत करें", note: "3 सवाल — साइट आपके लिए बनेगी" },
-  ar: { badge: "مما نحميك", items: ["المكالمات والصوت", "الروابط في الرسائل", "رموز QR والمدفوعات", "البيانات الشخصية"], toggle: "خصص الموقع", note: "3 أسئلة — وسيتكيف الموقع معك" },
-  pt: { badge: "Do que protegemos", items: ["Chamadas e voz", "Links em mensagens", "Códigos QR e pagamentos", "Dados pessoais"], toggle: "Personalizar o site", note: "3 perguntas — e o site se adapta a você" },
-  fr: { badge: "Contre quoi nous protégeons", items: ["Appels et voix", "Liens dans les messages", "Codes QR et paiements", "Données personnelles"], toggle: "Personnaliser le site", note: "3 questions — et le site s'adapte à vous" },
-  de: { badge: "Wovor wir schützen", items: ["Anrufe und Stimme", "Links in Nachrichten", "QR-Codes und Zahlungen", "Persönliche Daten"], toggle: "Website personalisieren", note: "3 Fragen — und die Website passt sich dir an" },
-  ja: { badge: "何から守るか", items: ["電話と音声", "メッセージ内のリンク", "QRコードと支払い", "個人データ"], toggle: "サイトをカスタマイズ", note: "3つの質問 — サイトがあなた向けに" },
+  ru: {
+    badge: "TrustNode",
+    title: "Защита от телефонных мошенников — прямо на вашем телефоне",
+    sub: "TrustNode проверяет звонки, ссылки, QR-коды и переводы, пока вы их не открыли. Всё работает локально: ваши данные никуда не уходят.",
+    toggle: "Персонализировать сайт под себя",
+    note: "3 вопроса — и сайт соберётся под вас",
+  },
+  en: {
+    badge: "TrustNode",
+    title: "Protection from phone scammers — right on your phone",
+    sub: "TrustNode checks calls, links, QR codes and transfers before you open them. Everything runs on your device: your data never leaves it.",
+    toggle: "Personalize the site",
+    note: "3 questions — and the site adapts to you",
+  },
+  es: {
+    badge: "TrustNode",
+    title: "Protección contra estafas telefónicas — en tu teléfono",
+    sub: "TrustNode revisa llamadas, enlaces, códigos QR y pagos antes de que los abras. Todo funciona en tu dispositivo: tus datos no salen de él.",
+    toggle: "Personalizar el sitio",
+    note: "3 preguntas — y el sitio se adapta a ti",
+  },
+  zh: {
+    badge: "TrustNode",
+    title: "防范电话诈骗 — 就在您的手机上",
+    sub: "TrustNode 在您打开之前检查来电、链接、二维码和转账。一切都在设备本地运行：您的数据不会离开设备。",
+    toggle: "个性化网站",
+    note: "3 个问题 — 网站将为您定制",
+  },
+  tr: {
+    badge: "TrustNode",
+    title: "Telefon dolandırıcılarına karşı koruma — telefonunuzda",
+    sub: "TrustNode, aramaları, bağlantıları, QR kodları ve ödemeleri açmadan önce kontrol eder. Her şey cihazınızda çalışır: verileriniz asla dışarı çıkmaz.",
+    toggle: "Siteyi kişiselleştir",
+    note: "3 soru — site size göre şekillenir",
+  },
+  hi: {
+    badge: "TrustNode",
+    title: "फ़ोन धोखेबाज़ों से सुरक्षा — सीधे आपके फ़ोन पर",
+    sub: "TrustNode कॉल, लिंक, QR कोड और भुगतान को खोलने से पहले जाँचता है। सब कुछ आपके डिवाइस पर चलता है: आपका डेटा कहीं नहीं जाता।",
+    toggle: "साइट को निजीकृत करें",
+    note: "3 सवाल — साइट आपके लिए बनेगी",
+  },
+  ar: {
+    badge: "TrustNode",
+    title: "حماية من محتالي الهاتف — على هاتفك مباشرة",
+    sub: "يفحص TrustNode المكالمات والروابط ورموز QR والمدفوعات قبل فتحها. كل شيء يعمل على جهازك: بياناتك لا تغادره أبدًا.",
+    toggle: "خصص الموقع",
+    note: "3 أسئلة — وسيتكيف الموقع معك",
+  },
+  pt: {
+    badge: "TrustNode",
+    title: "Proteção contra golpes por telefone — no seu celular",
+    sub: "TrustNode verifica chamadas, links, QR codes e pagamentos antes de você abri-los. Tudo roda no seu aparelho: seus dados nunca saem dele.",
+    toggle: "Personalizar o site",
+    note: "3 perguntas — e o site se adapta a você",
+  },
+  fr: {
+    badge: "TrustNode",
+    title: "Protection contre les arnaques téléphoniques — sur votre téléphone",
+    sub: "TrustNode vérifie appels, liens, QR codes et paiements avant que vous ne les ouvriez. Tout fonctionne sur votre appareil : vos données ne le quittent jamais.",
+    toggle: "Personnaliser le site",
+    note: "3 questions — et le site s'adapte à vous",
+  },
+  de: {
+    badge: "TrustNode",
+    title: "Schutz vor Telefonbetrug – direkt auf Ihrem Telefon",
+    sub: "TrustNode prüft Anrufe, Links, QR-Codes und Überweisungen, bevor Sie sie öffnen. Alles läuft auf Ihrem Gerät: Ihre Daten verlassen es nie.",
+    toggle: "Website personalisieren",
+    note: "3 Fragen — und die Website passt sich dir an",
+  },
+  ja: {
+    badge: "TrustNode",
+    title: "電話詐欺から守る — あなたのスマホで",
+    sub: "TrustNode は、開く前に通話・リンク・QRコード・送金をチェックします。すべて端末内で完結し、データが外に出ることはありません。",
+    toggle: "サイトをカスタマイズ",
+    note: "3つの質問 — サイトがあなた向けに",
+  },
 };
-
-const THREAT_ICONS = [Phone, Link2, QrCode, UserRound];
 
 export default function LandingQuizGate({ compact = false }: { compact?: boolean }) {
   const { language } = useTranslation();
   const [quizOpen, setQuizOpen] = useState(false);
-  const d = THREATS_BY_LANG[language] || THREATS_BY_LANG.ru;
+  const d = COPY_BY_LANG[language] || COPY_BY_LANG.ru;
 
   return (
     <div className={`w-full text-center ${compact ? "" : "max-w-3xl mx-auto"}`}>
       <span className="font-mono text-[11px] tracking-[0.25em] text-[#3B82F6] uppercase font-bold">
         {d.badge}
       </span>
-      <div className={`grid grid-cols-2 lg:grid-cols-4 gap-3 w-full ${compact ? "mt-5" : "mt-8"}`}>
-        {d.items.map((label, i) => {
-          const Icon = THREAT_ICONS[i];
-          return (
-            <div
-              key={i}
-              className="flex flex-col items-center gap-2.5 rounded-xl border border-white/[0.06] bg-[#0E0F12]/70 px-4 py-5"
-            >
-              <Icon className="w-6 h-6 text-[#3B82F6]" />
-              <span className="font-sans text-sm text-[#F5F5F0]/90 leading-snug">{label}</span>
-            </div>
-          );
-        })}
-      </div>
-      <div className={`${compact ? "mt-6" : "mt-10"}`}>
+      <h2
+        className={`font-display font-semibold tracking-tight text-[#F5F5F0] ${
+          compact ? "text-xl sm:text-2xl mt-3" : "text-2xl sm:text-4xl mt-4"
+        }`}
+      >
+        {d.title}
+      </h2>
+      <p
+        className={`font-sans text-[#9CA3AF] leading-relaxed ${
+          compact ? "text-sm mt-3" : "text-base sm:text-lg mt-4 max-w-2xl mx-auto"
+        }`}
+      >
+        {d.sub}
+      </p>
+      <div className={compact ? "mt-6" : "mt-8"}>
         <DownloadCTA size={compact ? "md" : "lg"} />
       </div>
       <button
