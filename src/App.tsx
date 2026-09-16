@@ -1091,9 +1091,8 @@ export default function App() {
 
               {/* CORE LANDING CONTENT (NORMAL DOCUMENT FLOW) */}
               <div ref={coreLandingRef} className="aurora-top aurora-stars relative z-20 w-full flex flex-col bg-[#0A0A0B]/90 backdrop-blur-sm shadow-[0_-30px_60px_rgba(10,10,11,0.95)]" id="core-landing-page">
-                {/* Квиз сразу после кинематик-анимации Земли — вместо плашек «как это устроено».
-                    Рендерится ВСЕГДА как обычная секция страницы (и для WebGL-кинематика,
-                    и для eco/без-WebGL): после анимации юзер просто листает страницу вниз. */}
+                {/* Квиз сразу после кинематик-анимации Земли — вместо плашек «как это устроено» */}
+      {!cinematicEnabled && (
         <div data-snap-section className="relative">
           {/* Живой созвездие-фон позади блока (контент в z-10) */}
           <div className="absolute inset-0 z-0 opacity-70" aria-hidden="true">
@@ -1105,6 +1104,7 @@ export default function App() {
             <LandingQuizGate />
           </section>
         </div>
+      )}
                 {/* Сборка главной по блокам: только разделы из персонального маршрута квиза */}
                 <HomePersonalBlocks />
                 <Footer />

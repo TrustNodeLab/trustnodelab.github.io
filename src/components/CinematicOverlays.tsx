@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { motion } from "motion/react";
 import AssembledLogo from "./AssembledLogo";
 import ScanCard from "./ScanCard";
+import LandingQuizGate from "./LandingQuizGate";
+import { UNLOCK_SCROLL_EVENT } from "../lib/personalRoute";
+import { acquireScrollLock, releaseScrollLock } from "../lib/scrollLock";
 import { useTranslation } from "../i18n/LanguageContext";
 import { useEcoMode } from "../context/EcoModeContext";
 import { INTRO_DICT } from "./IntroSection";
@@ -60,9 +64,21 @@ export default function CinematicOverlays({ progressRef, heroRef, onEnterDome, s
     return () => cancelAnimationFrame(raf);
   }, [progressRef]);
 
-  // Скролл не блокируется этим оверлеем: пока идёт кинематик-автоплей, страницу
-  // держит scroll-lock из App.tsx; после introDone лендинг — обычная секция
-  // страницы (core-landing-page), и юзер просто листает вниз.
+  // Скролл заблокирован с начала и до завершения квиза (или открытия «Все разделы»)
+  const [scrollLocked, setScrollLocked] = useState(!suppressQuiz);
+  useEffect(() => {
+    if (!introDone) return;
+    const unlock = () => setScrollLocked(false);
+    window.addEventListener(UNLOCK_SCROLL_EVENT, unlock);
+    return () => window.removeEventListener(UNLOCK_SCROLL_EVENT, unlock);
+  }, [introDone]);
+  useEffect(() => {
+    if (!scrollLocked) return;
+    acquireScrollLock();
+    return () => {
+      releaseScrollLock();
+    };
+  }, [scrollLocked]);
 
   // A single rAF loop drives every overlay by writing opacity/transform straight to
   // the DOM. No React re-render, no CSS transitions fighting the per-frame updates —
@@ -169,28 +185,19 @@ export default function CinematicOverlays({ progressRef, heroRef, onEnterDome, s
         </div>
       </div>
 
-      {/* Финал: лёгкая подсказка «листай вниз». Полный лендинг (герой + карточки +
-          шаги + квиз) рендерится ОБЫЧНОЙ СЕКЦИЕЙ страницы ниже — в #core-landing-page.
-          При клике плавно скроллим к началу лендинга. */}
+      {/* Лендинг-финал: от чего защищаем + скачать + квиз за кнопкой.
+          ТОЛЬКО после завершения автоплея (и никогда при якорном deep-link) */}
       {introDone && !suppressQuiz && (
-        <button
-          onClick={onEnterDome}
-          className="absolute bottom-7 inset-x-0 flex flex-col items-center gap-1.5 pointer-events-auto group"
-          aria-label={t.hero?.scrollStart || "Scroll to begin"}
-        >
-          <span className="font-mono text-[10px] tracking-[0.25em] text-[#3B82F6] group-hover:text-[#2DD4BF] transition-colors uppercase font-bold">
-            {t.hero?.scrollStart}
-          </span>
-          <svg
-            className="w-4 h-4 text-gray-500 animate-bounce group-hover:text-[#2DD4BF] transition-colors"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-        </button>
+      <motion.div
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        className="absolute inset-x-0 top-0 flex flex-col items-center px-4 pt-[10vh] sm:pt-[12vh] pb-[18vh] pointer-events-auto"
+      >
+        <div className="w-full max-w-3xl max-h-[76vh] overflow-y-auto bg-[#0A0A0B]/55 backdrop-blur-md rounded-2xl border border-white/[0.05] px-4 py-6 sm:px-6 pointer-events-auto">
+          <LandingQuizGate />
+        </div>
+      </motion.div>
       )}
     </div>
   );
