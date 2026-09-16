@@ -195,7 +195,7 @@ export default function CinematicOverlays({ progressRef, heroRef, onEnterDome, s
         className="absolute inset-x-0 top-0 flex flex-col items-center px-4 pt-[10vh] sm:pt-[12vh] pb-[18vh] pointer-events-auto"
       >
         <div className="w-full max-w-3xl max-h-[76vh] overflow-y-auto bg-[#0A0A0B]/55 backdrop-blur-md rounded-2xl border border-white/[0.05] px-4 py-6 sm:px-6 pointer-events-auto">
-          <LandingQuizGate compact />
+          <LandingQuizGate />
         </div>
       </motion.div>
       )}
