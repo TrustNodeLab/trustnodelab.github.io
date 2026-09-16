@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import * as THREE from "three";
+import * as satellite from "satellite.js";
 import * as Astronomy from "astronomy-engine";
 import { REAL_STARS } from "../data/realStarCatalog";
-import { useSkyActivation } from "../hooks/useSkyActivation";
+import { cachedSatellites, useSkyActivation } from "../hooks/useSkyActivation";
 import { isWebGLAvailable, type CinematicPhases } from "./cinematicShared";
 
 export { isWebGLAvailable };
@@ -329,6 +330,8 @@ export default function CinematicScene({ progress = 0, progressRef, phases, acti
   // the first WebGL frame, so using it inside the short-circuited JSX below would
   // change the hook order on that re-render and crash the whole app.
   const reducedMotion = useReducedMotion();
+
+  useSkyActivation(false);
 
   useEffect(() => {
     progressRefInternal.current = progress;
@@ -688,17 +691,62 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
       overlayCap
     );
 
-    // ---- REAL SUN/MOON ------------------------------------------------
-    // The Sun/Moon sit at their real geocentric directions. The astronomy solve
-    // runs once on the main thread near the Earth approach (p~0.75), deferred
-    // until the opening frames are done so it never stalls the flight start.
+    // ---- REAL SATELLITES + REAL SUN/MOON -------------------------------
+    // The FULL active payload catalog from live TLE data (CelesTrak "active"
+    // group, ~12k+ real satellites) orbits the planet on its true TLE tracks,
+    // and the Sun/Moon sit at their real geocentric directions. The satellite
+    // clock is sped up so the orbits are visible during the short cinematic,
+    // but the positions stay on the real TLE tracks.
+    const realNowBase = new Date();
+    const startTime = performance.now();
+    const SAT_TIME_MULT = 150; // 1 real second = 2.5 sim minutes (LEO orbit ~90min)
+
     // ECI/TEME frame: +z = north celestial pole. The scene frame has +y = north
     // (matching raDecDir below), so swap y/z when converting to scene coordinates.
-    // `out` is optional: when given, the vector is reused (no per-call allocation).
+    // `out` is optional: when given, the vector is reused (no per-call allocation),
+    // which keeps the satellite fallback tick allocation-free.
     function toSceneDir(x: number, y: number, z: number, out?: THREE.Vector3): THREE.Vector3 {
       const v = out ?? new THREE.Vector3();
       return v.set(x, z, y).normalize();
     }
+
+    // Satellite point swarm. SGP4 propagation for the whole catalog (deep-space
+    // GEO/MEO sats are ~200x more expensive than LEO ones) runs in a Web Worker
+    // so it never blocks the main thread; a small main-thread fallback covers the
+    // moment before the worker is ready (and any worker failure).
+    const MAX_SATS = 20000;
+    const ALT_MIN = 200; // above the atmosphere
+    const ALT_MAX = 42000; // include GEO + graveyard orbits
+    const satPositions = new Float32Array(MAX_SATS * 3);
+    const satGeo = new THREE.BufferGeometry();
+    satGeo.setAttribute("position", new THREE.BufferAttribute(satPositions, 3));
+    satGeo.setDrawRange(0, 0);
+    // Circular dot texture for satellites (PointsMaterial default is a square)
+    const dotCanvas = document.createElement("canvas");
+    dotCanvas.width = 64;
+    dotCanvas.height = 64;
+    const dotCtx = dotCanvas.getContext("2d")!;
+    const gradient = dotCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gradient.addColorStop(0, "rgba(255,255,255,1)");
+    gradient.addColorStop(0.3, "rgba(255,255,255,0.8)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    dotCtx.fillStyle = gradient;
+    dotCtx.fillRect(0, 0, 64, 64);
+    const dotTexture = new THREE.CanvasTexture(dotCanvas);
+
+    const satMat = new THREE.PointsMaterial({
+      color: 0xfff2cc,
+      size: 1.4,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      map: dotTexture
+    });
+    const satellitePoints = new THREE.Points(satGeo, satMat);
+    satellitePoints.renderOrder = 4;
+    scene.add(satellitePoints);
 
     const defaultSunDir = new THREE.Vector3(0.35, 0.4, 0.85).normalize();
     const realSunDir = defaultSunDir.clone();
@@ -818,6 +866,102 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
     moonGlow.renderOrder = 4;
     scene.add(moonGlow);
 
+    const commitSatCount = (n: number) => {
+      satGeo.setDrawRange(0, n);
+      satGeo.attributes.position.needsUpdate = true;
+    };
+
+    let satWorker: Worker | null = null;
+    let satWorkerReady = false;
+    let satWorkerBusy = false;
+    let workerInitSent = false;
+
+    const makeSatWorker = () => {
+      try {
+        const w = new Worker(new URL("../workers/satelliteWorker.ts", import.meta.url), { type: "module" });
+        w.onmessage = (e: MessageEvent) => {
+          const d = e.data;
+          if (d && d.type === "ready") {
+            satWorkerReady = true;
+          } else if (d && d.type === "positions") {
+            satWorkerBusy = false;
+            const arr = d.positions as Float32Array;
+            const count = Math.min(d.count as number, MAX_SATS);
+            satPositions.set(arr.subarray(0, count * 3));
+            commitSatCount(count);
+          } else if (d && d.type === "sunmoon") {
+            realSunDir.fromArray(d.sun);
+            visualSunDir.copy(realSunDir).lerp(defaultSunDir, 0.4).normalize();
+            realMoonDir.fromArray(d.moon);
+            realSunOk = true;
+          }
+        };
+        w.onerror = () => {
+          w.terminate();
+          if (satWorker === w) satWorker = null;
+          satWorkerReady = false;
+          satWorkerBusy = false;
+          workerInitSent = false;
+        };
+        return w;
+      } catch {
+        return null;
+      }
+    };
+
+    // Main-thread fallback (runs only until the worker is ready, or if it fails):
+    // a rolling window over the catalog keeps each update's cost bounded. The
+    // budget is kept small — SGP4 is run synchronously here, and a large window
+    // over the ~12k catalog (incl. expensive GEO/MEO sats) stalls the flight.
+    // The worker is now seeded as soon as the TLEs land (see useSkyActivation),
+    // so on a fast connection this never runs at all during the 8-10s window;
+    // when the download is slow it still bounds each main-thread tick.
+    const FALLBACK_BUDGET = 100;
+    let fallbackIndex = 0;
+    // Reused per-call sim clock + scratch vector: the fallback tick runs up to
+    // every 250ms and the previous `new Date(...)` + `toSceneDir` allocations
+    // were the standing GC source found by the CPU-throttle profile (~440ms of
+    // incremental GC over one flight). Both are now cached instances.
+    const simNowDate = new Date();
+    const scratchDir = new THREE.Vector3();
+    const updateSatellitesFallback = () => {
+      const sats = cachedSatellites;
+      if (!sats || sats.length === 0) {
+        commitSatCount(0);
+        return;
+      }
+      simNowDate.setTime(realNowBase.getTime() + (performance.now() - startTime) * SAT_TIME_MULT);
+      let n = 0;
+      const total = sats.length;
+      for (let k = 0; k < FALLBACK_BUDGET && n < MAX_SATS; k++) {
+        const s = sats[(fallbackIndex + k) % total];
+        try {
+          const pv = satellite.propagate(s.satrec, simNowDate);
+          if (!pv.position || typeof pv.position === "boolean") continue;
+          const pos = pv.position;
+          const rKm = Math.hypot(pos.x, pos.y, pos.z);
+          const altKm = rKm - 6371;
+          if (altKm < ALT_MIN || altKm > ALT_MAX) continue;
+          toSceneDir(pos.x, pos.y, pos.z, scratchDir);
+          const sceneR = EARTH_R * (1.07 + (altKm / 4000) * 0.55);
+          satPositions[n * 3] = EARTH_POS.x + scratchDir.x * sceneR;
+          satPositions[n * 3 + 1] = EARTH_POS.y + scratchDir.y * sceneR;
+          satPositions[n * 3 + 2] = EARTH_POS.z + scratchDir.z * sceneR;
+          n++;
+        } catch {
+          // skip invalid TLE
+        }
+      }
+      fallbackIndex = (fallbackIndex + FALLBACK_BUDGET) % total;
+      commitSatCount(n);
+    };
+
+    // On phones the satellite swarm is decimated (~1/2 of the catalog) and the
+    // updates run at roughly half the cadence — the shell reads the same, but the
+    // phone CPU/GPU do a fraction of the work while the orbits still move.
+    const SAT_DECIMATE = isMobile ? 2 : 1;
+    const SAT_INTERVAL_MS = isMobile ? 450 : 250;
+
     // Fetches all run in parallel from mount (async I/O, near-zero main-thread
     // cost — see loadSized above). DECODE + GPU upload are strictly serialized
     // and entirely front-loaded: the logo assembly (p~0.44-0.52 = 4.4-5.2s) is a
@@ -844,6 +988,99 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
     };
     runDecodeQueue(decodes, TEX_DECODE_DELAY_MS);
     runDecodeQueue(lateDecodes, TEX_LATE_DELAY_MS);
+
+    const updateSatellites = () => {
+      // Never propagate while the corridor is out of view: the worker would
+      // otherwise keep SGP4-running the whole catalog (and structured-cloning
+      // the positions back) every 250ms long after the intro has scrolled away.
+      if (!activeRef.current) return;
+      // Satellites fade in with the Earth at p~0.82; skip all propagation until
+      // the flight approaches, so the logo/title phases don't burn CPU.
+      const p = progressRef ? progressRef.current : progressRefInternal.current;
+      // Ask the worker for the real Sun/Moon directions once, near the Earth
+      // approach, so the astronomy solve stays off the main thread. Its reply
+      // lands long before Sun/Moon become visible (fade starts at p~0.86).
+      if (!sunMoonRequested && p >= 0.72) {
+        if (satWorker && satWorkerReady) {
+          sunMoonRequested = true;
+          const reqNow = new Date(realNowBase.getTime() + (performance.now() - startTime) * SAT_TIME_MULT);
+          satWorker.postMessage({ type: "sunmoon", time: reqNow.getTime() });
+        } else {
+          updateSunMoonDirs(); // worker: none / not ready — run the one-shot fallback
+        }
+      }
+      // The whole texture chain is started by the early timer above and runs well
+      // before the Earth-fade / satellite-activation / sun-moon-fade / card
+      // beats (p 0.8-1), so no decode, GPU upload or shader re-compile can land
+      // on the visible part of the flight.
+      if (p < 0.8) return;
+      if (satWorker && satWorkerReady) {
+        if (satWorkerBusy) return;
+        satWorkerBusy = true;
+        const simNow = new Date(realNowBase.getTime() + (performance.now() - startTime) * SAT_TIME_MULT);
+        satWorker.postMessage({ type: "tick", simTime: simNow.getTime() });
+      } else {
+        updateSatellitesFallback();
+      }
+    };
+
+    // Seed the worker with the catalog as soon as it has loaded; until then the
+    // main-thread fallback keeps satellites on screen. Init is sent EXACTLY once:
+    // re-posting the ~12k-element catalog every 300ms until "ready" was a repeated
+    // multi-ms structured-clone stall on the main thread during the first seconds
+    // of the flight. The worker replies "ready" when its parse finishes; a
+    // per-frame fallback keeps satellites drawn until then. Retry only happens
+    // after a worker error (which resets workerInitSent).
+    const initWorker = () => {
+      if (workerInitSent || !satWorker) return;
+      // Deferred past the opening decode window: posting ~12k TLE strings is a
+      // multi-ms encode, and the worker's satrec build hammers a CPU core - both
+      // used to land in the pre-logo beats. The catalog arrives around ~1.5-4s
+      // (fetch starts at 1.2s, see useSkyActivation); starting at p 0.3 keeps
+      // the encode clear of the daymap upload at ~1-2s while still giving the
+      // worker several seconds to parse the satrecs off-thread, so it is ready
+      // long before satellites fade in at p~0.82 (8.2s) and the main-thread
+      // SGP4 fallback never has to run in the 8-10s window. The payload is a
+      // single UTF-8 blob transfered zero-copy (instead of ~12k nested string
+      // arrays, whose structured clone allocates tens of thousands of objects
+      // on the main thread and gels GC exactly at the Earth approach).
+      const p = progressRef ? progressRef.current : progressRefInternal.current;
+      if (p < 0.3) return;
+      const sats = cachedSatellites;
+      if (!sats || sats.length === 0) return;
+      workerInitSent = true;
+      const sb: string[] = [];
+      for (let i = 0; i < sats.length; i += SAT_DECIMATE) {
+        const s = sats[i];
+        sb.push(s.line1, s.line2); // line pairs, alternating per satellite
+      }
+      const bytes = new TextEncoder().encode(sb.join("\n"));
+      satWorker.postMessage(
+        {
+          type: "init",
+          tleBytes: bytes.buffer,
+          earthPos: [EARTH_POS.x, EARTH_POS.y, EARTH_POS.z],
+          earthR: EARTH_R,
+          altMin: ALT_MIN,
+          altMax: ALT_MAX
+        },
+        [bytes.buffer]
+      );
+    };
+
+    satWorker = makeSatWorker();
+    initWorker();
+    updateSatellites();
+    const satTimer = window.setInterval(updateSatellites, SAT_INTERVAL_MS);
+    // Polls only for the worker to become ready so the init can be sent the moment
+    // the catalog arrives; initWorker itself guards against duplicate sends.
+    const satInitTimer = window.setInterval(() => {
+      if (satWorkerReady || !satWorker) {
+        clearInterval(satInitTimer);
+        return;
+      }
+      initWorker();
+    }, 300);
 
     // Camera keyframes. Choreography: ONE single straight push-in. The flight
     // starts in deep space with NO Earth on screen (Earth fades in far ahead at
@@ -939,10 +1176,6 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
       prev = time;
       const p = progressRef ? progressRef.current : progressRefInternal.current;
 
-      // Real Sun/Moon directions: one-shot astronomy solve near the Earth
-      // approach (deferred so it never stalls the opening frames).
-      if (!sunMoonRequested && p >= 0.72) updateSunMoonDirs();
-
       // The corridor can be scrolled past mid-frame: cancel the loop on the very
       // next frame instead of waiting for the 400ms activeWatch poll below, so
       // no extra frames are wasted behind the opaque landing content.
@@ -977,6 +1210,7 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
       earth.visible = eVis;
       clouds.visible = eVis;
       night.visible = eVis;
+      satellitePoints.visible = eVis;
       sunCoreGlow.visible = eVis;
       sunHalo.visible = eVis;
 
@@ -1012,6 +1246,7 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
       moonGlow.visible = moonVis;
       moonMesh.material.opacity = moonIn;
       (moonGlow.material as THREE.SpriteMaterial).opacity = moonIn * 0.8;
+      satMat.opacity = earthIn * 0.8;
 
       // Sky reveal: the realistic backdrop is always on. The bright real stars are
       // grouped by sky region so the flight moves from the northern sky into the
@@ -1124,6 +1359,12 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
     return () => {
       stop();
       clearInterval(activeWatch);
+      clearInterval(satTimer);
+      clearInterval(satInitTimer);
+      if (satWorker) {
+        satWorker.terminate();
+        satWorker = null;
+      }
       window.removeEventListener("resize", onResize);
       scene.traverse((obj) => {
         if ((obj as THREE.Mesh).isMesh) {
@@ -1138,6 +1379,8 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
         pt.geometry.dispose();
         (pt.material as THREE.Material).dispose();
       });
+      satGeo.dispose();
+      satMat.dispose();
       sunCoreTex.dispose();
       sunHaloTex.dispose();
       moonGlowTex.dispose();
