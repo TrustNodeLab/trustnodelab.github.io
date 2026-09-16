@@ -721,6 +721,19 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
     const satGeo = new THREE.BufferGeometry();
     satGeo.setAttribute("position", new THREE.BufferAttribute(satPositions, 3));
     satGeo.setDrawRange(0, 0);
+    // Circular dot texture for satellites (PointsMaterial default is a square)
+    const dotCanvas = document.createElement("canvas");
+    dotCanvas.width = 64;
+    dotCanvas.height = 64;
+    const dotCtx = dotCanvas.getContext("2d")!;
+    const gradient = dotCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gradient.addColorStop(0, "rgba(255,255,255,1)");
+    gradient.addColorStop(0.3, "rgba(255,255,255,0.8)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    dotCtx.fillStyle = gradient;
+    dotCtx.fillRect(0, 0, 64, 64);
+    const dotTexture = new THREE.CanvasTexture(dotCanvas);
+
     const satMat = new THREE.PointsMaterial({
       color: 0xfff2cc,
       size: 1.4,
@@ -728,7 +741,8 @@ const loadSized = (path: string, onReady?: () => void, onAdopt?: (tex: THREE.Tex
       transparent: true,
       opacity: 0,
       depthWrite: false,
-      blending: THREE.AdditiveBlending
+      blending: THREE.AdditiveBlending,
+      map: dotTexture
     });
     const satellitePoints = new THREE.Points(satGeo, satMat);
     satellitePoints.renderOrder = 4;
