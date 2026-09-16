@@ -7,7 +7,8 @@ import { getPersonalRoute } from "./personalRoute";
    Квиз собирает персональный маршрут из СТРАНИЦ; этот реестр связывает каждый
    контентный блок главной с «доменом»-страницей маршрута. Главная собирается
    из блоков, нужных пользователю:
-   — маршрут не сохранён (квиз не пройден) → видны все блоки;
+   — маршрут не сохранён (квиз не пройден) → блоков нет: главная = короткий
+     лендинг (hero + карточки + шаги + квиз); полный набор — на /sections;
    — маршрут сохранён → видны блоки без домена (always) и блоки,
      чей домен входит в маршрут.
    Footer использует тот же реестр, чтобы не рекламировать ссылки
@@ -58,7 +59,7 @@ export const HOME_BLOCKS: HomeBlockDef[] = [
 ];
 
 export function getVisibleHomeBlocks(route: PageId[]): HomeBlockId[] {
-  if (!route.length) return HOME_BLOCKS.map((b) => b.id);
+  if (!route.length) return [];
   return HOME_BLOCKS.filter((b) => b.domain === null || route.includes(b.domain)).map((b) => b.id);
 }
 
